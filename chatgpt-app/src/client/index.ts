@@ -54,7 +54,7 @@ class App {
     
     if (!messageContent) return;
 
-    const message: Message= {role: 'user', content: messageContent, timestamp: new Date().toISOString()};
+    const message: Message= {role: 'user', content: messageContent, timestamp: new Date().toLocaleTimeString()};
     
     // Add message to UI
     this.ui.addMessage(message);

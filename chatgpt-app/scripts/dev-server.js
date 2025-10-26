@@ -52,7 +52,7 @@ function buildServer() {
 buildServer();
 
 // Watch for server file changes
-const serverWatcher = chokidar.watch('src/server.ts', {
+const serverWatcher = chokidar.watch('src/server/', {
   ignored: /node_modules/,
   persistent: true
 });

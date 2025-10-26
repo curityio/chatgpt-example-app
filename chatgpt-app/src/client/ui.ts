@@ -66,6 +66,11 @@ export class UI {
     `;
 
     this.messagesContainer.appendChild(messageElement);
+
+    if (message.role === 'user' && message.content === 'hide') {
+      this.hideTodoApp();
+    }
+
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
   }
 
@@ -90,5 +95,12 @@ export class UI {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  private hideTodoApp(): void {
+    const iframe = document.querySelector('iframe');
+    if (iframe) {
+      iframe.remove();
+    }
   }
 }

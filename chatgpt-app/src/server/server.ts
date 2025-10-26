@@ -1,7 +1,8 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Message } from './messages';
+import { Message } from '../messages.js';
+import { handleMessage } from './handlers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,12 +36,7 @@ app.get('*', (req, res) => {
 
 app.post('/api/message', (req, res) => {
   const userMessage: Message = req.body;
-  const reply: Message = { 
-    role: 'assistant',
-    content: `ECHO: ${userMessage.content}`,
-    timestamp: new Date().toISOString() 
-    };
-  res.json(reply);
+  handleMessage(userMessage, res);
 });
 
 app.listen(port, () => {
@@ -48,3 +44,4 @@ app.listen(port, () => {
   console.log(`📁 Serving static files from public directory`);
   console.log(`🔧 Development mode: ${process.env.NODE_ENV !== 'production'}`);
 });
+
