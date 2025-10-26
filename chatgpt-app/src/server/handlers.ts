@@ -1,5 +1,6 @@
 import express from 'express';
 import { Message } from '../messages';
+import mcpServerConfig from '../../config.json' assert { type: 'json' };
 
 export async function handleMessage(message: Message, res: express.Response): Promise<void> {
     switch (message.content.toLowerCase()) {
@@ -19,15 +20,17 @@ export async function handleMessage(message: Message, res: express.Response): Pr
     }
 }
 
+/// When the user asks to show the todo app, respond with an iframe embedding it.
 async function handleShow(res: express.Response): Promise<void> {
     res.json({
-        role: 'assistant', content: `<iframe id="todo-app-iframe" src="http://localhost:8080/" width="600" height="400">
+        role: 'assistant', content: `<iframe id="todo-app-iframe" src="${mcpServerConfig.mcpServerUrl}" width="550" height="400">
         </iframe>`, timestamp: now()
     });
 }
 
+/// The client handles hiding the iframe, so just confirm the action here.
 async function handleHide(res: express.Response): Promise<void> {
-    res.json({ role: 'assistant', content: 'Hiding content as requested.', timestamp: now() });
+    res.json({ role: 'assistant', content: 'Todo App hidden as requested.', timestamp: now() });
 }
 
 function now(): string {

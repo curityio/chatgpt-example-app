@@ -29,6 +29,14 @@ server.registerTool(
 const app = express();
 app.use(express.json());
 
+// Serve static files from the web directory
+app.use(express.static(path.join(__dirname, '../../web')));
+
+// Serve index.html for the root path and any unmatched routes (SPA support)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../web/index.html'));
+});
+
 app.post('/mcp', async (req, res) => {
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   res.on('close', () => {

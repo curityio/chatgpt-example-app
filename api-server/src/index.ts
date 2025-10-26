@@ -10,14 +10,6 @@ const todos = [
 const app = express();
 app.use(express.json());
 
-// Serve static files from the web directory
-app.use(express.static(path.join(__dirname, '../../web')));
-
-// Serve index.html for the root path and any unmatched routes (SPA support)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../web/index.html'));
-});
-
 app.get('/api/todos', (req, res) => {
   res.json(todos);
 });
@@ -40,15 +32,6 @@ app.put('/api/todos/:id', (req, res) => {
     res.status(404).json({ error: 'Todo not found' });
   }
 });
-
-// app.get('*', (req, res, next) => {
-//   // Skip API routes
-//   if (req.path.startsWith('/mcp')) {
-//     return next();
-//   }
-//   // Serve index.html for client-side routing
-//   res.sendFile(path.join(__dirname, '../web/index.html'));
-// });
 
 const port = 8080;
 app.listen(port, () => {

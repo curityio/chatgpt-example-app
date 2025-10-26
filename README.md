@@ -40,7 +40,7 @@ npx @modelcontextprotocol/inspector
 
 ### web
 
-The frontend is served by the api-server for convenience.
+The frontend is served by the mcp-server (as it would in a real ChatGPT app as a MCP Resource).
 
 To watch its resources and automatically re-build on changes:
 
