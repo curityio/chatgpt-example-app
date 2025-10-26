@@ -1,0 +1,24 @@
+{
+  "name": "todo-web",
+  "version": "1.0.0",
+  "main": "src/index.tsx",
+  "scripts": {
+    "start": "esbuild src/index.tsx --bundle --outfile=dist/bundle.js --servedir=. --serve=3000 --watch --loader:.tsx=tsx --loader:.ts=tsx",
+    "watch": "esbuild src/index.tsx --bundle --outfile=dist/bundle.js --watch --loader:.tsx=tsx --loader:.ts=tsx",
+    "build": "esbuild src/index.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react-dom": "^19.2.2",
+    "esbuild": "^0.25.11",
+    "typescript": "^5.9.3"
+  }
+}

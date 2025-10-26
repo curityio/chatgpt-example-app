@@ -1,0 +1,30 @@
+{
+  "name": "chatgpt-app",
+  "version": "1.0.0",
+  "description": "ChatGPT Client App Simulator",
+  "main": "src/server.ts",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "chokidar": "^3.5.3",
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.25.11",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "dev": "npm run build:client && concurrently \"npm run watch:client\" \"npm run watch:server\"",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "esbuild src/client/index.ts --bundle --outfile=public/js/bundle.js --loader:.ts=ts --format=esm --target=es2020 --sourcemap",
+    "build:server": "esbuild src/server.ts --outfile=dist/server.js --platform=node --format=esm --target=node18 --sourcemap",
+    "watch:client": "esbuild src/client/index.ts --bundle --outfile=public/js/bundle.js --loader:.ts=ts --format=esm --target=es2020 --sourcemap --watch",
+    "watch:server": "node scripts/dev-server.js",
+    "start": "node dist/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
