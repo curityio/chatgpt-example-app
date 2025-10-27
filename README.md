@@ -4,7 +4,7 @@ ChatGPT apps are not yet available in the EU. For that reason,
 this project simulates a ChagGPT App using only local servers.
 
 * api-server - the Todo API
-* mcp-server - MCP Server (wraps the Todo API)
+* mcp-server - MCP Server (exposes the Todo API as LLM tools and serves the web frontend)
 * web - the frontend of the Todo App
 * chat-gpt-app - ChatGPT App Simulator (necessary while the real ChatGPT Apps are not available in the EU)
 
@@ -26,6 +26,8 @@ npm i --workspaces
 npm run dev -w api-server
 ```
 
+The API Server allows configuring CORS in [api-server/config.json](api-server/config.json)
+
 ### mcp-server
 
 ```
@@ -38,7 +40,7 @@ To debug the MCP Server, use the MCP Inspector:
 npx @modelcontextprotocol/inspector
 ```
 
-The MCP Server calls the api-server. Its URL can be configured in
+The MCP Server calls the API Server. Its URL can be configured in
 [mcp-server/config.json](mcp-server/config.json).
 
 ### web

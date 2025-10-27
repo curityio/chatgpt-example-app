@@ -54,7 +54,7 @@ buildAndRun();
 
 // Watch for changes
 console.log('👀 Watching for changes...');
-const watcher = chokidar.watch('src/**/*.ts', {
+const watcher = chokidar.watch(['src/**/*.ts', 'config.json'], {
   ignoreInitial: true
 });
 

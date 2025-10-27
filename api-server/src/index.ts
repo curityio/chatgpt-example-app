@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import config from '../config.json';
 
 const todos = [
   { id: 1, task: 'Buy milk', completed: false },
@@ -8,10 +9,7 @@ const todos = [
 ];
 
 const app = express();
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8081'],
-  credentials: true
-}));
+app.use(cors(config.cors));
 app.use(express.json());
 
 app.get('/api/todos', (req, res) => {
