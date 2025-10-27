@@ -38,6 +38,9 @@ To debug the MCP Server, use the MCP Inspector:
 npx @modelcontextprotocol/inspector
 ```
 
+The MCP Server calls the api-server. Its URL can be configured in
+[mcp-server/config.json](mcp-server/config.json).
+
 ### web
 
 The frontend is served by the mcp-server (as it would in a real ChatGPT app as a MCP Resource).
@@ -52,6 +55,15 @@ For development, it can also run standalone with a dev server:
 
 ```
 npm start -w web
+```
+
+By default, the frontend will make requests to the api-server (configure the API base URL
+in [web/config.json](web/config.json)).
+
+To use a mock implementation instead (i.e. make no HTTP requests, use test data), run:
+
+```
+npm run start:test -w web
 ```
 
 ### chat-gpt-app
