@@ -3,10 +3,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import path from 'path';
 import { z } from 'zod';
+import { getTodos, setTodoCompletion } from './api_calls';
 
 const server = new McpServer({ name: 'todo-server', version: '1.0.0' });
-
-const apiUrl = 'http://localhost:8080/api/todos';
 
 server.registerTool(
   'get_todos',
@@ -16,13 +15,35 @@ server.registerTool(
     outputSchema: { result: z.string() }
   },
   async () => {
-    const response = await fetch(apiUrl);
-    if (response.status !== 200) {
-      throw new Error('Failed to fetch todos');
-    }
-    const todos = await response.json();
-    const output = { result: JSON.stringify(todos) };
-    return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
+    return getTodos();
+  },
+);
+
+server.registerTool(
+  'complete_todo',
+  { 
+    description: 'Sets the completion status of a todo item to true.',
+    inputSchema: {
+      id: z.string(),
+    },
+    outputSchema: { result: z.string() }
+  },
+  async (input) => {
+    return setTodoCompletion(input.id, true);
+  },
+);
+
+server.registerTool(
+  'uncomplete_todo',
+  { 
+    description: 'Sets the completion status of a todo item to false.',
+    inputSchema: {
+      id: z.string(),
+    },
+    outputSchema: { result: z.string() }
+  },
+  async (input) => {
+    return setTodoCompletion(input.id, false);
   },
 );
 

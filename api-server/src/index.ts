@@ -1,5 +1,4 @@
 import express from 'express';
-import path from 'path';
 
 const todos = [
   { id: 1, task: 'Buy milk', completed: false },
@@ -35,5 +34,5 @@ app.put('/api/todos/:id', (req, res) => {
 
 const port = 8080;
 app.listen(port, () => {
-  console.log(`API Server listening on http://localhost:${port}`);
+  console.log(`🚀 API Server listening on http://localhost:${port} with hot reloading!`);
 });

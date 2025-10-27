@@ -23,13 +23,13 @@ npm i --workspaces
 ### api-server
 
 ```
-npm start -w api-server
+npm run dev -w api-server
 ```
 
 ### mcp-server
 
 ```
-npm start -w mcp-server
+npm run dev -w mcp-server
 ```
 
 To debug the MCP Server, use the MCP Inspector:
@@ -57,5 +57,5 @@ npm start -w web
 ### chat-gpt-app
 
 ```
-npm run dev -w chat-gpt-app
+npm run dev -w chatgpt-app
 ```
