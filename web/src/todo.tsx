@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { Todo, TodoController, ApiTodoController, TestTodoController } from './controller';
 
-interface Todo {
-    id: string;
-    task: string;
-    completed: boolean;
+interface TodoAppProps {
+    useTestController?: boolean;
 }
 
-export const TodoApp: React.FC = () => {
+export const TodoApp: React.FC<TodoAppProps> = ({ useTestController = false }) => {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [todoController] = useState<TodoController>(
+        useTestController ? new TestTodoController() : new ApiTodoController()
+    );
 
     useEffect(() => {
         fetchTodos();
@@ -18,11 +20,7 @@ export const TodoApp: React.FC = () => {
     const fetchTodos = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/todos');
-            if (!response.ok) {
-                throw new Error('Failed to fetch todos');
-            }
-            const data = await response.json();
+            const data = await todoController.getTodos();
             setTodos(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
@@ -36,19 +34,10 @@ export const TodoApp: React.FC = () => {
             const todo = todos.find(t => t.id === id);
             if (!todo) return;
 
-            const response = await fetch(`/api/todos/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ completed: !todo.completed }),
-            });
-
-            if (response.ok) {
-                setTodos(todos.map(t => 
-                    t.id === id ? { ...t, completed: !t.completed } : t
-                ));
-            }
+            const updatedTodo = await todoController.setTodoCompletion(id, !todo.completed);
+            setTodos(todos.map(t => 
+                t.id === id ? updatedTodo : t
+            ));
         } catch (err) {
             console.error('Failed to update todo:', err);
         }
@@ -60,6 +49,9 @@ export const TodoApp: React.FC = () => {
     return (
         <div className="todo-app">
             <h2>Todo App</h2>
+            <p style={{ fontSize: '0.9em', color: '#666', fontStyle: 'italic' }}>
+                Using {useTestController ? 'Test' : 'API'} Controller
+            </p>
             <h3 className='todo-header'>Here are your tasks:</h3>
             <div className='todo-tasks'>
             {todos.length === 0 ? (
