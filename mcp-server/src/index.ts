@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
+import morgan from 'morgan';
 import path from 'path';
 import { z } from 'zod';
 import { getTodos, setTodoCompletion } from './api_calls';
@@ -26,7 +27,7 @@ server.registerTool(
     inputSchema: {
       id: z.string(),
     },
-    outputSchema: { result: z.string() }
+    outputSchema: { result: z.any() }
   },
   async (input) => {
     return setTodoCompletion(input.id, true);
@@ -48,6 +49,7 @@ server.registerTool(
 );
 
 const app = express();
+app.use(morgan('combined'));
 app.use(express.json());
 
 // Serve static files from the web directory

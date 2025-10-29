@@ -22,5 +22,5 @@ export async function setTodoCompletion(id: string, completed: boolean): Promise
           throw new Error('Failed to toggle todo');
         }
         const result = await response.json();
-        return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result };
+        return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { result } };
 }

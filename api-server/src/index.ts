@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import config from '../config.json';
 
 const todos = [
@@ -9,6 +10,7 @@ const todos = [
 ];
 
 const app = express();
+app.use(morgan('combined'));
 app.use(cors(config.cors));
 app.use(express.json());
 
