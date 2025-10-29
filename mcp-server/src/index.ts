@@ -1,16 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import express from 'express';
 import morgan from 'morgan';
 import path from 'path';
 import { z } from 'zod';
 import { getTodos, setTodoCompletion } from './api_calls';
+import { obtainAuthorization } from './authz';
 
 const server = new McpServer({ name: 'todo-server', version: '1.0.0' });
 
 server.registerTool(
   'get_todos',
-  { 
+  {
     title: 'Get Todos',
     description: 'Returns the full list of todos.',
     outputSchema: { result: z.string() }
@@ -22,7 +24,7 @@ server.registerTool(
 
 server.registerTool(
   'complete_todo',
-  { 
+  {
     description: 'Sets the completion status of a todo item to true.',
     inputSchema: {
       id: z.string(),
@@ -36,7 +38,7 @@ server.registerTool(
 
 server.registerTool(
   'uncomplete_todo',
-  { 
+  {
     description: 'Sets the completion status of a todo item to false.',
     inputSchema: {
       id: z.string(),
@@ -48,7 +50,38 @@ server.registerTool(
   },
 );
 
-const app = express();
+server.registerTool(
+  'obtain_authorization',
+  {
+    title: 'Obtain Authorization.',
+    description: 'Obtains authorization to perform sensitive API calls. ' +
+      'This is required before calling any tool that modifies data. ' +
+      'On success, returns a QR code that the user must scan to authorize. ' +
+      'The QR code string is a base64-encoded PNG image that must be displayed to the user.',
+    outputSchema: { success: z.boolean(), message: z.string(), qrCode: z.string().optional() }
+  },
+  async () => {
+    const output = await obtainAuthorization();
+    return {
+      content: [{ type: 'text', text: output.message }],
+      structuredContent: output,
+    };
+  },
+);
+
+// Check if stdio transport is requested via command line argument
+const useStdio = process.argv.includes('--stdio');
+
+if (useStdio) {
+  // Run with stdio transport
+  console.error('Starting MCP server with stdio transport...');
+  const transport = new StdioServerTransport();
+  server.connect(transport).catch((error) => {
+    console.error('Failed to start stdio transport:', error);
+    process.exit(1);
+  });
+} else {
+  const app = express();
 app.use(morgan('combined'));
 app.use(express.json());
 
@@ -69,7 +102,9 @@ app.post('/mcp', async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 });
 
-const port = 8081;
-app.listen(port, () => {
-  console.log(`MCP endpoint available at http://localhost:${port}/mcp`);
-});
+  // Run with HTTP transport (default behavior)
+  const port = 8081;
+  app.listen(port, () => {
+    console.log(`MCP endpoint available at http://localhost:${port}/mcp`);
+  });
+}

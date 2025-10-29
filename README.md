@@ -43,6 +43,8 @@ npx @modelcontextprotocol/inspector
 The MCP Server calls the API Server. Its URL can be configured in
 [mcp-server/config.json](mcp-server/config.json).
 
+> to run the MCP server using stdio transport, use `npm run start:stdio -w mcp-server`.
+
 ### web
 
 The frontend is served by the mcp-server (as it would in a real ChatGPT app as a MCP Resource).

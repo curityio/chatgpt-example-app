@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "start:stdio": "ts-node src/index.ts --stdio",
     "dev": "node scripts/dev.js",
     "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=cjs",
     "build:prod": "npm run build && npm run build:types",
@@ -25,8 +26,10 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@types/morgan": "^1.9.10",
+    "@types/qrcode": "^1.5.6",
     "express": "^5.1.0",
     "morgan": "^1.10.1",
+    "qrcode": "^1.5.4",
     "zod": "^3.25.76"
   }
 }
