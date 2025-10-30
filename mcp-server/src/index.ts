@@ -13,6 +13,9 @@ import { obtainAuthorization } from './authz';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// TODO remove this line when running against a real https URL!
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 const server = new McpServer({ name: 'todo-server', version: '1.0.0' });
 
 server.registerTool(
@@ -69,7 +72,7 @@ server.registerTool(
       return {
         content: [
           { type: 'text', text: output.message },
-          { type: 'image', data: output.qrCode.substring('data:image/png;base64,'.length), mimeType: 'image/png' }
+          { type: 'image', data: output.qrCode, mimeType: 'image/png' }
         ],
         structuredContent: { success: true, message: output.message },
       };

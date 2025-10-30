@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { Buffer } from 'buffer';
 import https from 'https';
 import * as DPoP from 'dpop'
@@ -23,6 +22,7 @@ export class DPoPOAuthClient {
   private accessToken?: string;
   private tokenType?: string;
   private expiresAt?: Date;
+  private sessionId?: string;
 
   constructor() {
     this.clientId = process.env.HAAPI_CLIENT_ID || 'haapi-client';
@@ -65,7 +65,16 @@ export class DPoPOAuthClient {
     return new Date() >= this.expiresAt;
   }
 
-  async authenticate(tokenEndpoint: string): Promise<void> {
+  /**
+   * Authenticate the OAuth client with the authorization server.
+   * 
+   * Uses the Client Credentials grant type with DPoP.
+   * 
+   * @param tokenEndpoint Authorization Server's token endpoint
+   * @param scope The scope for which to request access
+   * @returns 
+   */
+  async authenticateClient(tokenEndpoint: string, scope: string): Promise<void> {
     if (this.accessToken && !this.isTokenExpired()) {
       return; // Token is still valid
     }
@@ -74,7 +83,7 @@ export class DPoPOAuthClient {
 
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
-      scope     : 'urn:se:curity:scopes:haapi',
+      scope     : scope,
     });
 
     const response = await fetch(tokenEndpoint, {
@@ -102,7 +111,7 @@ export class DPoPOAuthClient {
     if (tokenData.expires_in) {
       this.expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
     }
-    console.log('Obtained HAAPI access token, expires at:', this.expiresAt);
+    console.log('Obtained client Access Token, expires at:', this.expiresAt);
   }
 
   async request(url: string, options: RequestInit = {}): Promise<Response> {
@@ -116,15 +125,22 @@ export class DPoPOAuthClient {
     const headers = {
       'Authorization': `${this.tokenType || 'DPoP'} ${this.accessToken}`,
       'DPoP': dpopProof,
+      ... this.sessionId ? { 'Session-Id': this.sessionId } : {},
       ...options.headers,
     };
 
-    return fetch(url, {
+    const response = await fetch(url, {
       ...options,
       headers,
       // @ts-ignore - Node.js specific agent property
       agent: url.startsWith('https:') ? this.httpsAgent : undefined,
     });
+
+    if (response.headers.has('Set-Session-Id')) {
+      this.sessionId = response.headers.get('Set-Session-Id') || undefined;
+    }
+
+    return response;
   }
 
   async get(url: string, headers?: Record<string, string>): Promise<Response> {
@@ -133,7 +149,6 @@ export class DPoPOAuthClient {
 
   async post(url: string, body?: any, headers?: Record<string, string>): Promise<Response> {
     const requestHeaders = {
-      'Content-Type': 'application/json',
       ...headers,
     };
 
@@ -141,6 +156,21 @@ export class DPoPOAuthClient {
       method: 'POST',
       headers: requestHeaders,
       body: typeof body === 'string' ? body : JSON.stringify(body),
+    });
+  }
+
+  async postForm(url: string, formData: Record<string, string>, headers?: Record<string, string>): Promise<Response> {
+    const body = new URLSearchParams(formData);
+
+    const requestHeaders = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...headers,
+    };
+
+    return this.request(url, {
+      method: 'POST',
+      headers: requestHeaders,
+      body: body.toString(),
     });
   }
 
