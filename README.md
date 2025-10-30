@@ -44,6 +44,7 @@ The MCP Server calls the API Server. Its URL can be configured in
 [mcp-server/config.json](mcp-server/config.json).
 
 > to run the MCP server using stdio transport, use `npm run start:stdio -w mcp-server`.
+> to initiate a HAAPI flow for testing it, run `npm run haapi`.
 
 ### web
 
