@@ -1,12 +1,16 @@
 import * as QRCode from 'qrcode';
 import { DPoPOAuthClient } from './haapi_client';
+import config from '../config.json' with { type: 'json' };
+import type { Config } from './types/config';
+
+const typedConfig = config as Config;
 
 export async function callHaapi() {
     const client = new DPoPOAuthClient();
-    await client.authenticate('https://localhost:8443/dev/oauth/token');
+    await client.authenticate(typedConfig.oauth.tokenEndpoint);
     
     // start OAuth authorization via HAAPI
-    const url = new URL('https://localhost:8443/dev/oauth/authorize');
+    const url = new URL(typedConfig.oauth.authorizationEndpoint);
     url.searchParams.append('response_type', 'code');
     url.searchParams.append('client_id', process.env.HAAPI_CLIENT_ID || 'haapi-client');
     url.searchParams.append('redirect_uri', 'https://localhost:7777/client-callback');

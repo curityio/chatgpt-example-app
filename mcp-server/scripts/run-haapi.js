@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Compile TypeScript and run the callHaapi function
 async function runHaapiScript() {
@@ -17,7 +22,7 @@ async function runHaapiScript() {
         console.log('Running callHaapi function...');
         
         // Import and run the compiled function
-        const { callHaapi } = require('../dist/authz.js');
+        const { callHaapi } = await import('../dist/authz.js');
         await callHaapi();
         
         console.log('callHaapi function completed successfully!');

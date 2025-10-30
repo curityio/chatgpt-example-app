@@ -4,9 +4,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import express from 'express';
 import morgan from 'morgan';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { getTodos, setTodoCompletion } from './api_calls';
 import { obtainAuthorization } from './authz';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const server = new McpServer({ name: 'todo-server', version: '1.0.0' });
 

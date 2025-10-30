@@ -1,3 +1,7 @@
 {
-    "apiUrl": "http://localhost:8080/api/todos"
+    "apiUrl": "http://localhost:8080/api/todos",
+    "oauth": {
+        "tokenEndpoint": "https://localhost:8443/dev/oauth/token",
+        "authorizationEndpoint": "https://localhost:8443/dev/oauth/authorize"
+    }
 }

@@ -1,5 +1,5 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types";
-import apiConfig from '../config.json';
+import apiConfig from '../config.json' with { type: 'json' };
 
 export async function getTodos(): Promise<CallToolResult> {
   console.log('Fetching todos from', apiConfig.apiUrl);

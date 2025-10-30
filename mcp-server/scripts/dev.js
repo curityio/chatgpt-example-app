@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const esbuild = require('esbuild');
-const chokidar = require('chokidar');
-const { spawn } = require('child_process');
-const path = require('path');
+import esbuild from 'esbuild';
+import chokidar from 'chokidar';
+import { spawn } from 'child_process';
+import path from 'path';
 
 let serverProcess = null;
 
@@ -24,8 +24,8 @@ const buildAndRun = async () => {
       platform: 'node',
       target: 'node18',
       outfile: 'dist/index.js',
-      format: 'cjs', // Changed to CommonJS for compatibility
-      external: [],
+      format: 'esm',
+      packages: 'external', // Don't bundle any node_modules
       sourcemap: true
     });
 
