@@ -16,7 +16,7 @@ export async function obtainAuthorization(): Promise<{ success: boolean; message
 
         return {
             success: true,
-            message: 'Authorization successful! Please scan the QR code to access the OAuth development endpoint.',
+            message: `Authorization successful! Please scan the QR code to access the OAuth development endpoint: ${qrCodeDataURL}`,
             qrCode: qrCodeDataURL
         };
     } catch (error) {
@@ -24,9 +24,8 @@ export async function obtainAuthorization(): Promise<{ success: boolean; message
         
         // Even if QR code generation fails, return success as requested
         return {
-            success: true,
-            message: 'Authorization successful! OAuth URL: https://localhost:8443/oauth/dev/',
-            qrCode: undefined
+            success: false,
+            message: 'Authorization failed. Please try again later.',
         };
     }
 }
