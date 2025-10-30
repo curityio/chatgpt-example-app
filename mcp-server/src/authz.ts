@@ -2,8 +2,8 @@ import * as QRCode from 'qrcode';
 
 export async function obtainAuthorization(): Promise<{ success: boolean; message: string; qrCode?: string }> {
     try {
-        // Generate QR code for the OAuth development URL
-        const url = 'https://localhost:8443/oauth/dev/';
+        // TODO call BankID and get a real QR code
+        const url = 'https://curity.io/';
         const qrCodeDataURL = await QRCode.toDataURL(url, {
             errorCorrectionLevel: 'M',
             margin: 1,
@@ -16,7 +16,7 @@ export async function obtainAuthorization(): Promise<{ success: boolean; message
 
         return {
             success: true,
-            message: `Authorization successful! Please scan the QR code to access the OAuth development endpoint: ${qrCodeDataURL}`,
+            message: `Authorization successful! Please scan the QR code to finish the authorization process.`,
             qrCode: qrCodeDataURL
         };
     } catch (error) {

@@ -55,16 +55,23 @@ server.registerTool(
   {
     title: 'Obtain Authorization.',
     description: 'Obtains authorization to perform sensitive API calls. ' +
-      'This is required before calling any tool that modifies data. ' +
-      'On success, returns a QR code that the user must scan to authorize. ' +
-      'The QR code string is a base64-encoded PNG image that must be displayed to the user.',
-    outputSchema: { success: z.boolean(), message: z.string(), qrCode: z.string().optional() }
+      'This is required before calling any tool that modifies data.',
+    outputSchema: { success: z.boolean(), message: z.string() }
   },
   async () => {
     const output = await obtainAuthorization();
+    if (output.success && output.qrCode) {
+      return {
+        content: [
+          { type: 'text', text: output.message },
+          { type: 'image', data: output.qrCode.substring('data:image/png;base64,'.length), mimeType: 'image/png' }
+        ],
+        structuredContent: { success: true, message: output.message },
+      };
+    }
     return {
       content: [{ type: 'text', text: output.message }],
-      structuredContent: output,
+      structuredContent: { success: false, message: output.message },
     };
   },
 );
