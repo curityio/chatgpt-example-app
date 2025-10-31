@@ -18,11 +18,11 @@ export async function getTodos(): Promise<CallToolResult> {
   return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
 }
 
-export async function setTodoCompletion(id: string, completed: boolean): Promise<CallToolResult> {
+export async function setTodoCompletion(id: string, completed: boolean, token: string): Promise<CallToolResult> {
   const response = await fetch(`${apiConfig.apiUrl}/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ completed: true }),
-    headers: { 'Content-Type': 'application/json' }
+    body: JSON.stringify({ completed: completed }),
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
   });
 
   const authError = resultIfAuthorizationError(response);
