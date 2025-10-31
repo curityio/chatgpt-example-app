@@ -94,3 +94,16 @@ export interface BankdIDAuthenticatorView extends HaapiView {
         }
     }>;
 }
+
+export interface OAuthAuthorizationResponseView extends HaapiView {
+    type: 'oauth-authorization-response';
+    links: Array<{
+        href: string;
+        rel: 'authorization-response';
+    }>;
+    properties: {
+        code: string;
+        iss: string;
+        state?: string;
+    }
+}

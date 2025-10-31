@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { getTodos, setTodoCompletion } from './api_calls';
-import { SessionManager, Session } from './session-manager';
+import { SessionManager } from './session-manager';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 import { obtainAuthorization } from './authz';
 
@@ -18,6 +18,8 @@ const __dirname = path.dirname(__filename);
 // TODO remove this line when running against a real https URL!
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
+const checkMark = 'iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAABSlJREFUeF7tnUty1DAQhqUjhAtAFVeAXaqS2bDLFeAYsCIZVnAMuEJ2bDKpyo5cIVVwAXIEQzvWPGKPH1Kr3W39sxkSj1vt//ske5wh8a7nUVXVebP5snkOX/fthm3zJ7Bxzt1SG977q752fNfGBjxBB/D5YXJ0sD4mQkuABv4Nx6iooS6BlggHAlRVRctFWO7VdY+GWBI4kGArAOCzhGulyMp7T9cJbl+Aykr36JMlgVqCWgDMfpZArRXZeO9XQQDMfmv4ePpdecx+niSNVoEARsFxtb2hFYDe8+OGD1ekturUAuD8bwsaa7cQgDVOe8UggD1mrB1DANY47RWDAPaYsXYMAVjjtFcMAthjxtoxBGCN014xCGCPGWvHEIA1TnvFIIA9ZqwdQwDWOO0VgwD2mLF2DAFY47RXDALYY8baMQRgjdNeMQhgjxlrxxCANU57xSCAPWasHUMA1jjtFYMA9pixdgwBWOO0VwwC2GPG2jEEYI1zWrG7xz/u20P9izzc3d/f7tPrs/rfH5vnadXiXg0B4nJL3ovAf23gPy9GIkhJAAGSUU4vcHH/o57xfQ8pCSDAdH5Je4yBHwa4fvvBnZ68TBpvaGcIMJQQ4/Yp8GnY0xev3PWb94wdtEtBgKzx7opPhQ8BhMBIDBMDP/T1+O5z1haxAmSN17kU+BIXghAgowAp8KktCJARTu7SFuBTBlgBMpiQCl/i6j8cNgRgFsASfKwAhcOHAIwCWJv5OAUAfp0ArgESRbA687ECJIKn3a3DxwqQIMES4EOASAGWAh8CRAiwJPgQYKIAS4MPASYIsET4EGCkAEuFDwFGCLBk+OICaPgc/Ajm25csHb6oAFo+Bz9WgBLgiwnQBz8AkfwZ+JAEpcAXEWAMfE0SlARfnQDU0JwrQWnwRQQ4+fllaMVtbZ9DghLhiwgQG6ykBLE9ajp1TZ5lzQ7ZPw+QEq6EBCn9zX3KioW+v192Aei9/8Wv79G95pSgdPgipwAaZMo7gS5TckgA+E9JZ18BAlBNgWvqJXppZNpRTADqV0PwGnpgYsdSRlSAuSUA/LYz4gLMJQHgdy8YswggLQHgHz9bzCaAlASA33+pMKsAuSUA/OHrxNkFyCUB4A/DF70PMNQOJzDOWkN9W9+uYgXgvFlEtYZ+CWMftBx3HTVLokoAjtNBStilwVd1CtgHl7qEx0hQIny1AkivBKXCVy2AlAQlw1cvQG4JSodvQoBcEgD+05WSuncBxy7gOC8MAX+XshkBuFYCwD+cYqYESJUA8NvrqzkBYiUA/O6Tq0kBpkoA+MdvjZkVYKwEgN9/X9S0AHRofR85B/zhm+LmBQgS0DP9J5TwoL+7l/svbg3Hq/8VixBAf8x6O4QAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQCKCXjUhnEEAkZr2DQAC9bEQ6gwAiMesdBALoZSPSGQQQiVnvIBBALxuRziCASMx6B4EAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQEuDGOXeut0V0ljGBDQTImK6B0msSgGY/rQJ4lJcABCiP+e6IPT3oS1wHFKnB+j/+qyAATgOFORAmfy1AswpAgnIkqGc/He5WgEYC+uZlOTkUeaRb+C0BIMHihVh57zf7R3mwAuxvqKoKq8FyfCDoNPMP4HeuAM+PuRGBvn2GO4ZmjAig1zXkDvDhSP4BcLDmrm+X+ucAAAAASUVORK5CYII=';
+
 // Initialize session manager
 const sessionManager = new SessionManager({
   sessionTimeoutMs: 30 * 60 * 1000, // 30 minutes
@@ -27,8 +29,8 @@ const sessionManager = new SessionManager({
 
 function missingAuthorizationResponse(): CallToolResult {
   const errorResult = {
-      result: 'Authorization required. Please call obtain_authorization first.',
-    };
+    result: 'Authorization required. Please call obtain_authorization first.',
+  };
   return {
     content: [{ type: 'text', text: JSON.stringify(errorResult) }],
     structuredContent: errorResult,
@@ -37,6 +39,28 @@ function missingAuthorizationResponse(): CallToolResult {
 }
 
 const server = new McpServer({ name: 'todo-server', version: '1.0.0' });
+
+async function onElicitationUserNameAndPasswordRequired(): Promise<{ username: string; password: string }> {
+  console.log('Eliciting user credentials for authorization...');
+  const result = await server.server.elicitInput({
+    message: 'Please provide your credentials to proceed with authorization.',
+    requestedSchema: {
+      type: 'object',
+      properties: {
+        username: { type: 'string', description: 'Your username' },
+        password: { type: 'string', description: 'Your password' },
+      },
+      required: ['username', 'password'],
+    }
+  });
+  if (result.action === 'accept') {
+    const username = result.content!.username as string;
+    const password = result.content!.password as string;
+    return { username, password };
+  } else {
+    throw new Error('User cancelled credential elicitation');
+  }
+}
 
 server.registerTool(
   'get_todos',
@@ -102,8 +126,8 @@ server.registerTool(
   },
   async (input, context) => {
     const session = sessionManager.getOrCreateSession(context?.sessionId);
-    const output = await obtainAuthorization((token) => session.token = token);
-    if (output.success && output.qrCode) {
+    const output = await obtainAuthorization((token) => session.token = token, onElicitationUserNameAndPasswordRequired);
+    if (output.success) {
       const structuredContent = { success: true, message: output.message };
       return {
         // The structuredContent should be exactly the same as the unstructured content
@@ -111,7 +135,7 @@ server.registerTool(
         // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
         content: [
           { type: 'text', text: JSON.stringify(structuredContent) },
-          { type: 'image', data: output.qrCode, mimeType: 'image/png' }
+          { type: 'image', data: output.qrCode || checkMark, mimeType: 'image/png' },
         ],
         structuredContent,
       };

@@ -83,7 +83,7 @@ export class DPoPOAuthClient {
 
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
-      scope     : scope,
+      scope: scope,
     });
 
     const response = await fetch(tokenEndpoint, {
@@ -104,10 +104,10 @@ export class DPoPOAuthClient {
     }
 
     const tokenData: TokenResponse = await response.json();
-    
+
     this.accessToken = tokenData.access_token;
     this.tokenType = tokenData.token_type;
-    
+
     if (tokenData.expires_in) {
       this.expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
     }
@@ -157,6 +157,21 @@ export class DPoPOAuthClient {
       headers: requestHeaders,
       body: typeof body === 'string' ? body : JSON.stringify(body),
     });
+  }
+
+  async postAuthorizationCode(url: string, code: string, redirectUri: string): Promise<TokenResponse> {
+    const response = await this.postForm(
+      url,
+      {
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+      }, {
+      'Accept': 'application/json',
+      'Authorization': this.getBasicAuthHeader(),
+    }
+    );
+    return await response.json() as TokenResponse;
   }
 
   async postForm(url: string, formData: Record<string, string>, headers?: Record<string, string>): Promise<Response> {

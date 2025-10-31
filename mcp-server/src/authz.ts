@@ -1,7 +1,7 @@
 import { DPoPOAuthClient } from './oauth_client';
 import config from '../config.json' with { type: 'json' };
 import { bankIdAcr, htmlFormAcr, type Config } from './types/config';
-import type { AccessTokenAuthenticatorView, BankdIDAuthenticatorView, HtmlFormAuthenticatorView, HaapiView } from './haapi_types';
+import type { AccessTokenAuthenticatorView, BankdIDAuthenticatorView, HtmlFormAuthenticatorView, HaapiView, OAuthAuthorizationResponseView } from './haapi_types';
 import { haapiResponseView } from './haapi_utils';
 import { haapiHeaders, ensureAbsoluteUrl } from './haapi_utils';
 import { authenticateWithBankID, findQrCode } from './bankid';
@@ -113,7 +113,7 @@ export async function runHtmlFormAuthenticationFlow(
     if (!postBackUrl) {
         throw new Error('No login action found in HTML Form Authenticator view');
     }
-    const finalView = await haapiResponseView<HaapiView>(
+    const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(
         await authenticateWithHtmlFormAuthenticator(client, postBackUrl,
             await requestUserNameAndPassword()),
         client
@@ -121,8 +121,22 @@ export async function runHtmlFormAuthenticationFlow(
 
     console.log('Final authenticator response:', JSON.stringify(finalView, null, 2));
 
-    return ''; // TODO extract access token from finalView
-    
+    if (finalView.metadata.viewName !== 'templates/oauth/success-authorization-response') {
+        throw new Error('Expected final authorization-response view now!');
+    }
+    console.log('Authentication successful! Exchanging authorization code for access token...');
+
+    const oauthCallbackUrl = finalView.links.find(link => link.rel === 'authorization-response')?.href;
+    if (!oauthCallbackUrl) {
+        throw new Error('No authorization-response link found in final OAuth authorization response view');
+    }
+
+    const tokenResponse = await client.postAuthorizationCode(config.oauth.tokenEndpoint,
+        finalView.properties.code, oauthCallbackUrl.substring(0, oauthCallbackUrl.indexOf('?')));
+
+    console.log('OAuth token response:', tokenResponse);
+
+    return tokenResponse.access_token;
 }
 
 async function authenticateWithAccessTokenAuthenticator(
@@ -159,14 +173,18 @@ async function authenticateWithHtmlFormAuthenticator(
  * This is the tool function the LLM will call when it needs to obtain authorization.
  * 
  * @param onToken callback to receive the obtained token. May be called much later than the function returns, or before.
+ * @param onElicitation use elicitation to obtain the user's credentials if necessary
  * @returns an object indicating success or failure, and the QR code if successful
  */
-export async function obtainAuthorization(onToken: (token: string) => void): Promise<AuthorizationResult> {
+export async function obtainAuthorization(
+    onToken: (token: string) => void,
+    onElicitation: () => Promise<{ username: string; password: string }>,
+): Promise<AuthorizationResult> {
     const acr = typedConfig.authn.acr;
     if (acr === bankIdAcr) {
         return authorizeWithBankID();
     } else if (acr === htmlFormAcr) {
-        return authorizeWithHtmlSql(onToken);
+        return authorizeWithHtmlSql(onToken, onElicitation);
     }
     return {
         success: false,
@@ -193,6 +211,22 @@ async function authorizeWithBankID(): Promise<AuthorizationResult> {
     }
 }
 
-async function authorizeWithHtmlSql(onToken: (token: string) => void): Promise<AuthorizationResult> {
-    throw new Error('HTML SQL authorization not implemented yet');
+async function authorizeWithHtmlSql(
+    onToken: (token: string) => void,
+    onElicitation: () => Promise<{ username: string; password: string }>,
+): Promise<AuthorizationResult> {
+    try {
+        const token = await runHtmlFormAuthenticationFlow(undefined, onElicitation);
+        onToken(token);
+        return {
+            success: true,
+            message: `Authentication successful! Feel free to proceed.`,
+        };
+    } catch (error) {
+        console.error('Error authenticating with HTML form:', error);
+        return {
+            success: false,
+            message: 'Authorization failed. Please try again later.',
+        };
+    }
 }

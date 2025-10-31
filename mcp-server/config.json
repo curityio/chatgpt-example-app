@@ -8,7 +8,7 @@
     },
     "authn": {
         "serverBaseUrl": "https://localhost:8443",
-        "acr": "urn:se:curity:authentication:bankid:bankid1",
+        "acr": "urn:se:curity:authentication:html-form:htmlFormJson",
         "backendAccessToken": "eyJraWQiOiItMTg0NTU4NTMwMiIsIng1dCI6ImpWS3pVNDYwODdwTENoejlVRDZlcWpmVmNmWSIsImFsZyI6IlJTMjU2In0.eyJqdGkiOiI2ZTg1MjI3ZC1jZjQ1LTRhMGItYmZiZi1kYmRhY2Q2MTU2NWYiLCJkZWxlZ2F0aW9uSWQiOiIwMjg1ZTViNy1hYTdjLTRhZDgtODYzMC1kYzc2NTU0ZDc5ZjUiLCJleHAiOjE3NjE4NDY2NzUsIm5iZiI6MTc2MTg0NjM3NSwic2NvcGUiOiJyZWFkIiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6ODQ0My9kZXYvb2F1dGgvYW5vbnltb3VzIiwic3ViIjoiam9obmRvZSIsImF1ZCI6WyJjbGllbnQtb25lIiwiYXVkaWVuY2UyIl0sImlhdCI6MTc2MTg0NjM3NSwicHVycG9zZSI6ImFjY2Vzc190b2tlbiJ9.SsE4H4eXfoVFQrVDx-Ih5DDYmDC0H8u9L7DQwbjRjqTyPIvpra6l43vXPaqGYWAgMjGdkKELR5riTwC6JfV5iIG0BdxS8ieKDLHQWq9peP9tj9lBxTef0T9t__twHHkXjHZZ_qW_ACOLDYWK49j2Ou7ygjyXAt1pVNNatH32Ww4eKBVo9jVbTmqxviaSYl8RRIkQRf7S5DnLqrYOYzS06ICxTxhwmmHvTWqoLuZlhnURaEiSZukR4Ay9o6xjS3mfx42VkIwZ5KmNsrEw7JWrbar71E9ZsGPaZIsywYJuV0Rfz67tex24kMeEQKInRBXMjHTDfEyRruE2N2g-z5dVSA",
         "userCredentials": {
             "username": "testuser",
