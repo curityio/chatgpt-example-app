@@ -14,17 +14,16 @@ async function runHaapiScript() {
         console.log('Compiling TypeScript...');
         
         // Compile TypeScript files
-        execSync('npx tsc', { 
+        execSync('npm run build:haapi', { 
             cwd: path.join(__dirname, '..'),
             stdio: 'inherit' 
         });
         
-        console.log('Running callHaapi function...');
-        
-        // Import and run the compiled function
-        const { callHaapi } = await import('../dist/authz.js');
-        await callHaapi();
-        
+        console.log('Running callHaapi...');
+        execSync('node dist/run-haapi.js', { 
+            cwd: path.join(__dirname, '..'),
+            stdio: 'inherit' 
+        });
         console.log('callHaapi function completed successfully!');
     } catch (error) {
         console.error('Error running callHaapi:', error.message);

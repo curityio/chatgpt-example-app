@@ -7,8 +7,9 @@
     "start": "ts-node src/index.ts",
     "start:stdio": "ts-node src/index.ts --stdio",
     "dev": "node scripts/dev.js",
-    "haapi": "node --loader ts-node/esm src/run-haapi.ts",
+    "haapi": "node scripts/run-haapi.js",
     "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=esm",
+    "build:haapi": "esbuild src/run-haapi.ts --bundle --platform=node --target=node18 --outfile=dist/run-haapi.js --format=esm",
     "build:prod": "npm run build && npm run build:types",
     "build:types": "tsc --emitDeclarationOnly",
     "test": "echo \"Error: no test specified\" && exit 1"

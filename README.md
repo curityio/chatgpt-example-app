@@ -43,6 +43,11 @@ npx @modelcontextprotocol/inspector
 The MCP Server calls the API Server. Its URL can be configured in
 [mcp-server/config.json](mcp-server/config.json).
 
+To use **BankID** authentication, set the `acr` to `urn:se:curity:authentication:bankid:bankid1`.
+
+To use **HTML Form** authentication, set the `acr` to `urn:se:curity:authentication:html-form:htmlFormJson`.
+If using this ACR, running `npm run haapi` requires setting the `userName` and `password` to test.
+
 > to run the MCP server using stdio transport, use `npm run start:stdio -w mcp-server`.
 > to initiate a HAAPI flow for testing it, run `npm run haapi`.
 

@@ -11,7 +11,7 @@ export interface HaapiRedirect extends HaapiView {
     actions: Array<{
         template: 'form';
         kind: 'redirect';
-        model: { href: string };
+        model: { href: string, method: string, fields?: Array<{ name: string, value: string }> };
     }>;
 }
 
@@ -32,6 +32,22 @@ export interface AccessTokenAuthenticatorView extends HaapiView {
     }>;
 }
 
+export interface HtmlFormAuthenticatorView extends HaapiView {
+    type: 'authentication-step';
+    actions: Array<{
+        template: 'form';
+        kind: 'login';
+        model: {
+            href: string;
+            method: 'POST';
+            fields: {
+                name: 'userName' | 'password',
+                type: 'text',
+                label: string,
+            }
+        }
+    }>;
+}
 export interface BankdIDAuthenticatorView extends HaapiView {
     type: 'polling-step';
     links: Array<{

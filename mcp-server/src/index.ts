@@ -102,7 +102,7 @@ server.registerTool(
   },
   async (input, context) => {
     const session = sessionManager.getOrCreateSession(context?.sessionId);
-    const output = await obtainAuthorization();
+    const output = await obtainAuthorization((token) => session.token = token);
     if (output.success && output.qrCode) {
       const structuredContent = { success: true, message: output.message };
       return {
