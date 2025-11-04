@@ -67,6 +67,9 @@ TODO: instead of configuring `backendAccessToken`, we should let the MCP client 
 to talk to the MCP Server. Currently, the MCP server maintains an unauthenticated session for each user, hence the need
 to configure the access token beforehand.
 
+For the HAAPI client to authenticate, credentials must be provided via environment variables,
+see the [.env.example](mcp-server/.env.example) file for which environment variables are required.
+
 #### ACR
 
 The Curity Identity Server needs to be configured with the `access_token` authenticator as a pre-requisite of the _main_ authenticator.
