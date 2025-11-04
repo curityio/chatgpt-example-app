@@ -1,5 +1,7 @@
 # Example ChatGPT App (Todo app)
 
+> DISCLAIMER: this project is not production-ready and is provided for example purposes only.
+
 ChatGPT apps are not yet available in the EU. For that reason,
 this project simulates a ChagGPT App using only local servers.
 
@@ -40,16 +42,54 @@ To debug the MCP Server, use the MCP Inspector:
 npx @modelcontextprotocol/inspector
 ```
 
-The MCP Server calls the API Server. Its URL can be configured in
-[mcp-server/config.json](mcp-server/config.json).
+The [mcp-server/config.json](mcp-server/config.json) config file can be used to configure the following:
 
-To use **BankID** authentication, set the `acr` to `urn:se:curity:authentication:bankid:bankid1`.
-
-To use **HTML Form** authentication, set the `acr` to `urn:se:curity:authentication:html-form:htmlFormJson`.
-If using this ACR, running `npm run haapi` requires setting the `userName` and `password` to test.
+* `apiUrl`: the API server's base URL.
+* `oauth`:
+    * `tokenEndpoint`: the authorization server's token endpoint full URL.
+    * `authorizationEndpoint`: the authorization server's authorization endpoint full URL.
+    * `scope`: the scope to request when the MCP server initiates the HAAPI authentication flow.
+    * `redirectUri`: the HAAPI client's redirect URI.
+* `authn`:
+    * `serverBaseUrl`: the Authentication Server's base URL.
+    * `acr`: the Authenticator's ACR to use. See details below.
+    * `backendAccessToken`: an access token that is assumed to be obtained by a MCP Client.
+       Used by the MCP server to start authentication via the [access_token plugin](https://github.com/curityio/access-token-authenticator).
+    * `userCredentials`: (FOR CLI TESTING PURPOSES ONLY)
+        * `username`: username to authenticate with when using the HTML Form Authenticator.
+        * `password`: password to authenticate with when using the HTML Form Authenticator.
 
 > to run the MCP server using stdio transport, use `npm run start:stdio -w mcp-server`.
-> to initiate a HAAPI flow for testing it, run `npm run haapi`.
+
+It is possible to initiate a HAAPI authentication flow from the terminal by running `npm run haapi`.
+
+TODO: instead of configuring `backendAccessToken`, we should let the MCP client actually run OAuth and obtain a real token
+to talk to the MCP Server. Currently, the MCP server maintains an unauthenticated session for each user, hence the need
+to configure the access token beforehand.
+
+#### ACR
+
+The Curity Identity Server needs to be configured with the `access_token` authenticator as a pre-requisite of the _main_ authenticator.
+That is used because before starting strong user authentication via HAAPI, we need to ensure the current user has authenticated against the
+MCP Server itself (which they do via the MCP Client, normally).
+
+Once the token is validated (the authenticator can validate audience, issuer, purpose),
+the HAAPI client will arrive at the _main_ authenticator, which should be one of the following:
+
+* **BankID**: set the `acr` to `urn:se:curity:authentication:bankid:bankid1`.
+* **HTML Form**: set the `acr` to `urn:se:curity:authentication:html-form:htmlFormJson`.
+
+> If using HTML Form, running `npm run haapi` requires setting `authn.userName` and `authn.password`.
+
+In the case of the BankID authenticator, the MCP Server will return a QR code to the MCP client which allows them to authenticate.
+
+In the case of the HTML Form authenticator, the MCP Server sends an _elicitation_ to the MCP client, asking the user for username and password.
+
+TODO: currently, when using BankID, we start authentication and only poll once. We do not refresh the QR code either, since that would require
+sending multiple messages back to the MCP Client which would just show new images to the user every time, instead of replace the previous one.
+Also, we could try to just obtain consent with BankID by asking it to sign a particular transaction instead of just authenticating.
+That would allow us to obtain a prefix-scope for the particular transaction, backed by a BankID signature.
+Many possibilities!
 
 ### web
 
@@ -76,8 +116,14 @@ To use a mock implementation instead (i.e. make no HTTP requests, use test data)
 npm run start:test -w web
 ```
 
+TODO: this is only useful when embedded by the chat-gpt-app, see below.
+
 ### chat-gpt-app
 
 ```
 npm run dev -w chatgpt-app
 ```
+
+TODO: this was added to allow iframing the web frontend inside a simulated Chat App - the way ChatGPT will apparently do with its new widgets.
+However, it's not currently doing anything much since implementing elicitation support for the HTML Form, or image prompting in case of BankID,
+would require more work without currenlty giving much value since we can make any MCP Client work with the current MCP Server anyway.
