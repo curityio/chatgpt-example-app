@@ -1,6 +1,7 @@
 import { Buffer } from 'buffer';
 import https from 'https';
 import * as DPoP from 'dpop'
+import Configuration from "./configuration";
 
 interface DPoPKeyPair {
   publicKey: CryptoKey;
@@ -25,8 +26,9 @@ export class DPoPOAuthClient {
   private sessionId?: string;
 
   constructor() {
-    this.clientId = process.env.HAAPI_CLIENT_ID || 'haapi-client';
-    this.clientPassword = process.env.HAAPI_CLIENT_PASSWORD || '0ne!Secret';
+      const config = new Configuration();
+    this.clientId = config.haapiClientId;
+    this.clientPassword = config.haapiClientSecret;
     this.keyPair = this.generateKeyPair();
     // Create HTTPS agent that ignores self-signed certificates
     this.httpsAgent = new https.Agent({
@@ -67,12 +69,12 @@ export class DPoPOAuthClient {
 
   /**
    * Authenticate the OAuth client with the authorization server.
-   * 
+   *
    * Uses the Client Credentials grant type with DPoP.
-   * 
+   *
    * @param tokenEndpoint Authorization Server's token endpoint
    * @param scope The scope for which to request access
-   * @returns 
+   * @returns
    */
   async authenticateClient(tokenEndpoint: string, scope: string): Promise<void> {
     if (this.accessToken && !this.isTokenExpired()) {

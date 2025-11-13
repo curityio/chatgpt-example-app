@@ -1,9 +1,8 @@
 import type { DPoPOAuthClient } from './oauth_client';
 import type { HaapiView, HaapiRedirect } from './haapi_types';
-import config from '../config.json' with { type: 'json' };
-import { Config } from './types/config';
+import Configuration from "./configuration";
 
-const typedConfig = config as Config;
+const config = new Configuration();
 
 export const haapiHeaders = {
     'Accept': 'application/vnd.auth+json'
@@ -47,6 +46,6 @@ export async function haapiResponseView<View extends HaapiView>(
 export function ensureAbsoluteUrl(url: string): string {
     // turn the URL into an absolute one if it's relative
     const absolutePostBackUrl = url.startsWith('http') ? url :
-        new URL(url, typedConfig.authn.serverBaseUrl).toString();
+        new URL(url, config.authnServerBaseUrl).toString();
     return absolutePostBackUrl;
 }

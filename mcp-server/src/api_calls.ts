@@ -1,9 +1,11 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types";
-import apiConfig from '../config.json' with { type: 'json' };
+import Configuration from "./configuration";
+
+const config = new Configuration();
 
 export async function getTodos(): Promise<CallToolResult> {
-  console.log('Fetching todos from', apiConfig.apiUrl);
-  const response = await fetch(apiConfig.apiUrl);
+  console.log('Fetching todos from', config.apiUrl);
+  const response = await fetch(config.apiUrl);
 
   const authError = resultIfAuthorizationError(response);
   if (authError) {
@@ -19,7 +21,7 @@ export async function getTodos(): Promise<CallToolResult> {
 }
 
 export async function setTodoCompletion(id: string, completed: boolean, token: string): Promise<CallToolResult> {
-  const response = await fetch(`${apiConfig.apiUrl}/${id}`, {
+  const response = await fetch(`${config.apiUrl}/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ completed: completed }),
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }

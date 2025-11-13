@@ -1,9 +1,20 @@
 # Example ChatGPT App (Todo app)
 
-> DISCLAIMER: this project is not production-ready and is provided for example purposes only.
+[![Quality](https://img.shields.io/badge/quality-demo-red)](https://curity.io/resources/code-examples/status/)
+[![Availability](https://img.shields.io/badge/availability-source-blue)](https://curity.io/resources/code-examples/status/)
 
-ChatGPT apps are not yet available in the EU. For that reason,
-this project simulates a ChagGPT App using only local servers.
+Prerequisites:
+
+- maven
+- docker
+- npm
+
+TODO:
+- add diagram
+- mention how to update the plugin
+- info about license
+
+**NOTE**: ChatGPT apps are not yet available in the EU. For that reason, this project simulates a ChagGPT App using only local servers.
 
 * api-server - the Todo API
 * mcp-server - MCP Server (exposes the Todo API as LLM tools and serves the web frontend)

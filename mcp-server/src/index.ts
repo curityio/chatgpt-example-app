@@ -10,6 +10,7 @@ import { getTodos, setTodoCompletion } from './api_calls';
 import { SessionManager } from './session-manager';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 import { obtainAuthorization } from './authz';
+import Configuration from "./configuration";
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -219,7 +220,9 @@ if (useStdio) {
   app.delete('/mcp', handleSessionRequest);
 
   // Run with HTTP transport (default behavior)
-  const port = 8081;
+    const config = new Configuration();
+    const port = config.port;
+
   app.listen(port, () => {
     console.log(`MCP endpoint available at http://localhost:${port}/mcp`);
   });

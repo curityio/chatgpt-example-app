@@ -1,0 +1,95 @@
+services:
+
+  #
+  # The API gateway that exposes backend components at domain based URLs
+  #
+#  api-gateway:
+#    image: kong-api-gateway:1.0
+#    ports:
+#      - 443:3001
+#    volumes:
+#      - ./apigateway/kong.yml:/usr/local/kong/declarative/kong.yml
+#      - ./apigateway/certs/example.ssl.crt:/usr/local/share/certs/example.ssl.crt
+#      - ./apigateway/certs/example.ssl.key:/usr/local/share/certs/example.ssl.key
+#    environment:
+#      KONG_DATABASE: 'off'
+#      KONG_DECLARATIVE_CONFIG: '/usr/local/kong/declarative/kong.yml'
+#      KONG_PROXY_LISTEN: '0.0.0.0:3001 http2 ssl'
+#      KONG_SSL_CERT: '/usr/local/share/certs/example.ssl.crt'
+#      KONG_SSL_CERT_KEY: './usr/local/share/certs/example.ssl.key'
+#      KONG_LOG_LEVEL: 'info'
+#      KONG_PLUGINS: 'bundled,phantom-token'
+#      KONG_NGINX_HTTP_LUA_SHARED_DICT: 'phantom-token 10m'
+
+  #
+  # The MCP server implements a streamable HTTP transport for MCP clients.
+  # The MCP server uses an access token audience different to that of APIs.
+  # To call APIs the MCP server uses token exchange to update the access token audience.
+  #
+  mcp-server:
+    image: mcp-server:1.0
+    hostname: mcp-server
+    environment:
+      PORT: '8081'
+      HAAPI_CLIENT_ID: 'haapi-client'
+      HAAPI_CLIENT_PASSWORD: '0ne!Secret'
+      API_URL: 'http://localhost:8080/api/todos'
+      TOKEN_ENDPOINT: 'https://localhost:8443/dev/oauth/token'
+      AUTHORIZATION_ENDPOINT: 'https://localhost:8443/dev/oauth/authorize'
+      SCOPE: 'read'
+      REDIRECT_URI: 'https://localhost:7777/client-callback'
+      AUTHN_SERVER_BASE_URL: 'https://localhost:8443'
+      ACR: 'urn:se:curity:authentication:bankid:bankid1'
+      BACKEND_ACCESS_TOKEN: 'YOUR_TOKEN_HERE'
+
+  #
+  # The Todo API that uses OAuth to secure access
+  #
+  todo-api:
+    image: todo-api:1.0
+    hostname: todo-api
+#    environment:
+#      PORT: '8080'
+#      JWKS_URI: 'http://idsvr:8443/oauth/v2/oauth-anonymous/jwks'
+#      REQUIRED_JWT_ALGORITHM: 'PS256'
+#      REQUIRED_JWT_ISSUER: 'https://login.demo.example/oauth/v2/oauth-anonymous'
+#      REQUIRED_JWT_AUDIENCE: 'https://api.demo.example'
+#      REQUIRED_SCOPE: 'stocks/read'
+
+  #
+  # The Curity Identity Server implements security standards and issues access tokens to MCP clients used by AI agents
+  #
+  authorization-server:
+    image: curity.azurecr.io/curity/idsvr:latest
+    hostname: idsvr
+    volumes:
+      - ./idsvr/curity-config.xml:/opt/idsvr/etc/init/curity-config.xml
+      - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
+    environment:
+      ADMIN: 'true'
+      LICENSE_KEY: "${LICENSE_KEY}"
+      LOGGING_LEVEL: 'INFO'
+
+  #
+  # The SQL database used by the Curity Identity Server
+  # This contains administrator approved users and dynamically registered clients
+  #
+  authorization-server-data:
+    image: postgres:latest
+    hostname: dbserver
+    volumes:
+      - ./idsvr/data-backup.sql:/docker-entrypoint-initdb.d/data-backup.sql
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'Password1'
+      POSTGRES_DB: 'idsvr'
+
+  #
+  # An email server with a test inbox to allow email authentication for test users
+  #
+  mail-server:
+    image: maildev/maildev:latest
+    hostname: smtpserver
+    environment:
+      MAILDEV_INCOMING_USER: 'noreply@maildev'
+      MAILDEV_INCOMING_PASSWORD: 'Password1'
