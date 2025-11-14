@@ -69,8 +69,8 @@
                 <key-verification>
                   <id>default-signature-verification-key</id>
                 </key-verification>
-                <required-audience>https://mcp.demo.example</required-audience>
-                <required-issuer>https://login.demo.example</required-issuer>
+                <required-audience>https://mcp.demo.example/</required-audience>
+                <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
                 <required-scopes>read</required-scopes>
               </access_token>
             </authenticator>
@@ -378,7 +378,7 @@
                   </code>
                   <haapi>
                     <allow-without-attestation>true</allow-without-attestation>
-                    <use-legacy-dpop>false</use-legacy-dpop>
+                    <use-legacy-dpop>true</use-legacy-dpop>
                   </haapi>
                 </capabilities>
                 <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
@@ -430,6 +430,7 @@
           <id>token-service-dynamic-client-registration</id>
           <uri>/oauth/v2/oauth-registration</uri>
           <endpoint-kind>oauth-dynamic-client-registration</endpoint-kind>
+          <pre-processing-procedure>mcp-client-registration-policy</pre-processing-procedure>
         </endpoint>
         <endpoint>
           <id>token-service-introspect</id>
@@ -450,6 +451,10 @@
           <id>token-service-token</id>
           <uri>/oauth/v2/oauth-token</uri>
           <endpoint-kind>oauth-token</endpoint-kind>
+          <token-endpoint-procedures>
+            <flow>oauth-token-authorization-code</flow>
+            <procedure>set-access-token-audience</procedure>
+          </token-endpoint-procedures>
         </endpoint>
         <endpoint>
           <id>token-service-userinfo</id>

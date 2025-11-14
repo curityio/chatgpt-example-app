@@ -1,4 +1,4 @@
-export const bankIdAcr = 'urn:se:curity:authentication:bankid:bankid1';
+export const bankIdAcr = 'urn:se:curity:authentication:bankid:bank-id';
 export const htmlFormAcr = 'urn:se:curity:authentication:html-form:htmlFormJson';
 
 export interface Config {

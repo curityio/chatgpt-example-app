@@ -35,7 +35,7 @@ services:
       HAAPI_CLIENT_PASSWORD: 'Password1'
       EXTERNAL_BASE_URL: https://mcp.demo.example
       AUTHORIZATION_SERVER_BASE_URL: https://login.demo.example
-      API_URL: 'https://api.demo.example/api/todos'
+      API_URL: 'http://todo-api:8080/api/todos'
       TOKEN_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-token'
       AUTHORIZATION_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-authorize'
       SCOPE: 'read'
@@ -66,6 +66,8 @@ services:
     volumes:
       - ./idsvr/curity-config.xml:/opt/idsvr/etc/init/curity-config.xml
       - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
+      - ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js:/opt/idsvr/etc/init/pre-processing-procedures/mcp-client-registration-policy.js
+      - ./idsvr/token-procedures/set-access-token-audience.js:/opt/idsvr/etc/init/token-procedures/oauth-token-authorization-code/set-access-token-audience.js
     environment:
       ADMIN: 'true'
       LICENSE_KEY: "${LICENSE_KEY}"

@@ -126,7 +126,7 @@ server.registerTool(
       'This is required before calling any tool that modifies data.',
     outputSchema: { success: z.boolean(), message: z.string() }
   },
-  async (input, context) => {
+  async (context) => {
       const receivedAccessToken = context.authInfo?.token || '';
       const session = sessionManager.getOrCreateSession(context?.sessionId);
     const output = await obtainAuthorization(receivedAccessToken, (token) => session.token = token, onElicitationUserNameAndPasswordRequired);
