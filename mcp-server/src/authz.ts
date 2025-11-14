@@ -24,10 +24,10 @@ export async function callHaapi() {
     const client = await createAuthenticatedHaapiClient();
     if (config.acr === htmlFormAcr) {
         // when running from the command line, use configured credentials.
-        const token = await runHtmlFormAuthenticationFlow(client, () => configUsernameAndPassword());
+        const token = await runHtmlFormAuthenticationFlow(config.backendAccessToken, client, () => configUsernameAndPassword());
         console.log('Obtained access token:', token);
     } else {
-        const bankIDView = await runBankIDAuthenticationFlow(client);
+        const bankIDView = await runBankIDAuthenticationFlow(config.backendAccessToken, client);
         await authenticateWithBankID(client, bankIDView);
     }
 }
@@ -59,7 +59,7 @@ async function sendAuthorizationRequest(client: DPoPOAuthClient): Promise<Respon
  * @param oauthClient optional OAuth client
  * @returns the initial BankID authenticator view (caller must poll until authentication is complete)
  */
-export async function runBankIDAuthenticationFlow(oauthClient?: DPoPOAuthClient): Promise<BankdIDAuthenticatorView> {
+export async function runBankIDAuthenticationFlow(receivedAccessToken: string, oauthClient?: DPoPOAuthClient): Promise<BankdIDAuthenticatorView> {
     const client = oauthClient || await createAuthenticatedHaapiClient();
     const authResponse = await sendAuthorizationRequest(client);
 
@@ -72,7 +72,7 @@ export async function runBankIDAuthenticationFlow(oauthClient?: DPoPOAuthClient)
 
     // submit the access token, expect the next authenticator to be BankID
     const bankIDView = await haapiResponseView<BankdIDAuthenticatorView>(
-        await authenticateWithAccessTokenAuthenticator(client, accessTokenView),
+        await authenticateWithAccessTokenAuthenticator(receivedAccessToken, client, accessTokenView),
         client
     );
 
@@ -91,6 +91,7 @@ export async function runBankIDAuthenticationFlow(oauthClient?: DPoPOAuthClient)
  * @returns the access token after successful authentication
  */
 export async function runHtmlFormAuthenticationFlow(
+    receivedAccessToken: string,
     oauthClient?: DPoPOAuthClient,
     requestUserNameAndPassword: () => Promise<{ username: string; password: string }> = configUsernameAndPassword
 ): Promise<string> {
@@ -106,7 +107,7 @@ export async function runHtmlFormAuthenticationFlow(
 
     // submit the access token, expect the next authenticator to be HTML Form
     const htmlFormView = await haapiResponseView<HtmlFormAuthenticatorView>(
-        await authenticateWithAccessTokenAuthenticator(client, accessTokenView),
+        await authenticateWithAccessTokenAuthenticator(receivedAccessToken, client, accessTokenView),
         client
     );
 
@@ -143,6 +144,7 @@ export async function runHtmlFormAuthenticationFlow(
 }
 
 async function authenticateWithAccessTokenAuthenticator(
+    receivedAccessToken: string,
     client: DPoPOAuthClient,
     accessTokenView: AccessTokenAuthenticatorView,
 ): Promise<Response> {
@@ -150,7 +152,7 @@ async function authenticateWithAccessTokenAuthenticator(
     return client.postForm(
         ensureAbsoluteUrl(accessTokenView.actions[0].model.href),
         {
-            token: config.backendAccessToken,
+            token: receivedAccessToken,
         },
         haapiHeaders
     );
@@ -181,14 +183,15 @@ async function authenticateWithHtmlFormAuthenticator(
  * @returns an object indicating success or failure, and the QR code if successful
  */
 export async function obtainAuthorization(
+    receivedAccessToken: string,
     onToken: (token: string) => void,
     onElicitation: () => Promise<{ username: string; password: string }>,
 ): Promise<AuthorizationResult> {
     const acr = config.acr;
     if (acr === bankIdAcr) {
-        return authorizeWithBankID();
+        return authorizeWithBankID(receivedAccessToken);
     } else if (acr === htmlFormAcr) {
-        return authorizeWithHtmlSql(onToken, onElicitation);
+        return authorizeWithHtmlSql(receivedAccessToken, onToken, onElicitation);
     }
     return {
         success: false,
@@ -196,9 +199,9 @@ export async function obtainAuthorization(
     };
 }
 
-async function authorizeWithBankID(): Promise<AuthorizationResult> {
+async function authorizeWithBankID(receivedAccessToken: string): Promise<AuthorizationResult> {
     try {
-        const bankIDView = await runBankIDAuthenticationFlow();
+        const bankIDView = await runBankIDAuthenticationFlow(receivedAccessToken);
         const qrCode = findQrCode(bankIDView);
 
         return {
@@ -216,11 +219,12 @@ async function authorizeWithBankID(): Promise<AuthorizationResult> {
 }
 
 async function authorizeWithHtmlSql(
+    receivedAccesstoken: string,
     onToken: (token: string) => void,
     onElicitation: () => Promise<{ username: string; password: string }>,
 ): Promise<AuthorizationResult> {
     try {
-        const token = await runHtmlFormAuthenticationFlow(undefined, onElicitation);
+        const token = await runHtmlFormAuthenticationFlow(receivedAccesstoken, undefined, onElicitation);
         onToken(token);
         return {
             success: true,

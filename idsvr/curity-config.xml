@@ -15,7 +15,7 @@
         <zones>
           <default-zone>
             <email-provider>smtp</email-provider>
-            <symmetric-key>data:text/plain;aes,v:S.aUpzY0tHaFJuaUR5b01ubA==.CyFShHkzG74OtG-VZnRgMQ==.kIzh_TUSPHFI75q-f3zpIv1wJm6yvwbz402yAZcOyzEm3Y4NX1wL7HF6GRa0v-SvHF3q-cRNt3rk3rMWWrLZ8TLuyZC5XeH1qisobYGGTrA=.Q38eC4-r0G7I2R6OuFAt7C_yz5Pq3qbtKonpd3wrmJk=</symmetric-key>
+            <symmetric-key>data:text/plain;aes,v:S.b2YwczZuSUpaTUEyeURLNw==.3-UtRcXOQQJ7RnYGvwHoNw==.crPSiDjzwKdcjFROoqL7GRHQKS9GjBSueOczQz-KjwEMUbvnWyi9Hzu9ahbJwvP3iDmrDBdf0UkvUcCzIkvwNJxqTORPx4I-VADVA4W_Jv4=.b2cVEB5cf7eoeduUwiG5b3v6D9VacPvqDEENPW6ghiY=</symmetric-key>
           </default-zone>
         </zones>
         <service-role>
@@ -64,14 +64,31 @@
           <persisted-sso-session>true</persisted-sso-session>
           <authenticators>
             <authenticator>
+              <id>access-token</id>
+              <access_token xmlns="https://curity.se/ns/ext-conf/access_token">
+                <key-verification>
+                  <id>default-signature-verification-key</id>
+                </key-verification>
+                <required-audience>https://mcp.demo.example</required-audience>
+                <required-issuer>https://login.demo.example</required-issuer>
+                <required-scopes>read</required-scopes>
+              </access_token>
+            </authenticator>
+            <authenticator>
+              <id>bank-id</id>
+              <previous-authenticator>access-token</previous-authenticator>
+              <bankid xmlns="https://curity.se/ns/conf/authenticators/bankid">
+                <http-client>bankid-client</http-client>
+                <mode>test</mode>
+              </bankid>
+            </authenticator>
+            <authenticator>
               <id>email</id>
               <email>
                 <account-manager>default-account-manager</account-manager>
                 <email-provider>
                   <id>smtp</id>
                 </email-provider>
-                <send-otp-as-code>
-                </send-otp-as-code>
               </email>
             </authenticator>
           </authenticators>
@@ -163,6 +180,9 @@
               <claims>updated_at</claims>
               <claims>website</claims>
               <claims>zoneinfo</claims>
+            </scope>
+            <scope>
+              <id>read</id>
             </scope>
             <scope>
               <id>stocks/read</id>
@@ -345,6 +365,24 @@
                   <oauth-token-exchange/>
                 </capabilities>
               </client>
+              <client>
+                <id>mcp-server-haapi</id>
+                <secret>$5$8LfFRmKklSw/pcbm$RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
+                <redirect-uris>https://mcp.demo.example</redirect-uris>
+                <scope>read</scope>
+                <user-authentication>
+                  <allowed-authenticators>bank-id</allowed-authenticators>
+                </user-authentication>
+                <capabilities>
+                  <code>
+                  </code>
+                  <haapi>
+                    <allow-without-attestation>true</allow-without-attestation>
+                    <use-legacy-dpop>false</use-legacy-dpop>
+                  </haapi>
+                </capabilities>
+                <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
+              </client>
             </config-backed>
           </client-store>
           <dynamic-client-registration>
@@ -355,10 +393,10 @@
               </capabilities>
               <default-refresh-token-ttl>3600</default-refresh-token-ttl>
               <scopes>
-                <scope>stocks/read</scope>
+                <scope>read</scope>
               </scopes>
               <authenticators>
-                <all/>
+                <authenticator>email</authenticator>
               </authenticators>
               <client-authentication-method>
                 <secret>
@@ -431,15 +469,20 @@
     </profile>
   </profiles>
   <facilities xmlns="https://curity.se/ns/conf/base">
+    <http>
+      <client>
+        <id>bankid-client</id>
+      </client>
+    </http>
     <data-sources>
       <data-source>
         <id>default-datasource</id>
         <jdbc xmlns="https://curity.se/ns/ext-conf/jdbc">
-          <connection-string>data:text/plain;aes,v:S.SU9VaWlmSGFrNU44ZkNLTQ==.cElMDBz7M4knt70AosfcUg==.9LlUG8aUsXol_wNkkl5uNBJ3eD3sp3GiNc5XrVEThbJC2nVlF8AjzfzWIysF7aj2.WH54DcWNXa1HFGYdaZyOb9oF26qNxDZ82hRAyre3Mn0=</connection-string>
+          <connection-string>data:text/plain;aes,v:S.NEE5eHNHdm1KTjRLQVFqWA==.1CI7bRgLjq3HDJPuNNjbhw==.q9gbhGGdru9yF7tPdKeaHV6jiGOJsVJzjhtP0Id55XqXM4tYoQx-4DQIlred7eJb.6VvJ3gozUA9EVpz6SMuMy43r7LyEibsq7kXXpDbVtfg=</connection-string>
           <standard-credentials-mode>
           </standard-credentials-mode>
           <driver>org.postgresql.Driver</driver>
-          <password>data:text/plain;aes,v:S.cnhiSkxlYWlkRVQ4WWl4Vw==.1aNHPxfLhSEArHTZLKziqw==.31T45YEtPPjyl07MgNoA0Q==.mVwglRB_PbfFz9624gR3pRhdNc51VtDU3zE_2ojt1Ro=</password>
+          <password>data:text/plain;aes,v:S.bTlheGtnSnNLZHoybzY2dg==.b99Al1oAwpBKra3pToNGHg==.XzbWIL6odICIcJvksLU5HA==.Z4yDZVzux8g4QSxQ7h38F3AA-rtgkFR9nZ8gO0x_RA8=</password>
           <username>postgres</username>
         </jdbc>
       </data-source>

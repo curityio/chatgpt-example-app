@@ -12,7 +12,8 @@ Prerequisites:
 TODO:
 - add diagram
 - mention how to update the plugin
-- info about license
+- info about license (`export LICENSE_FILE_PATH=`)
+- info about domains
 
 **NOTE**: ChatGPT apps are not yet available in the EU. For that reason, this project simulates a ChagGPT App using only local servers.
 

@@ -19,7 +19,9 @@
  */
 export default class Configuration {
     public port: string;
+    public externalBaseUrl: string;
     public apiUrl: string;
+    public authorizationServerBaseUrl: string;
     public tokenEndpoint: string;
     public authorizationEndpoint: string;
     public scope: string;
@@ -34,14 +36,16 @@ export default class Configuration {
 
     public constructor() {
         this.port = this.getValue('PORT');
+        this.externalBaseUrl = this.getValue('EXTERNAL_BASE_URL');
         this.apiUrl = this.getValue('API_URL');
+        this.authorizationServerBaseUrl = this.getValue('AUTHORIZATION_SERVER_BASE_URL');
         this.tokenEndpoint = this.getValue('TOKEN_ENDPOINT');
         this.authorizationEndpoint = this.getValue('AUTHORIZATION_ENDPOINT');
         this.scope = this.getValue('SCOPE');
         this.redirectUri = this.getValue('REDIRECT_URI');
         this.authnServerBaseUrl = this.getValue('AUTHN_SERVER_BASE_URL');
         this.acr = this.getValue('ACR');
-        this.backendAccessToken = this.getValue('BACKEND_ACCESS_TOKEN');
+        this.backendAccessToken = this.getValue('BACKEND_ACCESS_TOKEN', '');
         this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
         this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
         this.username = this.getValue('USERNAME', 'testuser');
@@ -52,7 +56,7 @@ export default class Configuration {
 
         const value = process.env[name];
         if (!value) {
-            if (defaultValue) {
+            if (defaultValue || defaultValue === '') {
                 return defaultValue;
             }
 
