@@ -16,14 +16,13 @@ The code clones the code for the MCP inspector and runs its web client:
 Wait for a few seconds and the MCP inspector opens in the browser.\
 Configure the following properties in the browser frontend:
 
-- Transport Type = Streamable HTTP
-- URL: `https://mcp.demo.example`
+- **Transport Type**: Streamable HTTP
+- **URL**: `https://mcp.demo.example/mcp`
+- **Connection Type**: Direct 
 
-Then click the `Connect` button and run the authentication flow.\
-The client triggers the OAuth flow from this repository's main [README](../../README.md).\
-The client then provides a web user interface and the user can invoke API operations as MCP tools:
+Click the `Connect` button. This will trigger the initial OAuth flow. The client uses Dynamic Client Registration to register itself at the authorization server, then authenticates a user to get access to the MCP server.
 
-![MCP inspector](../../images/inspector.png)
+Once the flow completes, you can list the available tools. To use any tool that calls the Todo API, you need to first run the `obtain_authorization` tool. This tool runs the HAAPI flow with the MCP client's initial access token to get a higher-privileged access token. The HAAPI flow requires the user to re-authenticate with a stronger credential — bank ID. After this tool completes, the higher-privileged token remains in the MCP server's memory and is tied to the user's session. This token is never revealed to the MCP client.
 
 ## CORS
 
@@ -44,11 +43,4 @@ Therefore, the example deployment's API gateway must use a CORS plugin to grant 
     config:
       origins:
       - 'http://localhost:6274'
-```      
-
-Usually though, backends will not grant CORS access to unknown web clients.\
-Therefore, a better option would be for the MCP inspector to send requests from its backend.
-
-## Capture OAuth and MCP Requests
-
-The [OAuth and MCP Requests](../OAUTH-MCP-MESSAGES.md) summary summarizes the OAuth and MCP messages.
+```
