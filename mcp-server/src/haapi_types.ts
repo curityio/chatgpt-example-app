@@ -95,6 +95,53 @@ export interface BankdIDAuthenticatorView extends HaapiView {
     }>;
 }
 
+export interface EmailAuthenticatorView extends HaapiView {
+    type: 'polling-step';
+    links: Array<{
+        rel: string;
+        href: string;
+        type?: string;
+    }>;
+    properties: {
+        status: 'pending' | 'completed' | 'failed';
+    }
+    actions: Array<{
+        template: 'form';
+        kind: 'poll';
+        model: {
+            href: string;
+            method: string;
+        }
+    } | {
+        template: 'form';
+        kind: 'cancel';
+        model: {
+            href: string;
+            method: string;
+            type: string;
+        }
+    } | {
+        template: 'client-operation';
+        kind: 'login',
+        model: {
+            name: 'email',
+            arguments: {
+                href: string;
+                autoStartToken: string;
+                redirect: string;
+            },
+            continueActions: Array<{
+                template: 'form';
+                kind: 'redirect';
+                model: {
+                    href: string;
+                    method: string;
+                }
+            }>;
+        }
+    }>;
+}
+
 export interface OAuthAuthorizationResponseView extends HaapiView {
     type: 'oauth-authorization-response';
     links: Array<{

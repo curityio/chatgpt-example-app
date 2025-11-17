@@ -1,5 +1,6 @@
 export const bankIdAcr = 'urn:se:curity:authentication:bankid:bank-id';
 export const htmlFormAcr = 'urn:se:curity:authentication:html-form:htmlFormJson';
+export const emailAcr = 'urn:se:curity:authentication:email:email-for-mcp';
 
 export interface Config {
 

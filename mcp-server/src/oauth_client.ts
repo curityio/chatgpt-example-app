@@ -83,10 +83,13 @@ export class DPoPOAuthClient {
 
     const dpopProof = await this.createDPoPProof('POST', tokenEndpoint);
 
+    console.log('>>> Using Dpop: ' + dpopProof);
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
       scope: scope,
     });
+
+    console.log('>>> Request with body ' + body.toString());
 
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
@@ -102,6 +105,7 @@ export class DPoPOAuthClient {
     });
 
     if (!response.ok) {
+        console.log('>>> Response from Curity: ' + await response.text())
       throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
     }
 

@@ -1,10 +1,18 @@
 import { DPoPOAuthClient } from './oauth_client';
-import { bankIdAcr, htmlFormAcr, type Config } from './types/config';
-import type { AccessTokenAuthenticatorView, BankdIDAuthenticatorView, HtmlFormAuthenticatorView, HaapiView, OAuthAuthorizationResponseView } from './haapi_types';
+import {bankIdAcr, htmlFormAcr, type Config, emailAcr} from './types/config';
+import type {
+    AccessTokenAuthenticatorView,
+    BankdIDAuthenticatorView,
+    HtmlFormAuthenticatorView,
+    HaapiView,
+    OAuthAuthorizationResponseView,
+    EmailAuthenticatorView
+} from './haapi_types';
 import { haapiResponseView } from './haapi_utils';
 import { haapiHeaders, ensureAbsoluteUrl } from './haapi_utils';
 import { authenticateWithBankID, findQrCode } from './bankid';
 import Configuration from './configuration';
+import {pollForToken} from "./email";
 
 export type AuthorizationResult = { success: boolean; message: string; qrCode?: string }
 
@@ -79,6 +87,37 @@ export async function runBankIDAuthenticationFlow(receivedAccessToken: string, o
     console.log('HAAPI BankID authenticator response:', JSON.stringify(bankIDView, null, 2));
 
     return bankIDView;
+}
+
+/**
+ * Run the HAAPI authentication flow up to the email authenticator.
+ *
+ * The Curity Server must be configured such that the email authenticator
+ * has a pre-requisite authenticator of type "access_token" for this to work.
+ *
+ * @param oauthClient optional OAuth client
+ * @returns the initial email authenticator view (caller must poll until authentication is complete)
+ */
+export async function runEmailAuthenticationFlow(receivedAccessToken: string, oauthClient?: DPoPOAuthClient): Promise<EmailAuthenticatorView> {
+    const client = oauthClient || await createAuthenticatedHaapiClient();
+    const authResponse = await sendAuthorizationRequest(client);
+
+    // Should get to the access_token authenticator view directly
+    const accessTokenView = await haapiResponseView<AccessTokenAuthenticatorView>(
+        authResponse,
+        client);
+
+    console.log('Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
+
+    // submit the access token, expect the next authenticator to be email
+    const emailView = await haapiResponseView<EmailAuthenticatorView>(
+        await authenticateWithAccessTokenAuthenticator(receivedAccessToken, client, accessTokenView),
+        client
+    );
+
+    console.log('HAAPI Email authenticator response:', JSON.stringify(emailView, null, 2));
+
+    return emailView;
 }
 
 /**
@@ -187,11 +226,14 @@ export async function obtainAuthorization(
     onToken: (token: string) => void,
     onElicitation: () => Promise<{ username: string; password: string }>,
 ): Promise<AuthorizationResult> {
+    console.log('>>> Obtaining authorization with token: ' + receivedAccessToken);
     const acr = config.acr;
     if (acr === bankIdAcr) {
         return authorizeWithBankID(receivedAccessToken);
     } else if (acr === htmlFormAcr) {
         return authorizeWithHtmlSql(receivedAccessToken, onToken, onElicitation);
+    } else if (acr === emailAcr) {
+        return authorizeWithEmail(receivedAccessToken, onToken);
     }
     return {
         success: false,
@@ -211,6 +253,26 @@ async function authorizeWithBankID(receivedAccessToken: string): Promise<Authori
         };
     } catch (error) {
         console.error('Error generating QR code:', error);
+        return {
+            success: false,
+            message: 'Authorization failed. Please try again later.',
+        };
+    }
+}
+
+async function authorizeWithEmail(receivedAccessToken: string, onToken: (token: string) => void): Promise<AuthorizationResult> {
+    try {
+        const client = await createAuthenticatedHaapiClient();
+        const emailView = await runEmailAuthenticationFlow(receivedAccessToken, client);
+
+        pollForToken(emailView, client, onToken);
+
+        return {
+            success: true,
+            message: `Authentication almost done! Please click the link you received in the email.`,
+        };
+    } catch (error) {
+        console.error('Error authenticating user: ', error);
         return {
             success: false,
             message: 'Authorization failed. Please try again later.',

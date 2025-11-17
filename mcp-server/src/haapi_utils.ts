@@ -19,6 +19,8 @@ export async function haapiResponseView<View extends HaapiView>(
 
     let view = await response.json() as HaapiView;
 
+    console.log('>>> The haapi view JSON: ' + view);
+
     // attempt to handle HAAPI redirects automatically
     if (view.type === 'redirection-step') {
         const redirectView = view as HaapiRedirect;

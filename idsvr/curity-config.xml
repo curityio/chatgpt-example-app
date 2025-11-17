@@ -90,6 +90,18 @@
                 <email-provider>
                   <id>smtp</id>
                 </email-provider>
+                <send-otp-as-code>
+                </send-otp-as-code>
+              </email>
+            </authenticator>
+            <authenticator>
+              <id>email-for-mcp</id>
+              <previous-authenticator>access-token</previous-authenticator>
+              <email>
+                <account-manager>default-account-manager</account-manager>
+                <email-provider>
+                  <id>smtp</id>
+                </email-provider>
               </email>
             </authenticator>
           </authenticators>
@@ -372,7 +384,7 @@
                 <redirect-uris>https://mcp.demo.example</redirect-uris>
                 <scope>read</scope>
                 <user-authentication>
-                  <allowed-authenticators>bank-id</allowed-authenticators>
+                  <allowed-authenticators>email-for-mcp</allowed-authenticators>
                 </user-authentication>
                 <capabilities>
                   <code>
