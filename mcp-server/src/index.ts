@@ -71,10 +71,15 @@ server.registerTool(
     description: 'Returns the full list of todos.',
     outputSchema: { result: z.string() }
   },
-  async (input, context) => {
-    // const session = getOrCreateSession(context);
-    // console.log(`Getting todos for session ${session.id}`);
-    return getTodos();
+  async (context) => {
+      const session = sessionManager.getOrCreateSession(context.sessionId);
+      const token = session?.token;
+
+      if (!token) {
+          return missingAuthorizationResponse();
+      }
+
+    return getTodos(token);
   },
 );
 

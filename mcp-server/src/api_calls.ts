@@ -3,9 +3,11 @@ import Configuration from "./configuration";
 
 const config = new Configuration();
 
-export async function getTodos(): Promise<CallToolResult> {
+export async function getTodos(token: string): Promise<CallToolResult> {
   console.log('Fetching todos from', config.apiUrl);
-  const response = await fetch(config.apiUrl);
+  const response = await fetch(config.apiUrl, {
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+  });
 
   const authError = resultIfAuthorizationError(response);
   if (authError) {

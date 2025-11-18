@@ -27,11 +27,11 @@ const authenticateToken = (req: express.Request, res: express.Response, next: ex
 
   try {
     const decoded = jwt.decode(token) as any;
-    
-    if (!decoded || decoded.sub !== 'testuser') {
+
+    if (!decoded || decoded.sub !== 'john.doe@demo.example') {
       return res.status(403).json({ error: 'Invalid token or unauthorized user' });
     }
-    
+
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Invalid token' });

@@ -13,7 +13,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # Do some one time setup
 #
 if [ ! -d inspector ]; then
-  
+
   #
   # Get the code
   #

@@ -1,6 +1,6 @@
 import {DPoPOAuthClient} from "./oauth_client";
-import {EmailAuthenticatorView, type OAuthAuthorizationResponseView} from "./haapi_types";
-import {haapiHeaders, haapiResponseView} from "./haapi_utils";
+import {EmailAuthenticatorView, type HaapiRedirect, type OAuthAuthorizationResponseView} from "./haapi_types";
+import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from "./haapi_utils";
 import Configuration from "./configuration";
 
 export async function pollForToken(
@@ -16,28 +16,46 @@ export async function pollForToken(
     // TODO keep polling once every 2 seconds, until authentication is complete, but only for half a minute (12 times)
 
     let timeoutCounter = 0;
-    const status = emailView.properties.status
+    let status = emailView.properties.status
 
 
-    while (status !== 'completed' && timeoutCounter < 12) {
+    while (status !== 'done' && timeoutCounter < 12) {
         const pollAction = findPollAction(emailViewCurrent);
         emailViewCurrent = await haapiResponseView<EmailAuthenticatorView>(
-            await client.get(pollAction.model.href, haapiHeaders),
+            await client.get(ensureAbsoluteUrl(pollAction.model.href), haapiHeaders),
             client
         );
-        console.log('Email poll response status:', emailViewCurrent);
+        console.log('>>> Email poll response status:', emailViewCurrent);
+        status = emailViewCurrent.properties.status;
 
         await new Promise(resolve => setTimeout(resolve, 2000));
         timeoutCounter++;
     }
 
-    if (status !== 'completed') {
+    if (status !== 'done') {
         throw new Error('Authentication did not finish');
     }
 
-    const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(
-        await client.get(emailViewCurrent.links[0].href, haapiHeaders) // FIXME (what should it be here?)
-        , client);
+    const redirectAction = findRedirectAction(emailViewCurrent);
+
+    const url = ensureAbsoluteUrl(redirectAction.model.href);
+    console.log('>>> Redirecting after successful authentication: ', redirectAction);
+
+    let redirectResponse = null;
+
+    if (redirectAction.model.method === 'POST') {
+        const formData: Record<string, string> = {};
+        for (const field of redirectAction.model.fields || []) {
+            formData[field.name] = field.value;
+        }
+        redirectResponse = await client.postForm(url, formData, haapiHeaders);
+    } else if (redirectAction.model.method === 'GET') {
+        redirectResponse = await client.get(url, haapiHeaders);
+    } else if (redirectAction.model.method !== 'GET') {
+        throw new Error(`Unsupported redirect method: ${redirectAction.model.method}`);
+    }
+
+    const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(redirectResponse as Response, client);
 
     console.log('Final authenticator response:', JSON.stringify(finalView, null, 2));
 
@@ -63,6 +81,14 @@ export async function pollForToken(
 
 function findPollAction(view: EmailAuthenticatorView) {
     const action = view.actions.find(action => action.kind === 'poll');
+    if (!action) {
+        throw new Error('Poll action not found in Email authenticator view');
+    }
+    return action;
+}
+
+function findRedirectAction(view: EmailAuthenticatorView) {
+    const action = view.actions.find(action => action.kind === 'redirect');
     if (!action) {
         throw new Error('Poll action not found in Email authenticator view');
     }

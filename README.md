@@ -69,7 +69,10 @@ Once you're finished working with the project, use the following command from th
 
 To test the complete flow, you need to use a compatible MCP client. See the options below for instructions on how to use some popular clients.
 
-The initial setup comes with a pre-registered user account. Use `jogn.doe@demo.example` whenever prompted for an email. The email authenticator will send a one-time-password to the user's email. This example uses a local maildev server to catch all outgoing emails. Navigate to `https://mail.demo.example` to access the dev inbox. You will see all the OTP emails there.
+The initial setup comes with a pre-registered user account. Use `john.doe@demo.example` whenever prompted for an email. The email authenticator will send a one-time-password to the user's email. This example uses a local maildev server to catch all outgoing emails. Navigate to `https://mail.demo.example` to access the dev inbox. You will see all the OTP emails there.
+
+You can register other users and log in as them. The Todo API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
+
 
 ### Test with MCP Inspector
 

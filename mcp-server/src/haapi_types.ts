@@ -103,7 +103,7 @@ export interface EmailAuthenticatorView extends HaapiView {
         type?: string;
     }>;
     properties: {
-        status: 'pending' | 'completed' | 'failed';
+        status: 'pending' | 'done' | 'failed';
     }
     actions: Array<{
         template: 'form';
@@ -139,6 +139,10 @@ export interface EmailAuthenticatorView extends HaapiView {
                 }
             }>;
         }
+    } | {
+        template: 'form';
+        kind: 'redirect';
+        model: { href: string, method: string, fields?: Array<{ name: string, value: string }> };
     }>;
 }
 
