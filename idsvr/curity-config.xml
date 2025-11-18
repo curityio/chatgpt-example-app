@@ -63,17 +63,18 @@
         <authentication-service xmlns="https://curity.se/ns/conf/profile/authentication">
           <persisted-sso-session>true</persisted-sso-session>
           <authenticators>
-            <authenticator>
-              <id>access-token</id>
-              <access_token xmlns="https://curity.se/ns/ext-conf/access_token">
-                <key-verification>
-                  <id>default-signature-verification-key</id>
-                </key-verification>
-                <required-audience>https://mcp.demo.example/</required-audience>
-                <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
-                <required-scopes>read</required-scopes>
-              </access_token>
-            </authenticator>
+              <authenticator>
+                  <id>access-token</id>
+                  <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
+                      <key-verification>
+                          <id>default-signature-verification-key</id>
+                      </key-verification>
+                      <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
+                      <required-audience>https://mcp.demo.example/</required-audience>
+                      <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
+                      <required-scopes>read</required-scopes>
+                  </access-token>
+              </authenticator>
             <authenticator>
               <id>bank-id</id>
               <previous-authenticator>access-token</previous-authenticator>
