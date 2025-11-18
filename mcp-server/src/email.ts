@@ -13,12 +13,12 @@ export async function pollForToken(
     // allow the user to click the email link before polling
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // TODO keep polling once every 2 seconds, until authentication is complete, but only for half a minute (12 times)
+
 
     let timeoutCounter = 0;
     let status = emailView.properties.status
 
-
+    // keep polling once every 2 seconds, until authentication is complete, but only for half a minute (12 times)
     while (status !== 'done' && timeoutCounter < 12) {
         const pollAction = findPollAction(emailViewCurrent);
         emailViewCurrent = await haapiResponseView<EmailAuthenticatorView>(

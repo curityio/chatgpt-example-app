@@ -36,7 +36,7 @@ export async function callHaapi() {
         console.log('Obtained access token:', token);
     } else {
         const bankIDView = await runBankIDAuthenticationFlow(config.backendAccessToken, client);
-        await authenticateWithBankID(client, bankIDView);
+        await authenticateWithBankID(client, bankIDView, (token)=> { console.log(token) });
     }
 }
 
@@ -229,7 +229,7 @@ export async function obtainAuthorization(
     console.log('>>> Obtaining authorization with token: ' + receivedAccessToken);
     const acr = config.acr;
     if (acr === bankIdAcr) {
-        return authorizeWithBankID(receivedAccessToken);
+        return authorizeWithBankID(receivedAccessToken, onToken);
     } else if (acr === htmlFormAcr) {
         return authorizeWithHtmlSql(receivedAccessToken, onToken, onElicitation);
     } else if (acr === emailAcr) {
@@ -241,10 +241,15 @@ export async function obtainAuthorization(
     };
 }
 
-async function authorizeWithBankID(receivedAccessToken: string): Promise<AuthorizationResult> {
+async function authorizeWithBankID(receivedAccessToken: string, onToken: (token: string) => void): Promise<AuthorizationResult> {
     try {
-        const bankIDView = await runBankIDAuthenticationFlow(receivedAccessToken);
+        const client = await createAuthenticatedHaapiClient();
+
+        const bankIDView = await runBankIDAuthenticationFlow(receivedAccessToken, client);
         const qrCode = findQrCode(bankIDView);
+
+
+        authenticateWithBankID(client, bankIDView, onToken);
 
         return {
             success: true,

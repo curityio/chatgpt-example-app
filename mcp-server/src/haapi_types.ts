@@ -48,6 +48,22 @@ export interface HtmlFormAuthenticatorView extends HaapiView {
         }
     }>;
 }
+
+export interface RedirectAction {
+    template: 'form';
+    kind: 'redirect';
+    model: { href: string, method: string, fields?: Array<{ name: string, value: string }> };
+}
+
+export interface PollAction {
+    template: 'form';
+    kind: 'poll';
+    model: {
+        href: string;
+        method: string;
+    }
+}
+
 export interface BankdIDAuthenticatorView extends HaapiView {
     type: 'polling-step';
     links: Array<{
@@ -56,16 +72,10 @@ export interface BankdIDAuthenticatorView extends HaapiView {
         type?: string;
     }>;
     properties: {
-        status: 'pending' | 'completed' | 'failed';
+        status: 'pending' | 'done' | 'failed';
     }
-    actions: Array<{
-        template: 'form';
-        kind: 'poll';
-        model: {
-            href: string;
-            method: string;
-        }
-    } | {
+    actions: Array<
+        PollAction | RedirectAction | {
         template: 'form';
         kind: 'cancel';
         model: {
@@ -105,14 +115,7 @@ export interface EmailAuthenticatorView extends HaapiView {
     properties: {
         status: 'pending' | 'done' | 'failed';
     }
-    actions: Array<{
-        template: 'form';
-        kind: 'poll';
-        model: {
-            href: string;
-            method: string;
-        }
-    } | {
+    actions: Array< PollAction | RedirectAction | {
         template: 'form';
         kind: 'cancel';
         model: {
@@ -139,10 +142,6 @@ export interface EmailAuthenticatorView extends HaapiView {
                 }
             }>;
         }
-    } | {
-        template: 'form';
-        kind: 'redirect';
-        model: { href: string, method: string, fields?: Array<{ name: string, value: string }> };
     }>;
 }
 
