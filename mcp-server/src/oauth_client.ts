@@ -20,6 +20,8 @@ export class DPoPOAuthClient {
   private readonly clientPassword: string;
   private readonly keyPair: Promise<DPoPKeyPair>;
   private readonly httpsAgent: https.Agent;
+  private readonly authnBaseUrl: string;
+  private readonly externalAuthnBaseUrl: string;
   private accessToken?: string;
   private tokenType?: string;
   private expiresAt?: Date;
@@ -30,6 +32,9 @@ export class DPoPOAuthClient {
     this.clientId = config.haapiClientId;
     this.clientPassword = config.haapiClientSecret;
     this.keyPair = this.generateKeyPair();
+    this.authnBaseUrl = config.authnServerBaseUrl;
+    this.externalAuthnBaseUrl = config.externalAuthnServerBaseUrl;
+
     // Create HTTPS agent that ignores self-signed certificates
     this.httpsAgent = new https.Agent({
       rejectUnauthorized: false,
@@ -54,12 +59,20 @@ export class DPoPOAuthClient {
     const keyPair = await this.keyPair;
     const dpopProof = await DPoP.generateProof(
       keyPair,
-      url.split('?')[0],
+      this.ensureExternalDomain(url.split('?')[0]),
       method,
       nonce,
       accessToken,
     );
     return dpopProof;
+  }
+
+  private ensureExternalDomain(url: string): string {
+      if (this.authnBaseUrl !== this.externalAuthnBaseUrl) {
+          return url.replace(this.authnBaseUrl, this.externalAuthnBaseUrl);
+      }
+
+      return url;
   }
 
   private isTokenExpired(): boolean {

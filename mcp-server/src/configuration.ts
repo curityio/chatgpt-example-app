@@ -27,6 +27,8 @@ export default class Configuration {
     public scope: string;
     public redirectUri: string;
     public authnServerBaseUrl: string;
+    // The MCP server can connect to the authorization server using internal network (e.g. through http://idsvr:8443 when running on Docker), but `htu` claim in DPoP needs to be created using the authorization server's public address.
+    public externalAuthnServerBaseUrl: string;
     public acr: string;
     public backendAccessToken: string;
     public username: string;
@@ -44,6 +46,7 @@ export default class Configuration {
         this.scope = this.getValue('SCOPE');
         this.redirectUri = this.getValue('REDIRECT_URI');
         this.authnServerBaseUrl = this.getValue('AUTHN_SERVER_BASE_URL');
+        this.externalAuthnServerBaseUrl = this.getValue('EXTERNAL_AUTHN_SERVER_BASE_URL');
         this.acr = this.getValue('ACR');
         this.backendAccessToken = this.getValue('BACKEND_ACCESS_TOKEN', '');
         this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
