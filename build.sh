@@ -15,7 +15,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # Build the Todo API to a Docker container
 #
 echo '>>> Building Todo API ...'
-cd api-server
+cd todo-api
 npm install
 if [ $? -ne 0 ]; then
   echo ">>> Problem installing dependencies for the API"

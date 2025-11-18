@@ -24,6 +24,10 @@ Click the `Connect` button. This will trigger the initial OAuth flow. The client
 
 Once the flow completes, you can list the available tools. To use any tool that calls the Todo API, you need to first run the `obtain_authorization` tool. This tool runs the HAAPI flow with the MCP client's initial access token to get a higher-privileged access token. The HAAPI flow requires the user to re-authenticate with a stronger credential — bank ID. After this tool completes, the higher-privileged token remains in the MCP server's memory and is tied to the user's session. This token is never revealed to the MCP client.
 
+## Restarting Environment
+
+The MCP Inspector runs a DCR flow to register itself at the authorization server, then stores the client data in session storage. Whenever you restart the environment you need to ensure that the inspector registers a new client at the authorization server. Make sure to clear your browser's session storage for the MCP inspector whenever you rebuild the environment.
+
 ## CORS
 
 The MCP inspector calls the example deployment's endpoints directly from the browser.\
