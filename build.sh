@@ -76,9 +76,6 @@ fi
 echo ">>> Building the plugin"
 cd plugins/access-token-authenticator
 
-# FIXME
-git checkout add-build-plugin
-
 mvn package
 
 # Copy the relevant jars into a directory for an easier mount
