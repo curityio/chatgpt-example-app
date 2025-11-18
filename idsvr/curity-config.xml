@@ -385,6 +385,7 @@
                 <scope>read</scope>
                 <user-authentication>
                   <allowed-authenticators>email-for-mcp</allowed-authenticators>
+                  <allowed-authenticators>bank-id</allowed-authenticators>
                 </user-authentication>
                 <capabilities>
                   <code>
