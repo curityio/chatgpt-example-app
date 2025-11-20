@@ -1,132 +1,91 @@
 # Example ChatGPT App (Todo app)
 
-> DISCLAIMER: this project is not production-ready and is provided for example purposes only.
+[![Quality](https://img.shields.io/badge/quality-demo-red)](https://curity.io/resources/code-examples/status/)
+[![Availability](https://img.shields.io/badge/availability-source-blue)](https://curity.io/resources/code-examples/status/)
 
-ChatGPT apps are not yet available in the EU. For that reason,
-this project simulates a ChagGPT App using only local servers.
+An example that shows how an AI application can securely call APIs with elevated permissions and human-in-the-loop.
 
-* api-server - the Todo API
-* mcp-server - MCP Server (exposes the Todo API as LLM tools and serves the web frontend)
-* web - the frontend of the Todo App
-* chat-gpt-app - ChatGPT App Simulator (necessary while the real ChatGPT Apps are not available in the EU)
+## Prerequisites
 
-A real application would only require the `mcp-server` and the `web` frontend.
+You need the following tools on your computer in order to run the example:
 
-The API is assumed to already exist as a separate project, and to be protected by OAuth.
+- maven
+- docker
+- node and npm (node, at least v22)
 
-## Installing Dependencies
+You also need a valid license to run the Curity Identity Server. Make sure you have the license file locally and point the `LICENSE_FILE_PATH` environment variable to it. For example:
 
-```
-npm i --workspaces
-```
-
-## Running
-
-### api-server
-
-```
-npm run dev -w api-server
+```shell
+export LICENSE_FILE_PATH=/license/license.json
 ```
 
-The API Server allows configuring CORS in [api-server/config.json](api-server/config.json)
+## Overview
 
-### mcp-server
+The example consists of the following components:
 
-```
-npm run dev -w mcp-server
-```
+- **MCP Server** — an OAuth-protected MCP server, that is capable of exchanging access tokens using HAAPI, and implements tools for calling the Todo API.
+- **The Curity Identity Server** — serves as the authorization server which protects both access to the MCP Server and to the APIs. It is also responsible for authenticating users.
+- **Todo API** — a simple API to manage a list of to-dos. It exposes endpoints for listing the tasks and marking them either as done or undone. The API is protected with OAuth access tokens.
+- **API Gateway** — the Kong API gateway is used for the phantom token flow — it exchanges opaque access tokens handled by the MCP client into JWTs required by the MCP server.
 
-To debug the MCP Server, use the MCP Inspector:
+The following diagram shows an overview of an end-to-end flow implemented in this example:
 
-```
-npx @modelcontextprotocol/inspector
-```
+![Overview of an end-to-end flow implemented by this example](docs/end-to-end-overview.png)
 
-The [mcp-server/config.json](mcp-server/config.json) config file can be used to configure the following:
+## Running the Example
 
-* `apiUrl`: the API server's base URL.
-* `oauth`:
-    * `tokenEndpoint`: the authorization server's token endpoint full URL.
-    * `authorizationEndpoint`: the authorization server's authorization endpoint full URL.
-    * `scope`: the scope to request when the MCP server initiates the HAAPI authentication flow.
-    * `redirectUri`: the HAAPI client's redirect URI.
-* `authn`:
-    * `serverBaseUrl`: the Authentication Server's base URL.
-    * `acr`: the Authenticator's ACR to use. See details below.
-    * `backendAccessToken`: an access token that is assumed to be obtained by a MCP Client.
-       Used by the MCP server to start authentication via the [access_token plugin](https://github.com/curityio/access-token-authenticator).
-    * `userCredentials`: (FOR CLI TESTING PURPOSES ONLY)
-        * `username`: username to authenticate with when using the HTML Form Authenticator.
-        * `password`: password to authenticate with when using the HTML Form Authenticator.
+Follow these steps to run the example:
 
-> to run the MCP server using stdio transport, use `npm run start:stdio -w mcp-server`.
-
-It is possible to initiate a HAAPI authentication flow from the terminal by running `npm run haapi`.
-
-TODO: instead of configuring `backendAccessToken`, we should let the MCP client actually run OAuth and obtain a real token
-to talk to the MCP Server. Currently, the MCP server maintains an unauthenticated session for each user, hence the need
-to configure the access token beforehand.
-
-For the HAAPI client to authenticate, credentials must be provided via environment variables,
-see the [.env.example](mcp-server/.env.example) file for which environment variables are required.
-
-#### ACR
-
-The Curity Identity Server needs to be configured with the `access_token` authenticator as a pre-requisite of the _main_ authenticator.
-That is used because before starting strong user authentication via HAAPI, we need to ensure the current user has authenticated against the
-MCP Server itself (which they do via the MCP Client, normally).
-
-Once the token is validated (the authenticator can validate audience, issuer, purpose),
-the HAAPI client will arrive at the _main_ authenticator, which should be one of the following:
-
-* **BankID**: set the `acr` to `urn:se:curity:authentication:bankid:bankid1`.
-* **HTML Form**: set the `acr` to `urn:se:curity:authentication:html-form:htmlFormJson`.
-
-> If using HTML Form, running `npm run haapi` requires setting `authn.userName` and `authn.password`.
-
-In the case of the BankID authenticator, the MCP Server will return a QR code to the MCP client which allows them to authenticate.
-
-In the case of the HTML Form authenticator, the MCP Server sends an _elicitation_ to the MCP client, asking the user for username and password.
-
-TODO: currently, when using BankID, we start authentication and only poll once. We do not refresh the QR code either, since that would require
-sending multiple messages back to the MCP Client which would just show new images to the user every time, instead of replace the previous one.
-Also, we could try to just obtain consent with BankID by asking it to sign a particular transaction instead of just authenticating.
-That would allow us to obtain a prefix-scope for the particular transaction, backed by a BankID signature.
-Many possibilities!
-
-### web
-
-The frontend is served by the mcp-server (as it would in a real ChatGPT app as a MCP Resource).
-
-To watch its resources and automatically re-build on changes:
+1. Add the following line into your local `/etc/hosts` file (or equivalent for your operating system):
 
 ```
-npm run watch -w web
+127.0.0.1 api.demo.example mcp.demo.example admin.demo.example login.demo.example mail.demo.example
 ```
 
-For development, it can also run standalone with a dev server:
+2. Make sure the `LICENSE_FILE_PATH` environment variable points to a license for the Curity Identity Server. For example:
 
-```
-npm start -w web
-```
-
-By default, the frontend will make requests to the api-server (configure the API base URL
-in [web/config.json](web/config.json)).
-
-To use a mock implementation instead (i.e. make no HTTP requests, use test data), run:
-
-```
-npm run start:test -w web
+```shell
+export LICENSE_FILE_PATH=/license/license.json
 ```
 
-TODO: this is only useful when embedded by the chat-gpt-app, see below.
+3. Build the project files by running the following command from the project's root directory:
 
-### chat-gpt-app
-
+```shell
+./build.sh
 ```
-npm run dev -w chatgpt-app
+4. Start all the Docker containers by running the following command from the project's root directory:
+
+```shell
+./deploy.sh
 ```
 
-TODO: this was added to allow iframing the web frontend inside a simulated Chat App - the way ChatGPT will apparently do with its new widgets.
-However, it's not currently doing anything much since implementing elicitation support for the HTML Form, or image prompting in case of BankID,
-would require more work without currenlty giving much value since we can make any MCP Client work with the current MCP Server anyway.
+Once you're finished working with the project, use the following command from the project's root directory to free up resources:
+
+```shell
+./teardown.sh
+```
+
+## Testing the End to End Flow
+
+To test the complete flow, you need to use a compatible MCP client. See the options below for instructions on how to use some popular clients.
+
+The initial setup comes with a pre-registered user account. Use `john.doe@demo.example` whenever prompted for an email. The email authenticator will send a one-time-password to the user's email. This example uses a local maildev server to catch all outgoing emails. Navigate to `https://mail.demo.example` to access the dev inbox. You will see all the OTP emails there.
+
+You can register other users and log in as them. The Todo API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
+
+
+### Test with MCP Inspector
+
+The simplest way is to test the solution with the MCP inspector tool. See the [MCP Inspector readme](clients/mcp-inspector/README.md) for details of installing and running the tool.
+
+### Test with Claude Desktop
+
+// TODO
+
+## Development
+
+See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for details on how to work with the code locally.
+
+## Work In Progress
+
+See the [Work In Progress](docs/WIP.md) document to read about further planned development of this example.

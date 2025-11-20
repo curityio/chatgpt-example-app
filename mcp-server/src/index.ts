@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,6 +10,8 @@ import { getTodos, setTodoCompletion } from './api_calls';
 import { SessionManager } from './session-manager';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 import { obtainAuthorization } from './authz';
+import Configuration from "./configuration";
+import {AuthInfo} from '@modelcontextprotocol/sdk/server/auth/types.js';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -69,10 +71,15 @@ server.registerTool(
     description: 'Returns the full list of todos.',
     outputSchema: { result: z.string() }
   },
-  async (input, context) => {
-    // const session = getOrCreateSession(context);
-    // console.log(`Getting todos for session ${session.id}`);
-    return getTodos();
+  async (context) => {
+      const session = sessionManager.getOrCreateSession(context.sessionId);
+      const token = session?.token;
+
+      if (!token) {
+          return missingAuthorizationResponse();
+      }
+
+    return getTodos(token);
   },
 );
 
@@ -124,9 +131,10 @@ server.registerTool(
       'This is required before calling any tool that modifies data.',
     outputSchema: { success: z.boolean(), message: z.string() }
   },
-  async (input, context) => {
-    const session = sessionManager.getOrCreateSession(context?.sessionId);
-    const output = await obtainAuthorization((token) => session.token = token, onElicitationUserNameAndPasswordRequired);
+  async (context) => {
+      const receivedAccessToken = context.authInfo?.token || '';
+      const session = sessionManager.getOrCreateSession(context?.sessionId);
+    const output = await obtainAuthorization(receivedAccessToken, (token) => session.token = token, onElicitationUserNameAndPasswordRequired);
     if (output.success) {
       const structuredContent = { success: true, message: output.message };
       return {
@@ -175,8 +183,34 @@ if (useStdio) {
   // Map to store transports by session ID
   const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
+    /*
+     * The MCP server makes the access token available to tools that call upstream APIs
+     */
+      const setAuthInfo = (request: Request) => {
+
+          let accessToken = '';
+
+          const authorizationHeader = request.header('authorization');
+          if (authorizationHeader) {
+              const parts = authorizationHeader.split(' ');
+              if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+                  accessToken = parts[1];
+              }
+          }
+
+        const authInfo: AuthInfo = {
+            token: accessToken,
+            clientId: '',
+            scopes: [],
+        };
+        (request as any).auth = authInfo;
+    }
+
   app.post('/mcp', async (req, res) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+      setAuthInfo(req);
+
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
     if (sessionId && transports[sessionId]) {
       transport = transports[sessionId];
@@ -212,14 +246,39 @@ if (useStdio) {
     await transport.handleRequest(req, res);
   };
 
+    /*
+     * The MCP server returns its resource information and points clients to its authorization server
+     * Some example clients require a resource identifier that ends with a trailing backslash
+     * Return the scopes_supported that some MCP clients use in their scope selection strategy
+     * - https://modelcontextprotocol.io/specification/draft/basic/authorization#scope-selection-strategy
+     */
+      const handleGetResourceMetadata = async (request: Request, response: Response)=> {
+
+          const config = new Configuration();
+        const metadata = {
+            resource: `${config.externalBaseUrl}/`,
+            resource_name: 'MCP Server',
+            authorization_servers: [config.authorizationServerBaseUrl],
+            scopes_supported: [config.scope],
+        };
+
+        response.setHeader('content-type', 'application/json');
+        response.status(200).send(JSON.stringify(metadata));
+    }
+
   // Handle GET requests for server-to-client notifications via SSE
   app.get('/mcp', handleSessionRequest);
 
   // Handle DELETE requests for session termination
   app.delete('/mcp', handleSessionRequest);
 
+  // Handle protected resource metadata
+  app.get('/.well-known/oauth-protected-resource', handleGetResourceMetadata);
+
   // Run with HTTP transport (default behavior)
-  const port = 8081;
+    const config = new Configuration();
+    const port = config.port;
+
   app.listen(port, () => {
     console.log(`MCP endpoint available at http://localhost:${port}/mcp`);
   });

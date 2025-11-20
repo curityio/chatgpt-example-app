@@ -1,6 +1,7 @@
 import { Buffer } from 'buffer';
 import https from 'https';
 import * as DPoP from 'dpop'
+import Configuration from "./configuration";
 
 interface DPoPKeyPair {
   publicKey: CryptoKey;
@@ -19,15 +20,21 @@ export class DPoPOAuthClient {
   private readonly clientPassword: string;
   private readonly keyPair: Promise<DPoPKeyPair>;
   private readonly httpsAgent: https.Agent;
+  private readonly authnBaseUrl: string;
+  private readonly externalAuthnBaseUrl: string;
   private accessToken?: string;
   private tokenType?: string;
   private expiresAt?: Date;
   private sessionId?: string;
 
   constructor() {
-    this.clientId = process.env.HAAPI_CLIENT_ID || 'haapi-client';
-    this.clientPassword = process.env.HAAPI_CLIENT_PASSWORD || '0ne!Secret';
+      const config = new Configuration();
+    this.clientId = config.haapiClientId;
+    this.clientPassword = config.haapiClientSecret;
     this.keyPair = this.generateKeyPair();
+    this.authnBaseUrl = config.authnServerBaseUrl;
+    this.externalAuthnBaseUrl = config.externalAuthnServerBaseUrl;
+
     // Create HTTPS agent that ignores self-signed certificates
     this.httpsAgent = new https.Agent({
       rejectUnauthorized: false,
@@ -52,12 +59,20 @@ export class DPoPOAuthClient {
     const keyPair = await this.keyPair;
     const dpopProof = await DPoP.generateProof(
       keyPair,
-      url.split('?')[0],
+      this.ensureExternalDomain(url.split('?')[0]),
       method,
       nonce,
       accessToken,
     );
     return dpopProof;
+  }
+
+  private ensureExternalDomain(url: string): string {
+      if (this.authnBaseUrl !== this.externalAuthnBaseUrl) {
+          return url.replace(this.authnBaseUrl, this.externalAuthnBaseUrl);
+      }
+
+      return url;
   }
 
   private isTokenExpired(): boolean {
@@ -67,12 +82,12 @@ export class DPoPOAuthClient {
 
   /**
    * Authenticate the OAuth client with the authorization server.
-   * 
+   *
    * Uses the Client Credentials grant type with DPoP.
-   * 
+   *
    * @param tokenEndpoint Authorization Server's token endpoint
    * @param scope The scope for which to request access
-   * @returns 
+   * @returns
    */
   async authenticateClient(tokenEndpoint: string, scope: string): Promise<void> {
     if (this.accessToken && !this.isTokenExpired()) {
@@ -81,10 +96,13 @@ export class DPoPOAuthClient {
 
     const dpopProof = await this.createDPoPProof('POST', tokenEndpoint);
 
+    console.log('>>> Using Dpop: ' + dpopProof);
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
       scope: scope,
     });
+
+    console.log('>>> Request with body ' + body.toString());
 
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
@@ -100,6 +118,7 @@ export class DPoPOAuthClient {
     });
 
     if (!response.ok) {
+        console.log('>>> Response from Curity: ' + await response.text())
       throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
     }
 

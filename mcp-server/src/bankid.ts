@@ -1,29 +1,84 @@
 import { DPoPOAuthClient } from './oauth_client';
-import { BankdIDAuthenticatorView } from './haapi_types';
-import { haapiHeaders, haapiResponseView } from './haapi_utils';
+import {BankdIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction} from './haapi_types';
+import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapi_utils';
+import Configuration from "./configuration";
 
 export async function authenticateWithBankID(
     client: DPoPOAuthClient,
     bankIDView: BankdIDAuthenticatorView,
+    onToken: (token: string) => void
 ) {
     const qrCode = findQrCode(bankIDView);
     console.log('BankID QR Code (base64):', qrCode);
 
     let bankIDViewCurrent = bankIDView;
 
-    // pause for a second before polling
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    let timeoutCounter = 0;
+    let status = bankIDViewCurrent.properties.status
 
-    // TODO keep polling until authentication is complete
-    // while (true) {
+    // keep polling once every 2 seconds, until authentication is complete, but only for half a minute (12 times)
+    while (status !== 'done' && timeoutCounter < 12) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
         const pollAction = findPollAction(bankIDViewCurrent);
         bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
-            await client.get(pollAction.model.href, haapiHeaders),
+            await client.get(ensureAbsoluteUrl(pollAction.model.href), haapiHeaders),
             client
         );
-        console.log('BankID poll response status:', bankIDViewCurrent);
-    // }
-    
+        console.log('>>> BankID poll response status:', bankIDViewCurrent);
+
+        status = bankIDViewCurrent.properties.status;
+        timeoutCounter++;
+    }
+
+    if (status !== 'done') {
+        throw new Error('Authentication did not finish. Current status: ' + status);
+    }
+
+    // Finish authentication and eventually set token in the session
+    const formAction = findFormAction(bankIDViewCurrent);
+
+    console.log('>>> Continue authentication', formAction)
+
+    const url = ensureAbsoluteUrl(formAction.model.href);
+    console.log('>>> Redirecting after successful authentication: ', formAction);
+
+    let redirectResponse = null;
+
+    if (formAction.model.method === 'POST') {
+        const formData: Record<string, string> = {};
+        for (const field of formAction.model.fields || []) {
+            formData[field.name] = field.value;
+        }
+        redirectResponse = await client.postForm(url, formData, haapiHeaders);
+    } else if (formAction.model.method === 'GET') {
+        redirectResponse = await client.get(url, haapiHeaders);
+    } else if (formAction.model.method !== 'GET') {
+        throw new Error(`Unsupported redirect method: ${formAction.model.method}`);
+    }
+
+    const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(redirectResponse as Response, client);
+
+    console.log('Final authenticator response:', JSON.stringify(finalView, null, 2));
+
+    if (finalView.metadata.viewName !== 'templates/oauth/success-authorization-response') {
+        throw new Error('Expected final authorization-response view now!');
+    }
+    console.log('Authentication successful! Exchanging authorization code for access token...');
+
+    const oauthCallbackUrl = finalView.links.find(link => link.rel === 'authorization-response')?.href;
+    if (!oauthCallbackUrl) {
+        throw new Error('No authorization-response link found in final OAuth authorization response view');
+    }
+
+    const config = new Configuration();
+
+    const tokenResponse = await client.postAuthorizationCode(config.tokenEndpoint,
+        finalView.properties.code, oauthCallbackUrl.substring(0, oauthCallbackUrl.indexOf('?')));
+
+    console.log('OAuth token response:', tokenResponse);
+
+    onToken(tokenResponse.access_token);
+
 }
 
 export function findQrCode(view: BankdIDAuthenticatorView): string {
@@ -37,10 +92,19 @@ export function findQrCode(view: BankdIDAuthenticatorView): string {
     throw new Error('QR code link is not a base64 data URL: ' + qrCodeLink.href);
 }
 
-function findPollAction(view: BankdIDAuthenticatorView) {
-    const action = view.actions.find(action => action.kind === 'poll');
+function findAction(view: BankdIDAuthenticatorView, kind: string) {
+    const action = view.actions.find(action => action.kind === kind);
     if (!action) {
-        throw new Error('Poll action not found in BankID authenticator view');
+        throw new Error(`${kind} action not found in BankID authenticator view`);
     }
     return action;
+}
+
+
+function findPollAction(view: BankdIDAuthenticatorView): PollAction {
+    return findAction(view, 'poll') as PollAction
+}
+
+function findFormAction(view: BankdIDAuthenticatorView): RedirectAction {
+    return findAction(view, 'form') as RedirectAction
 }
