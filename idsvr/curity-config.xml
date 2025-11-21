@@ -15,7 +15,7 @@
         <zones>
           <default-zone>
             <email-provider>smtp</email-provider>
-            <symmetric-key>data:text/plain;aes,v:S.UzR3dUVEeVZsMnZuY3lVWQ==.ZnnvdlY_x0oUMlrGcK1n3g==.oaYwN2YxVIoGrVtkVGM5d8u6k-3yUOnl1nZeCumtdPUaefjhbMfj3MW3NWeutB6iww6-5h_7Oq7d-tPeFopA8NOnFBJnHSnkKbNrkX2p7Wg=.rDgMZ-_qXxUlon7m6kP3qDPQeGvnhnOUQCxQEU7qflE=</symmetric-key>
+            <symmetric-key>data:text/plain;aes,v:S.NjE1SnhQMFlJalM2NHpPcQ==.AOBFzPDQM_cr6xCZHan4Nw==.bJFaUEAIZJx86WWRjOhV9kx2MjQl3DYxZctfqZvm37YWwvu1UdAdqRjJElB0DYZY255wse8_JKxLcBBJX45SrUUjvoPNpDYNfkOO66uSHas=.nEmv1hje5PcdtPlp31z6Y9zs_mA0zuB6nwH8rtPV2Wk=</symmetric-key>
           </default-zone>
         </zones>
         <service-role>
@@ -62,19 +62,32 @@
       <settings>
         <authentication-service xmlns="https://curity.se/ns/conf/profile/authentication">
           <persisted-sso-session>true</persisted-sso-session>
+          <authentication-actions>
+            <authentication-action>
+              <id>set-subject-from-authenticator</id>
+              <script-transformer xmlns="https://curity.se/ns/ext-conf/script-transformer">
+                <attributes-location>context-attributes</attributes-location>
+                <transformation-procedure>set-subject</transformation-procedure>
+              </script-transformer>
+            </authentication-action>
+          </authentication-actions>
           <authenticators>
-              <authenticator>
-                  <id>access-token</id>
-                  <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
-                      <key-verification>
-                          <id>default-signature-verification-key</id>
-                      </key-verification>
-                      <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
-                      <required-audience>https://mcp.demo.example/</required-audience>
-                      <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
-                      <required-scopes>read</required-scopes>
-                  </access-token>
-              </authenticator>
+            <authenticator>
+              <id>access-token</id>
+              <authentication-actions>
+                <login>set-subject-from-authenticator</login>
+                <sso>set-subject-from-authenticator</sso>
+              </authentication-actions>
+              <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
+                <key-verification>
+                  <id>default-signature-verification-key</id>
+                </key-verification>
+                <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
+                <required-audience>https://mcp.demo.example/</required-audience>
+                <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
+                <required-scopes>read</required-scopes>
+              </access-token>
+            </authenticator>
             <authenticator>
               <id>bank-id</id>
               <previous-authenticator>access-token</previous-authenticator>
@@ -104,6 +117,15 @@
                   <id>smtp</id>
                 </email-provider>
               </email>
+            </authenticator>
+            <authenticator>
+              <id>htmlForm</id>
+              <previous-authenticator>access-token</previous-authenticator>
+              <html-form xmlns="https://curity.se/ns/conf/authenticators/html-form">
+                <account-manager>default-account-manager</account-manager>
+                <credential-manager>default-credential-manager</credential-manager>
+                <email-provider>smtp</email-provider>
+              </html-form>
             </authenticator>
           </authenticators>
           <protocols>
@@ -201,6 +223,9 @@
             <scope>
               <id>stocks/read</id>
               <description>Read only information about financial stocks and their current prices</description>
+            </scope>
+            <scope>
+              <id>write</id>
             </scope>
           </scopes>
           <claims>
@@ -375,6 +400,8 @@
                 <id>mcp-server</id>
                 <secret>$5$4VcWtNqulwJgD7Zw$419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
                 <scope>stocks/read</scope>
+                <scope>read</scope>
+                <scope>write</scope>
                 <capabilities>
                   <oauth-token-exchange/>
                 </capabilities>
@@ -384,9 +411,11 @@
                 <secret>$5$8LfFRmKklSw/pcbm$RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
                 <redirect-uris>https://mcp.demo.example</redirect-uris>
                 <scope>read</scope>
+                <scope>write</scope>
                 <user-authentication>
-                  <allowed-authenticators>email-for-mcp</allowed-authenticators>
                   <allowed-authenticators>bank-id</allowed-authenticators>
+                  <allowed-authenticators>email-for-mcp</allowed-authenticators>
+                  <allowed-authenticators>htmlForm</allowed-authenticators>
                 </user-authentication>
                 <capabilities>
                   <code>
@@ -395,6 +424,26 @@
                     <allow-without-attestation>true</allow-without-attestation>
                     <use-legacy-dpop>true</use-legacy-dpop>
                   </haapi>
+                </capabilities>
+                <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
+              </client>
+              <client>
+                <id>oauth-tools</id>
+                <secret>$5$fEqIcKSpTyvVR1/c$8J/wA./UwSAidFH0IwW.HEpt1xk8UX94cLxJpKHExd9</secret>
+                <redirect-uris>oauth.tools://app/callback/code</redirect-uris>
+                <proof-key>
+                  <require-proof-key>true</require-proof-key>
+                </proof-key>
+                <refresh-token-ttl>disabled</refresh-token-ttl>
+                <scope>read</scope>
+                <user-authentication>
+                  <allowed-authenticators>email</allowed-authenticators>
+                </user-authentication>
+                <allowed-origins>https://oauth.tools</allowed-origins>
+                <capabilities>
+                  <code>
+                  </code>
+                  <introspection/>
                 </capabilities>
                 <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
               </client>
@@ -470,6 +519,10 @@
             <flow>oauth-token-authorization-code</flow>
             <procedure>set-access-token-audience</procedure>
           </token-endpoint-procedures>
+          <token-endpoint-procedures>
+            <flow>oauth-token-oauth-token-exchange</flow>
+            <procedure>mcp-token-exchange</procedure>
+          </token-endpoint-procedures>
         </endpoint>
         <endpoint>
           <id>token-service-userinfo</id>
@@ -504,11 +557,11 @@
       <data-source>
         <id>default-datasource</id>
         <jdbc xmlns="https://curity.se/ns/ext-conf/jdbc">
-          <connection-string>data:text/plain;aes,v:S.bDladEVDU3NxS1E5QlB3Ng==.l69a0vg2d8IlSmx8qhtSlg==.knoMt5ELkgZ4p8JZlfC3PY0abmvuOaX5qsd53XwJ9QeXkJvKMYHX4rE3zBbiUooL.RPP3FtJCdsfzL18K3NbY1a10NqbpYtwWsNrx6zjljsQ=</connection-string>
+          <connection-string>data:text/plain;aes,v:S.OW5zYTd4MHUxZjFVUms4WQ==.Yw6iTRyVg_tRDsUOuZdUXA==.kqF0iNeTXu-GwYwBK2s-Mw269YXdqaaSJO-VSHL7pMnYriLamZVWhUpgrKkvEBF7.eySMGWTpV68eALrk5BlMEkmixyNrmpK8R8OlNOhCiJw=</connection-string>
           <standard-credentials-mode>
           </standard-credentials-mode>
           <driver>org.postgresql.Driver</driver>
-          <password>data:text/plain;aes,v:S.OUVVUnZSYTBpdDJsWGpwRw==.knRZD8bQ0ETds0U0QjxEjQ==.GBljFGtL26pnxSim4TZImw==.BV6TJ7KWQdFiK4JlZ2IVrSUiKylB_LHpskWluDjXsAk=</password>
+          <password>data:text/plain;aes,v:S.SW5oSDVCQzNvZGFjdzl4Vw==.F0KbZLlWC4ozsfLMTK6cUg==.anxcBW5GwWTM3vUpLzBgrg==.kKkwukVk3oKnx9rqEsNvyVpdsVufnLsKq4eMOB-QF24=</password>
           <username>postgres</username>
         </jdbc>
       </data-source>

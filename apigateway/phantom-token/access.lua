@@ -10,7 +10,7 @@ local jwt = require 'resty.jwt'
 -- Get values into an array that can be iterated multiple times
 --
 local function iterator_to_array(iterator)
-    
+
     local i = 1;
     local array = {};
 
@@ -66,14 +66,14 @@ local function error_response(status, code, message)
 
     local method = ngx.req.get_method():upper()
     if method ~= 'HEAD' then
-    
+
         ngx.status = status
         ngx.header['content-type'] = 'application/json'
-        
+
         local jsonData = '{"code":"' .. code .. '","message":"' .. message .. '"}'
         ngx.say(jsonData)
     end
-    
+
     ngx.exit(status)
 end
 
@@ -81,10 +81,10 @@ end
 -- Return a generic invalid token message and optionally return resource server metadata
 --
 local function unauthorized_error_response(config)
-    
+
     local method = ngx.req.get_method():upper()
     if method ~= 'HEAD' then
-    
+
         ngx.status = ngx.HTTP_UNAUTHORIZED
         ngx.header['content-type'] = 'application/json'
 
@@ -99,11 +99,11 @@ local function unauthorized_error_response(config)
             wwwAuthenticate = wwwAuthenticate .. ', scope="' .. config.scope .. '"'
         end
         ngx.header['WWW-Authenticate'] = wwwAuthenticate
-        
-        local jsonData = '{"code":"' .. code .. '","message":"' .. message .. '"}'
+
+        local jsonData = '{"error": "" ' .. code .. ' "code":"' .. code .. '","message":"' .. message .. '"}'
         ngx.say(jsonData)
     end
-    
+
     ngx.exit(ngx.HTTP_UNAUTHORIZED)
 end
 
@@ -122,14 +122,14 @@ local function introspect_access_token(access_token, config)
     local result, error = httpc:request_uri(config.introspection_endpoint, {
         method = 'POST',
         body = 'token=' .. access_token,
-        headers = { 
+        headers = {
             ['authorization'] = authorizationHeader,
             ['content-type'] = 'application/x-www-form-urlencoded',
             ['accept'] = 'application/jwt'
         },
         ssl_verify = config.verify_ssl
     })
-    
+
     if error then
         local connectionMessage = 'A technical problem occurred during access token introspection: '
         ngx.log(ngx.WARN, connectionMessage .. error)
@@ -173,7 +173,7 @@ local function verify_access_token(access_token, config)
 
         -- Return cached introspection results for the same token
         result = { status = 200, jwt = existing_jwt }
-    
+
     else
 
         -- Otherwise introspect the opaque access token
@@ -203,7 +203,7 @@ end
 function _M.run(config)
 
     -- Start by validating configuration
-    if initialize_configuration(config) == false then 
+    if initialize_configuration(config) == false then
         server_error_response(config)
         return
     end
@@ -218,7 +218,7 @@ function _M.run(config)
         local access_token_untrimmed = string.sub(auth_header, 8)
         local access_token = string.gsub(access_token_untrimmed, "%s+", "")
         local result = verify_access_token(access_token, config)
-    
+
         if result.status == 500 then
             error_response(ngx.HTTP_INTERNAL_SERVER_ERROR, 'server_error', 'Problem encountered authorizing the HTTP request')
         end

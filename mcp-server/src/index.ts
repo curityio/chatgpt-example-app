@@ -7,11 +7,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { getTodos, setTodoCompletion } from './api_calls';
-import { SessionManager } from './session-manager';
+import {Session, SessionManager} from './session-manager';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 import { obtainAuthorization } from './authz';
 import Configuration from "./configuration";
 import {AuthInfo} from '@modelcontextprotocol/sdk/server/auth/types.js';
+import {DPoPOAuthClient} from "./oauth_client";
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -64,22 +65,67 @@ async function onElicitationUserNameAndPasswordRequired(): Promise<{ username: s
   }
 }
 
+async function getAccessToken(session: Session, receivedAccessToken: string) {
+
+    const token = session?.token;
+
+    if (token) {
+        console.log('>>> Using token from session: ' + token)
+        return token;
+    }
+
+    const client = new DPoPOAuthClient();
+    const tokenResponse = await client.exchangeToken(receivedAccessToken);
+
+    console.log('>>> Setting new access token in session');
+    session.token = tokenResponse.access_token;
+
+    return tokenResponse.access_token;
+}
+
+async function requestAuthorization(receivedAccessToken: string, session: Session): Promise<CallToolResult> {
+    // TODO The new authorization request should ideally take scope information from the 403 response from API.
+    const output = await obtainAuthorization(
+        receivedAccessToken,
+        (token) => {
+            console.log('>>> Setting new token in session: ' + token);
+            session.token = token
+        },
+        onElicitationUserNameAndPasswordRequired);
+    if (output.success) {
+        const structuredContent = { success: true, message: output.message };
+        return {
+            // The structuredContent should be exactly the same as the unstructured content
+            // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
+            // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
+            content: [
+                { type: 'text', annotations: { audience: ['user'] }, text: JSON.stringify(structuredContent) },
+                { type: 'image', data: output.qrCode || checkMark, mimeType: 'image/png', annotations: { audience: ['user']} },
+                { type: 'text', annotations: { audience: ['assistant'] }, text: 'Show the user the response from this tool and ask them to confirm when they approved authorization. Once the user approves, run the initial tool again.'}
+            ],
+            // structuredContent,
+        };
+    }
+    const structuredContent = { success: false, message: output.message };
+    return {
+        content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+        // structuredContent,
+    };
+}
+
 server.registerTool(
   'get_todos',
   {
     title: 'Get Todos',
     description: 'Returns the full list of todos.',
-    outputSchema: { result: z.string() }
+    // outputSchema: { result: z.string() }
   },
   async (context) => {
+      const receivedAccessToken = context.authInfo?.token || '';
       const session = sessionManager.getOrCreateSession(context.sessionId);
-      const token = session?.token;
+      const token = await getAccessToken(session, receivedAccessToken);
 
-      if (!token) {
-          return missingAuthorizationResponse();
-      }
-
-    return getTodos(token);
+      return getTodos(token);
   },
 );
 
@@ -90,17 +136,22 @@ server.registerTool(
     inputSchema: {
       id: z.string(),
     },
-    outputSchema: { result: z.any() }
+    // outputSchema: { result: z.any() }
   },
   async (input, context) => {
-    const session = sessionManager.getOrCreateSession(context.sessionId);
-    const token = session?.token;
-    if (!token) {
-      return missingAuthorizationResponse();
-    }
-    console.log(`Completing todo ${input.id} for session ${session.id}`);
-    return setTodoCompletion(input.id, true, token);
-  },
+      const receivedAccessToken = context.authInfo?.token || '';
+      const session = sessionManager.getOrCreateSession(context.sessionId);
+      const token = await getAccessToken(session, receivedAccessToken);
+
+        console.log(`Completing todo ${input.id} for session ${session.id}`);
+        const completionResponse = await setTodoCompletion(input.id, true, token);
+
+        if (completionResponse.isError) {
+            return await requestAuthorization(receivedAccessToken, session);
+        }
+
+        return completionResponse;
+    },
 );
 
 server.registerTool(
@@ -110,49 +161,21 @@ server.registerTool(
     inputSchema: {
       id: z.string(),
     },
-    outputSchema: { result: z.string() }
+    // outputSchema: { result: z.string() }
   },
   async (input, context) => {
-    const session = sessionManager.getOrCreateSession(context.sessionId);
-    const token = session?.token;
-    if (!token) {
-      return missingAuthorizationResponse();
-    }
-    console.log(`Uncompleting todo ${input.id} for session ${session.id}`);
-    return setTodoCompletion(input.id, false, token);
-  },
-);
-
-server.registerTool(
-  'obtain_authorization',
-  {
-    title: 'Obtain Authorization.',
-    description: 'Obtains authorization to perform sensitive API calls. ' +
-      'This is required before calling any tool that modifies data.',
-    outputSchema: { success: z.boolean(), message: z.string() }
-  },
-  async (context) => {
       const receivedAccessToken = context.authInfo?.token || '';
-      const session = sessionManager.getOrCreateSession(context?.sessionId);
-    const output = await obtainAuthorization(receivedAccessToken, (token) => session.token = token, onElicitationUserNameAndPasswordRequired);
-    if (output.success) {
-      const structuredContent = { success: true, message: output.message };
-      return {
-        // The structuredContent should be exactly the same as the unstructured content
-        // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
-        // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
-        content: [
-          { type: 'text', text: JSON.stringify(structuredContent) },
-          { type: 'image', data: output.qrCode || checkMark, mimeType: 'image/png' },
-        ],
-        structuredContent,
-      };
-    }
-    const structuredContent = { success: false, message: output.message };
-    return {
-      content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
-      structuredContent,
-    };
+      const session = sessionManager.getOrCreateSession(context.sessionId);
+      const token = await getAccessToken(session, receivedAccessToken);
+
+      console.log(`Uncompleting todo ${input.id} for session ${session.id}`);
+      const completionResponse = await setTodoCompletion(input.id, false, token);
+
+      if (completionResponse.isError) {
+          return await requestAuthorization(receivedAccessToken, session);
+      }
+
+      return completionResponse;
   },
 );
 
@@ -209,6 +232,14 @@ if (useStdio) {
   app.post('/mcp', async (req, res) => {
 
       setAuthInfo(req);
+      if (!(req as any).auth?.token) {
+
+          return res
+              .status(401)
+              .header('Content-Type', 'application/json')
+              .header('WWW-Authenticate', `Bearer error="invalid_token", error_description="Missing, invalid or expired access token", resource_metadata="${config.externalBaseUrl}/.well-known/oauth-protected-resource", scope="read"`)
+              .send({'error': 'invalid_token', 'code': 'invalid_token', message: 'Missing, invalid or expired access token'})
+      }
 
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
@@ -259,7 +290,7 @@ if (useStdio) {
             resource: `${config.externalBaseUrl}/`,
             resource_name: 'MCP Server',
             authorization_servers: [config.authorizationServerBaseUrl],
-            scopes_supported: [config.scope],
+            scopes_supported: [config.scopeSupported],
         };
 
         response.setHeader('content-type', 'application/json');

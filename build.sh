@@ -2,15 +2,6 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-#echo ">>> Installing dependencies"
-#npm i --workspaces
-#if [ $? -ne 0 ]; then
-#  echo ">>> Problem installing npm dependencies"
-#  exit 1
-#fi
-#
-#echo ">>> Build finished successfully"
-
 #
 # Build the Todo API to a Docker container
 #
@@ -81,3 +72,16 @@ mvn package
 # Copy the relevant jars into a directory for an easier mount
 mkdir target/plugin
 cp target/*.jar target/plugin
+
+cd ../../..
+
+#
+# Build the API gateway custom image to a Docker container
+#
+echo 'Building API gateway with phantom token plugin ...'
+cd apigateway
+docker build --no-cache -t kong-api-gateway:1.0 .
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+cd ..

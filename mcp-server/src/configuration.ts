@@ -24,7 +24,18 @@ export default class Configuration {
     public authorizationServerBaseUrl: string;
     public tokenEndpoint: string;
     public authorizationEndpoint: string;
+
+    /**
+     * This parameter is used in the example to request high-privilege scope during HAAPI flow. In a real-life scenario this could be dictated by 403 responses from API.
+     */
     public scope: string;
+
+    /**
+     * scopeSupported are the scopes that the MCP client should request when getting initial access token to connect to the server.
+     * These are the scopes that will enable the client ot list tools and perform low-privilege actions.
+      */
+
+    public scopeSupported: string;
     public redirectUri: string;
     public authnServerBaseUrl: string;
     // The MCP server can connect to the authorization server using internal network (e.g. through http://idsvr:8443 when running on Docker), but `htu` claim in DPoP needs to be created using the authorization server's public address.
@@ -44,6 +55,7 @@ export default class Configuration {
         this.tokenEndpoint = this.getValue('TOKEN_ENDPOINT');
         this.authorizationEndpoint = this.getValue('AUTHORIZATION_ENDPOINT');
         this.scope = this.getValue('SCOPE');
+        this.scopeSupported = this.getValue('SCOPE_SUPPORTED');
         this.redirectUri = this.getValue('REDIRECT_URI');
         this.authnServerBaseUrl = this.getValue('AUTHN_SERVER_BASE_URL');
         this.externalAuthnServerBaseUrl = this.getValue('EXTERNAL_AUTHN_SERVER_BASE_URL');

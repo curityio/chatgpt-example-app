@@ -16,8 +16,8 @@ export async function authenticateWithBankID(
     let timeoutCounter = 0;
     let status = bankIDViewCurrent.properties.status
 
-    // keep polling once every 2 seconds, until authentication is complete, but only for half a minute (12 times)
-    while (status !== 'done' && timeoutCounter < 12) {
+    // keep polling once every 2 seconds, until authentication is complete, but only for half a minute (15 times)
+    while (status !== 'done' && timeoutCounter < 15) {
         await new Promise(resolve => setTimeout(resolve, 2000));
         const pollAction = findPollAction(bankIDViewCurrent);
         bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
@@ -31,7 +31,8 @@ export async function authenticateWithBankID(
     }
 
     if (status !== 'done') {
-        throw new Error('Authentication did not finish. Current status: ' + status);
+       console.log('>>> BankID authentication failed to complete in time');
+       return;
     }
 
     // Finish authentication and eventually set token in the session

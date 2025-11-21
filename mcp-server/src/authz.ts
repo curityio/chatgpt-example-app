@@ -52,6 +52,7 @@ async function sendAuthorizationRequest(client: DPoPOAuthClient): Promise<Respon
     url.searchParams.append('response_type', 'code');
     url.searchParams.append('client_id', config.haapiClientId);
     url.searchParams.append('redirect_uri', config.redirectUri);
+    // TODO - the new authorization request should ideally take scope information from the 403 API response
     url.searchParams.append('scope', config.scope);
     url.searchParams.append('state', 'random-state-value');
     url.searchParams.append('acr', config.acr);

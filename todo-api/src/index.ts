@@ -28,9 +28,26 @@ const authenticateToken = (req: express.Request, res: express.Response, next: ex
   try {
     const decoded = jwt.decode(token) as any;
 
+    console.log(`Received ${req.method} request to ${req.path} with token ${token}. Decoded token: `, decoded);
+
     if (!decoded || decoded.sub !== 'john.doe@demo.example') {
+        console.log('Invalid subject in token: ' + decoded.sub);
       return res.status(403).json({ error: 'Invalid token or unauthorized user' });
     }
+
+    // Apply authorization logic. Here we simply require concrete scopes for HTTP method. In a real scenario this could delegate authorization to a policy engine
+
+      if (req.method === 'GET') {
+            if (!decoded.scope || !decoded.scope.includes('read')) {
+                console.log('Token missing scope `read`: ', decoded.scope);
+                return res.status(403).json({ error: 'Insufficient scope. The token needs scope `read`.'})
+            }
+      } else if (req.method === 'PUT') {
+          if (!decoded.scope || !decoded.scope.includes('write')) {
+              console.log('Token missing scope `write`: ', decoded.scope);
+              return res.status(403).json({ error: 'Insufficient scope. The token needs scope `write`.'})
+          }
+      }
 
     next();
   } catch (error) {

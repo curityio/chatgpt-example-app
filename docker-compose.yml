@@ -38,7 +38,8 @@ services:
       API_URL: 'http://todo-api:8080/api/todos'
       TOKEN_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-token'
       AUTHORIZATION_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-authorize'
-      SCOPE: 'read'
+      SCOPE_SUPPORTED: 'read'
+      SCOPE: 'write'
       REDIRECT_URI: 'https://mcp.demo.example'
       AUTHN_SERVER_BASE_URL: 'http://idsvr:8443'
       EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://login.demo.example'
@@ -69,10 +70,12 @@ services:
       - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
       - ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js:/opt/idsvr/etc/init/pre-processing-procedures/mcp-client-registration-policy.js
       - ./idsvr/token-procedures/set-access-token-audience.js:/opt/idsvr/etc/init/token-procedures/oauth-token-authorization-code/set-access-token-audience.js
+      - ./idsvr/token-procedures/mcp-token-exchange.js:/opt/idsvr/etc/init/token-procedures/oauth-token-oauth-token-exchange/mcp-token-exchange.js
+      - ./idsvr/authentication-actions/set-subject.js:/opt/idsvr/etc/init/transformation-procedures/set-subject.js
     environment:
       ADMIN: 'true'
       LICENSE_KEY: "${LICENSE_KEY}"
-      LOGGING_LEVEL: 'INFO'
+      LOGGING_LEVEL: 'DEBUG'
 
   #
   # The SQL database used by the Curity Identity Server

@@ -22,6 +22,7 @@ export class DPoPOAuthClient {
   private readonly httpsAgent: https.Agent;
   private readonly authnBaseUrl: string;
   private readonly externalAuthnBaseUrl: string;
+  private readonly tokenEndpoint: string;
   private accessToken?: string;
   private tokenType?: string;
   private expiresAt?: Date;
@@ -34,6 +35,7 @@ export class DPoPOAuthClient {
     this.keyPair = this.generateKeyPair();
     this.authnBaseUrl = config.authnServerBaseUrl;
     this.externalAuthnBaseUrl = config.externalAuthnServerBaseUrl;
+    this.tokenEndpoint = config.tokenEndpoint;
 
     // Create HTTPS agent that ignores self-signed certificates
     this.httpsAgent = new https.Agent({
@@ -50,7 +52,8 @@ export class DPoPOAuthClient {
   private getBasicAuthHeader(): string {
     // Encode client credentials for Basic Authentication according to RFC 6749
     const credentials = `${encodeURIComponent(this.clientId)}:${encodeURIComponent(this.clientPassword)}`;
-    const encoded = Buffer.from(credentials, 'utf-8').toString('base64');
+    const encoded = Buffer.from(credentials, 'utf-8').toString('base64')
+        .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     return `Basic ${encoded}`;
   }
 
@@ -232,6 +235,41 @@ export class DPoPOAuthClient {
       expiresAt: this.expiresAt,
     };
   }
+
+    async exchangeToken(token: string): Promise<TokenResponse> {
+        const body = new URLSearchParams({
+            client_id: 'mcp-server', // FIXME - this should come from a configu. And it's a pity we have to use a different client
+            client_secret: 'Password1', // FiXME (see above)
+            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+            subject_token: token,
+            subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+        });
+
+        const requestHeaders = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        };
+
+        const options = {
+            method: 'POST',
+            headers: requestHeaders,
+            body: body.toString(),
+        } as RequestInit;
+
+        console.log('>>> Token Exchange request to: ' + this.tokenEndpoint, body, requestHeaders, options);
+
+        const response = await fetch(this.tokenEndpoint, {
+            ...options,
+            // @ts-ignore - Node.js specific agent property
+            agent: this.tokenEndpoint.startsWith('https:') ? this.httpsAgent : undefined,
+        });
+
+        const tokenResponse = await response.json() as TokenResponse;
+
+        console.log('>>> Token successfully exchanged ', tokenResponse)
+
+        return tokenResponse;
+    }
 }
 
 // Example usage:

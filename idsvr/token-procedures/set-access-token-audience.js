@@ -28,10 +28,25 @@ function result(context) {
     }
   }
 
-  var issuedAccessToken = context.accessTokenIssuer.issue(
-    accessTokenData,
-    issuedDelegation
-  );
+    console.log('>>> Setting attributes');
+    console.log('>>> access token data ' + JSON.stringify(accessTokenData));
+    console.log('>>> context attributes ' + JSON.stringify(context.contextAttributes()));
+    console.log('>>> Original subject: ' + context.contextAttributes().originalSubject);
+
+
+    var issuedAccessToken = null;
+
+    if (context.client.id === 'mcp-server-haapi') { // Issue JWTs in the HAAPI flow
+        issuedAccessToken = context.getDefaultAccessTokenJwtIssuer().issue(
+            accessTokenData,
+            issuedDelegation
+        );
+    } else {
+        issuedAccessToken = context.accessTokenIssuer.issue(
+            accessTokenData,
+            issuedDelegation
+        );
+    }
 
   var refreshTokenData = context.getDefaultRefreshTokenData();
   var issuedRefreshToken = context.refreshTokenIssuer.issue(
