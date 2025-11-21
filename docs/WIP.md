@@ -1,8 +1,9 @@
-**NOTE**: ChatGPT apps are not yet available in the EU. For that reason, this project simulates a ChagGPT App using only local servers.
+# Work In Progress
 
-* web - the frontend of the Todo App
-* chat-gpt-app - ChatGPT App Simulator (necessary while the real ChatGPT Apps are not available in the EU)
+The `work-in-progress` folder contains components which are not yet fully developed and might not work properly:
 
+- `web` contains a simple frontend that a ChatGPT widget can use.
+- `chatgpt-app` contains a mock of chatGPT frontend for testing the widget.
 
 ### web
 
@@ -11,6 +12,8 @@ The frontend is served by the mcp-server (as it would in a real ChatGPT app as a
 To watch its resources and automatically re-build on changes:
 
 ```
+cd work-in-progress/web
+npm i
 npm run watch -w web
 ```
 
@@ -26,15 +29,19 @@ in [web/config.json](web/config.json)).
 To use a mock implementation instead (i.e. make no HTTP requests, use test data), run:
 
 ```
-npm run start:test -w web
+cd work-in-progress/web
+npm i
+npm run start:test
 ```
 
-TODO: this is only useful when embedded by the chat-gpt-app, see below.
+This frontend is only useful when embedded by the chat-gpt-app.
 
 ### chat-gpt-app
 
 ```
-npm run dev -w chatgpt-app
+cd work-in-progress/chatgpt-app
+npm i
+npm run dev
 ```
 
 TODO: this was added to allow iframing the web frontend inside a simulated Chat App - the way ChatGPT will apparently do with its new widgets.
