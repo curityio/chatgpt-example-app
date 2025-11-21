@@ -88,4 +88,4 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for details on how to work with the co
 
 ## Work In Progress
 
-See the [Work In Progress](docs/WIP.md) document to read about further planned development of this example.
+See the [Work In Progress](docs/WIP.md) document to read about components that are in progress.
