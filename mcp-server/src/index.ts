@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {McpServer, ResourceTemplate} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import express, { Request, Response } from 'express';
@@ -13,6 +13,7 @@ import { obtainAuthorization } from './authz';
 import Configuration from "./configuration";
 import {AuthInfo} from '@modelcontextprotocol/sdk/server/auth/types.js';
 import {DPoPOAuthClient} from "./oauth_client";
+import {readFileSync} from "node:fs";
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -93,7 +94,13 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
         },
         onElicitationUserNameAndPasswordRequired);
     if (output.success) {
-        const structuredContent = { success: true, message: output.message };
+        const structuredContent = {
+            result: [], // Empty todo list
+            authMessage: {
+                message: output.message,
+                qrcode: output.qrCode
+            }
+        };
         return {
             // The structuredContent should be exactly the same as the unstructured content
             // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
@@ -103,13 +110,13 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
                 { type: 'image', data: output.qrCode || checkMark, mimeType: 'image/png', annotations: { audience: ['user']} },
                 { type: 'text', annotations: { audience: ['assistant'] }, text: 'Show the user the response from this tool and ask them to confirm when they approved authorization. Once the user approves, run the initial tool again.'}
             ],
-            // structuredContent,
+            structuredContent,
         };
     }
-    const structuredContent = { success: false, message: output.message };
+    const structuredContent = { success: false, result: [], authMessage: { message: output.message, qrCode: null }};
     return {
         content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
-        // structuredContent,
+        structuredContent,
     };
 }
 
@@ -118,7 +125,12 @@ server.registerTool(
   {
     title: 'Get Todos',
     description: 'Returns the full list of todos.',
-    // outputSchema: { result: z.string() }
+    // outputSchema: { result: z.string() } // TODO — this should be set properly
+    _meta: {
+        "openai/outputTemplate": "ui://widget/todo-widget.html",
+        "openai/toolInvocation/invoking": "Checking your todos...",
+        "openai/toolInvocation/invoked": "Todo list ready",
+    },
   },
   async (context) => {
       const receivedAccessToken = context.authInfo?.token || '';
@@ -137,6 +149,11 @@ server.registerTool(
       id: z.string(),
     },
     // outputSchema: { result: z.any() }
+    _meta: {
+        "openai/outputTemplate": "ui://widget/todo-widget.html",
+        "openai/toolInvocation/invoking": "Completing a todo...",
+        "openai/toolInvocation/invoked": "Completing a todo done.",
+    },
   },
   async (input, context) => {
       const receivedAccessToken = context.authInfo?.token || '';
@@ -162,6 +179,11 @@ server.registerTool(
       id: z.string(),
     },
     // outputSchema: { result: z.string() }
+    _meta: {
+        "openai/outputTemplate": "ui://widget/todo-widget.html",
+        "openai/toolInvocation/invoking": "Uncompleting a todo...",
+        "openai/toolInvocation/invoked": "Uncompleting a todo done.",
+    },
   },
   async (input, context) => {
       const receivedAccessToken = context.authInfo?.token || '';
@@ -178,6 +200,33 @@ server.registerTool(
       return completionResponse;
   },
 );
+
+const widgetAppBundle = readFileSync("dist/web/bundle.js", "utf8");
+const css = readFileSync("dist/web/app.css", "utf8");
+
+server.registerResource(
+    "todo-widget",
+    "ui://widget/todo-widget.html",
+    {},
+    async () => ({
+        contents: [
+            {
+                uri: "ui://widget/todo-widget.html",
+                mimeType: "text/html+skybridge",
+                text: `
+<div id="root"></div>
+<style>${css}</style>
+<script type="module">${widgetAppBundle}</script>
+        `.trim(),
+                _meta: {
+                    "openai/widgetPrefersBorder": true,
+                },
+            },
+        ],
+    })
+);
+
+
 
 // Check if stdio transport is requested via command line argument
 const useStdio = process.argv.includes('--stdio');

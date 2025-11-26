@@ -9,6 +9,8 @@ export interface Session {
     lastAccessedAt: Date;
     token: string | undefined;
     authorizationExpiry?: Date;
+    pollingUrl: string;
+    pollingCount: number;
 }
 
 /**
@@ -74,7 +76,7 @@ export class SessionManager {
         if (session) {
           return session;
         }
-      } 
+      }
       const session = this.createSession();
       return session;
     }

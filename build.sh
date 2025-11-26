@@ -45,6 +45,22 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+echo ">>> Build the widget resources"
+cd ../web
+npm i
+npm run build
+
+if [ $? -ne 0 ]; then
+  echo ">>> Problem building the chatgpt app widget"
+  exit 1
+fi
+
+mkdir ../mcp-server/dist/web
+cp app.css ../mcp-server/dist/web/app.css
+cp dist/bundle.js ../mcp-server/dist/web/bundle.js
+
+cd ../mcp-server
+
 docker build --no-cache -t mcp-server:1.0 .
 if [ $? -ne 0 ]; then
   echo ">>> Problem building the MCP server Docker image"

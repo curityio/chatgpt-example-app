@@ -5,30 +5,29 @@ import Configuration from "./configuration";
 
 export async function authenticateWithBankID(
     client: DPoPOAuthClient,
-    bankIDView: BankdIDAuthenticatorView,
+    pollingUrl: string,
+    pollingCount: number,
     onToken: (token: string) => void
 ) {
+
+    // Check status of authorization
+    const bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
+        await client.get(ensureAbsoluteUrl(pollingUrl), haapiHeaders),
+        client
+    );
+    console.log('>>> BankID poll response status:', bankIDViewCurrent);
+
+    const status = bankIDViewCurrent.properties.status;
+    timeoutCounter++;
+
     const qrCode = findQrCode(bankIDView);
     console.log('BankID QR Code (base64):', qrCode);
 
     let bankIDViewCurrent = bankIDView;
 
-    let timeoutCounter = 0;
     let status = bankIDViewCurrent.properties.status
 
-    // keep polling once every 2 seconds, until authentication is complete, but only for half a minute (15 times)
-    while (status !== 'done' && timeoutCounter < 15) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const pollAction = findPollAction(bankIDViewCurrent);
-        bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
-            await client.get(ensureAbsoluteUrl(pollAction.model.href), haapiHeaders),
-            client
-        );
-        console.log('>>> BankID poll response status:', bankIDViewCurrent);
 
-        status = bankIDViewCurrent.properties.status;
-        timeoutCounter++;
-    }
 
     if (status !== 'done') {
        console.log('>>> BankID authentication failed to complete in time');
@@ -102,7 +101,7 @@ function findAction(view: BankdIDAuthenticatorView, kind: string) {
 }
 
 
-function findPollAction(view: BankdIDAuthenticatorView): PollAction {
+export function findPollAction(view: BankdIDAuthenticatorView): PollAction {
     return findAction(view, 'poll') as PollAction
 }
 

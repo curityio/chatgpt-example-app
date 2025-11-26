@@ -9,9 +9,9 @@ services:
 # The phantom token plugin returns a 401 that points the MCP client to resource metadata
 #
 - name: mcp-server
-  url: http://mcp-server:8081/
+#  url: http://mcp-server:8081/
 #  To use a local instance of the MCP server uncomment the following line and comment out the one oabove
-#  url: http://host.docker.internal:8081/
+  url: http://host.docker.internal:8081/
   routes:
   - name: mcp-server-route
     hosts:
@@ -42,9 +42,9 @@ services:
 # This endpoint is not secured so we use a different route for it
 #
 - name: mcp-server-resource-metadata
-  url: http://mcp-server:8081/.well-known/oauth-protected-resource
+#  url: http://mcp-server:8081/.well-known/oauth-protected-resource
   #  To use a local instance of the MCP server uncomment the following line and comment out the one oabove
-#  url: http://host.docker.internal:8081/.well-known/oauth-protected-resource
+  url: http://host.docker.internal:8081/.well-known/oauth-protected-resource
   routes:
   - name: mcp-server-resource-metadata-route
     hosts:

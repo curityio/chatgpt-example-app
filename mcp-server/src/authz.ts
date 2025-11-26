@@ -10,9 +10,10 @@ import type {
 } from './haapi_types';
 import { haapiResponseView } from './haapi_utils';
 import { haapiHeaders, ensureAbsoluteUrl } from './haapi_utils';
-import { authenticateWithBankID, findQrCode } from './bankid';
+import {authenticateWithBankID, findPollAction, findQrCode} from './bankid';
 import Configuration from './configuration';
 import {pollForToken} from "./email";
+import {Session} from "./session-manager";
 
 export type AuthorizationResult = { success: boolean; message: string; qrCode?: string }
 
@@ -242,15 +243,37 @@ export async function obtainAuthorization(
     };
 }
 
-async function authorizeWithBankID(receivedAccessToken: string, onToken: (token: string) => void): Promise<AuthorizationResult> {
+async function authorizeWithBankID(receivedAccessToken: string, onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
     try {
         const client = await createAuthenticatedHaapiClient();
 
         const bankIDView = await runBankIDAuthenticationFlow(receivedAccessToken, client);
         const qrCode = findQrCode(bankIDView);
 
+        const pollAction = findPollAction(bankIDView);
+        const urlForPolling = pollAction.model.href;
+        session.pollingUrl = urlForPolling;
+        session.pollingCount = 0;
 
-        authenticateWithBankID(client, bankIDView, onToken);
+        return {
+            success: true,
+            message: `Authentication almost done! Please scan the QR code to finish the authorization process.`,
+            qrCode: qrCode,
+        };
+    } catch (error) {
+        console.error('Error generating QR code:', error);
+        return {
+            success: false,
+            message: 'Authorization failed. Please try again later.',
+        };
+    }
+}
+
+async function continueAuthorizeWithBankID(receivedAccessToken: string, onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
+    try {
+        const client = await createAuthenticatedHaapiClient();
+
+        const responseView = await authenticateWithBankID(client, session.pollingUrl, session.pollingCount, onToken)
 
         return {
             success: true,

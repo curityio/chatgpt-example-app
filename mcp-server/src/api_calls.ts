@@ -18,7 +18,7 @@ export async function getTodos(token: string): Promise<CallToolResult> {
     throw new Error('Failed to fetch todos');
   }
   const todos = await response.json();
-  const output = { result: JSON.stringify(todos) };
+  const output = { result: todos };
   return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
 }
 
@@ -46,7 +46,8 @@ function resultIfAuthorizationError(response: Response): CallToolResult | null {
     const errorMessage = 'User must obtain authorization to call this tool';
     return {
       content: [{ type: 'text', text: errorMessage }],
-      isError: true
+      isError: true,
+      structuredContent: { result: [] }
     };
   }
   return null;
