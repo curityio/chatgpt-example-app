@@ -3,12 +3,17 @@ import {BankdIDAuthenticatorView, type OAuthAuthorizationResponseView, type Poll
 import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapi_utils';
 import Configuration from "./configuration";
 
+export type AuthenticateWithBankIDResult = {
+    status: 'continue' | 'done' | 'failed',
+    currentQRCode: string | undefined,
+    pollingUrl: string | undefined,
+    accessToken: string | undefined
+}
+
 export async function authenticateWithBankID(
     client: DPoPOAuthClient,
-    pollingUrl: string,
-    pollingCount: number,
-    onToken: (token: string) => void
-) {
+    pollingUrl: string
+): Promise<AuthenticateWithBankIDResult> {
 
     // Check status of authorization
     const bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
@@ -18,20 +23,20 @@ export async function authenticateWithBankID(
     console.log('>>> BankID poll response status:', bankIDViewCurrent);
 
     const status = bankIDViewCurrent.properties.status;
-    timeoutCounter++;
 
-    const qrCode = findQrCode(bankIDView);
-    console.log('BankID QR Code (base64):', qrCode);
+    if (status == 'failed') {
+        return {
+            status: 'failed'
+        } as AuthenticateWithBankIDResult;
+    }
 
-    let bankIDViewCurrent = bankIDView;
-
-    let status = bankIDViewCurrent.properties.status
-
-
-
-    if (status !== 'done') {
-       console.log('>>> BankID authentication failed to complete in time');
-       return;
+    if (status == 'pending') {
+        const pollAction = findPollAction(bankIDViewCurrent);
+        return {
+            status: 'continue',
+            pollingUrl: pollAction.model.href,
+            currentQRCode: findQrCode(bankIDViewCurrent)
+        } as AuthenticateWithBankIDResult;
     }
 
     // Finish authentication and eventually set token in the session
@@ -77,8 +82,10 @@ export async function authenticateWithBankID(
 
     console.log('OAuth token response:', tokenResponse);
 
-    onToken(tokenResponse.access_token);
-
+    return {
+        status: 'done',
+        accessToken: tokenResponse.access_token
+    } as AuthenticateWithBankIDResult;
 }
 
 export function findQrCode(view: BankdIDAuthenticatorView): string {

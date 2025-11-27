@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { getTodos, setTodoCompletion } from './api_calls';
 import {Session, SessionManager} from './session-manager';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
-import { obtainAuthorization } from './authz';
+import {continueAuthorizeWithBankID, obtainAuthorization} from './authz';
 import Configuration from "./configuration";
 import {AuthInfo} from '@modelcontextprotocol/sdk/server/auth/types.js';
 import {DPoPOAuthClient} from "./oauth_client";
@@ -92,7 +92,8 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
             console.log('>>> Setting new token in session: ' + token);
             session.token = token
         },
-        onElicitationUserNameAndPasswordRequired);
+        onElicitationUserNameAndPasswordRequired,
+        session);
     if (output.success) {
         const structuredContent = {
             result: [], // Empty todo list
@@ -120,17 +121,30 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
     };
 }
 
+
 server.registerTool(
   'get_todos',
   {
     title: 'Get Todos',
     description: 'Returns the full list of todos.',
-    // outputSchema: { result: z.string() } // TODO — this should be set properly
+    outputSchema: {
+        result: z.array(
+            z.object({
+                id: z.string(),
+                task: z.string(),
+                completed: z.boolean()
+            })
+        )
+    },
     _meta: {
         "openai/outputTemplate": "ui://widget/todo-widget.html",
         "openai/toolInvocation/invoking": "Checking your todos...",
         "openai/toolInvocation/invoked": "Todo list ready",
     },
+    // @ts-ignore
+    securitySchemes: [
+        { type: "oauth2" }
+    ]
   },
   async (context) => {
       const receivedAccessToken = context.authInfo?.token || '';
@@ -148,12 +162,28 @@ server.registerTool(
     inputSchema: {
       id: z.string(),
     },
-    // outputSchema: { result: z.any() }
+    outputSchema: {
+        result: z.array(
+            z.object({
+                id: z.string(),
+                task: z.string(),
+                completed: z.boolean()
+            })
+        ),
+        authMessage: z.object({
+            message: z.string(),
+            qrCode: z.string().nullable()
+        }).nullable()
+    },
     _meta: {
         "openai/outputTemplate": "ui://widget/todo-widget.html",
         "openai/toolInvocation/invoking": "Completing a todo...",
         "openai/toolInvocation/invoked": "Completing a todo done.",
     },
+    // @ts-ignore
+    securitySchemes: [
+        { type: "oauth2" }
+    ]
   },
   async (input, context) => {
       const receivedAccessToken = context.authInfo?.token || '';
@@ -178,12 +208,28 @@ server.registerTool(
     inputSchema: {
       id: z.string(),
     },
-    // outputSchema: { result: z.string() }
+    outputSchema: {
+        result: z.array(
+            z.object({
+                id: z.string(),
+                task: z.string(),
+                completed: z.boolean()
+            })
+        ),
+        authMessage: z.object({
+            message: z.string(),
+            qrCode: z.string().nullable()
+        }).nullable()
+    },
     _meta: {
         "openai/outputTemplate": "ui://widget/todo-widget.html",
         "openai/toolInvocation/invoking": "Uncompleting a todo...",
         "openai/toolInvocation/invoked": "Uncompleting a todo done.",
     },
+    // @ts-ignore
+    securitySchemes: [
+        { type: "oauth2" }
+    ]
   },
   async (input, context) => {
       const receivedAccessToken = context.authInfo?.token || '';
@@ -199,6 +245,46 @@ server.registerTool(
 
       return completionResponse;
   },
+);
+
+server.registerTool(
+    'continue_authorization',
+    {
+        description: 'Continue authorization',
+        _meta: {
+            "openai/widgetAccessible": true, // Make the tool accessible from the widget
+            "openai/visibility": 'private' // Don't expose the tool to the LLM
+        },
+        outputSchema: {
+            authMessage: z.object({
+                message: z.string(),
+                qrCode: z.string().nullable()
+            })
+        },
+        // @ts-ignore
+        securitySchemes: [
+            { type: "oauth2" }
+        ]
+    },
+    async (context) => {
+        const session = sessionManager.getOrCreateSession(context.sessionId);
+        const authorizationResult = await continueAuthorizeWithBankID(
+            (token) => {
+                console.log('>>> Setting new token in session: ' + token);
+                session.token = token
+            },
+            session)
+
+        return {
+            content: [],
+            structuredContent: {
+                authMessage: {
+                    message: authorizationResult.message,
+                    qrcode: authorizationResult.qrCode
+                }
+            }
+        }
+    }
 );
 
 const widgetAppBundle = readFileSync("dist/web/bundle.js", "utf8");
@@ -278,7 +364,7 @@ if (useStdio) {
         (request as any).auth = authInfo;
     }
 
-  app.post('/mcp', async (req, res) => {
+  app.post('/', async (req, res) => {
 
       setAuthInfo(req);
       if (!(req as any).auth?.token) {
@@ -347,10 +433,10 @@ if (useStdio) {
     }
 
   // Handle GET requests for server-to-client notifications via SSE
-  app.get('/mcp', handleSessionRequest);
+  app.get('/', handleSessionRequest);
 
   // Handle DELETE requests for session termination
-  app.delete('/mcp', handleSessionRequest);
+  app.delete('/', handleSessionRequest);
 
   // Handle protected resource metadata
   app.get('/.well-known/oauth-protected-resource', handleGetResourceMetadata);

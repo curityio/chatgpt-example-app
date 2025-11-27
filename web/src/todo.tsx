@@ -10,11 +10,44 @@ type Todo = {
     completed: boolean
 }
 
+type Tool = {
+    name: string,
+    parameters: {
+        id: string
+    }
+}
+
 const TodoApp: React.FC<{ toolResponse: UnknownObject | null }> = ({ toolResponse }) => {
     const [widgetState, setWidgetState] = useWidgetState(() => ({
         todoList : toolResponse?.result as Todo[],
-        authMessage: toolResponse?.authMessage as any
+        authMessage: toolResponse?.authMessage as any,
+        tool: null as Tool | null
     }));
+
+    const pollAuthentication = async () => {
+        // Wait 2 seconds before polling
+        await setTimeout(() => Promise.resolve(), 1000);
+
+        const toolResult = await window.openai?.callTool('continue_authorization', { });
+
+        if (toolResult.authMessage?.message === 'Authentication finished') { // TODO — maybe this should use a code or a separate field instead?
+            // Invoke the original tool again
+            const originalToolResult = await window.openai?.callTool(widgetState.tool?.name!, { id: widgetState.tool?.parameters.id! });
+            setWidgetState({
+                ...widgetState,
+                todoList: originalToolResult?.result as Todo[] || widgetState.todoList,
+                authMessage: null,
+                tool: null
+            });
+        }
+
+        setWidgetState({
+            ...widgetState,
+            authMessage: toolResult?.authMessage,
+        });
+
+        pollAuthentication();
+    }
 
     const updateTodo = async (id: string, checked: boolean) => {
         const updatedList = widgetState.todoList.map(todo =>
@@ -32,9 +65,18 @@ const TodoApp: React.FC<{ toolResponse: UnknownObject | null }> = ({ toolRespons
         setWidgetState({
             ...widgetState,
             todoList: todoUpdateResult?.result as Todo[] || widgetState.todoList,
-            authMessage: todoUpdateResult?.authMessage
-        })
+            authMessage: todoUpdateResult?.authMessage,
+            tool: {
+                name: toolName,
+                parameters: {
+                    id
+                }
+            }
+        });
 
+        if (todoUpdateResult?.authMessage) {
+            pollAuthentication();
+        }
     }
 
     return (<div>

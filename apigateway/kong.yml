@@ -15,14 +15,15 @@ services:
   routes:
   - name: mcp-server-route
     hosts:
-    - mcp.demo.example
+    - 73d2fa03e178-12486528803601528557.ngrok-free.app
     paths:
-    - /
+    - /mcp
   plugins:
   - name: cors # This is required for the MCP inspector to work properly
     config:
       origins:
         - 'http://localhost:6274'
+        - 'https://chatgpt.com'
       exposed_headers:
         - 'content-type'
         - 'authorization'
@@ -34,7 +35,7 @@ services:
       client_id: api-gateway-client
       client_secret: Password1
       token_cache_seconds: 900
-      resource_metadata_url: https://mcp.demo.example/.well-known/oauth-protected-resource
+      resource_metadata_url: https://73d2fa03e178-12486528803601528557.ngrok-free.app/.well-known/oauth-protected-resource
       scope: read
 
 #
@@ -48,7 +49,7 @@ services:
   routes:
   - name: mcp-server-resource-metadata-route
     hosts:
-    - mcp.demo.example
+    - 73d2fa03e178-12486528803601528557.ngrok-free.app
     paths:
     - /.well-known/oauth-protected-resource
   plugins:
@@ -56,6 +57,7 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
+      - 'https://chatgpt.com'
 
 #
 # The main Todo API route serves other types of API clients
@@ -85,7 +87,7 @@ services:
   routes:
   - name: authorization-server-metadata-reroute
     hosts:
-    - login.demo.example
+    - 73d2fa03e178-12486528803601528557.ngrok-free.app
     paths:
     - /.well-known/oauth-authorization-server
   plugins:
@@ -103,7 +105,7 @@ services:
   routes:
   - name: authorization-server-registration
     hosts:
-    - login.demo.example
+    - 73d2fa03e178-12486528803601528557.ngrok-free.app
     paths:
     - /oauth/v2/oauth-registration
   plugins:
@@ -130,7 +132,7 @@ services:
   routes:
   - name: oauth-route
     hosts:
-    - login.demo.example
+    - 73d2fa03e178-12486528803601528557.ngrok-free.app
     paths:
     - /
   plugins:

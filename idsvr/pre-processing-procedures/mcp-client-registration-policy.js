@@ -18,7 +18,7 @@ function result(context) {
         attributes.refresh_token_ttl = 0;
 
         // Add a custom property that specifies the audiences of this DCR client
-        attributes.audiences = ["https://mcp.demo.example/"];
+        attributes.audiences = ["https://73d2fa03e178-12486528803601528557.ngrok-free.app/"];
       }
     }
   }

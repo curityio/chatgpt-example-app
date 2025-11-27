@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import {DPoPOAuthClient} from "./oauth_client";
 
 /**
  * Represents session-specific state and data
@@ -11,6 +12,7 @@ export interface Session {
     authorizationExpiry?: Date;
     pollingUrl: string;
     pollingCount: number;
+    client: DPoPOAuthClient | null;
 }
 
 /**
@@ -64,6 +66,9 @@ export class SessionManager {
             createdAt: new Date(),
             lastAccessedAt: new Date(),
             token: undefined,
+            pollingUrl: '',
+            pollingCount: 0,
+            client: null
         };
 
         this.sessions.set(id, session);

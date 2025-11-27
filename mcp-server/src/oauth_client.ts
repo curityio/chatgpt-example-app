@@ -144,6 +144,8 @@ export class DPoPOAuthClient {
     const method = options.method || 'GET';
     const dpopProof = await this.createDPoPProof(method, url, this.accessToken);
 
+    console.log('>>> Using Dpop: ' + dpopProof);
+
     const headers = {
       'Authorization': `${this.tokenType || 'DPoP'} ${this.accessToken}`,
       'DPoP': dpopProof,

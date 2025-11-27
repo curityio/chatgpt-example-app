@@ -100,7 +100,7 @@ local function unauthorized_error_response(config)
         end
         ngx.header['WWW-Authenticate'] = wwwAuthenticate
 
-        local jsonData = '{"error": "" ' .. code .. ' "code":"' .. code .. '","message":"' .. message .. '"}'
+        local jsonData = '{"error":"' .. code .. '","code":"' .. code .. '","message":"' .. message .. '"}'
         ngx.say(jsonData)
     end
 

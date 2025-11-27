@@ -1,7 +1,7 @@
 <config xmlns="http://tail-f.com/ns/config/1.0">
   <environments xmlns="https://curity.se/ns/conf/base">
     <environment>
-      <base-url>https://login.demo.example</base-url>
+      <base-url>https://73d2fa03e178-12486528803601528557.ngrok-free.app</base-url>
       <admin-service>
         <http>
           <base-url>https://admin.demo.example</base-url>
@@ -83,8 +83,8 @@
                   <id>default-signature-verification-key</id>
                 </key-verification>
                 <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
-                <required-audience>https://mcp.demo.example/</required-audience>
-                <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
+                <required-audience>https://73d2fa03e178-12486528803601528557.ngrok-free.app/</required-audience>
+                <required-issuer>https://73d2fa03e178-12486528803601528557.ngrok-free.app/oauth/v2/oauth-anonymous</required-issuer>
                 <required-scopes>read</required-scopes>
               </access-token>
             </authenticator>

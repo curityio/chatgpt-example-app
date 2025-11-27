@@ -29,8 +29,10 @@ function result(context) {
   }
 
     console.log('>>> Setting attributes');
-    console.log('>>> access token data ' + JSON.stringify(accessTokenData));
-    console.log('>>> context attributes ' + JSON.stringify(context.contextAttributes()));
+    console.log('>>> access token data ');
+    console.log(accessTokenData);
+    console.log('>>> context attributes ');
+    console.log(context.contextAttributes());
     console.log('>>> Original subject: ' + context.contextAttributes().originalSubject);
 
 

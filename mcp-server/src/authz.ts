@@ -37,7 +37,7 @@ export async function callHaapi() {
         console.log('Obtained access token:', token);
     } else {
         const bankIDView = await runBankIDAuthenticationFlow(config.backendAccessToken, client);
-        await authenticateWithBankID(client, bankIDView, (token)=> { console.log(token) });
+        await authenticateWithBankID(client, '');
     }
 }
 
@@ -227,15 +227,16 @@ export async function obtainAuthorization(
     receivedAccessToken: string,
     onToken: (token: string) => void,
     onElicitation: () => Promise<{ username: string; password: string }>,
+    session: Session
 ): Promise<AuthorizationResult> {
     console.log('>>> Obtaining authorization with token: ' + receivedAccessToken);
     const acr = config.acr;
     if (acr === bankIdAcr) {
-        return authorizeWithBankID(receivedAccessToken, onToken);
+        return authorizeWithBankID(receivedAccessToken, session);
     } else if (acr === htmlFormAcr) {
-        return authorizeWithHtmlSql(receivedAccessToken, onToken, onElicitation);
+        return authorizeWithHtmlSql(receivedAccessToken, onToken, onElicitation, session);
     } else if (acr === emailAcr) {
-        return authorizeWithEmail(receivedAccessToken, onToken);
+        return authorizeWithEmail(receivedAccessToken, onToken, session);
     }
     return {
         success: false,
@@ -243,9 +244,13 @@ export async function obtainAuthorization(
     };
 }
 
-async function authorizeWithBankID(receivedAccessToken: string, onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
+async function authorizeWithBankID(receivedAccessToken: string, session: Session): Promise<AuthorizationResult> {
     try {
-        const client = await createAuthenticatedHaapiClient();
+        if (!session.client) {
+            session.client = await createAuthenticatedHaapiClient();
+        }
+
+        const client = session.client;
 
         const bankIDView = await runBankIDAuthenticationFlow(receivedAccessToken, client);
         const qrCode = findQrCode(bankIDView);
@@ -269,17 +274,45 @@ async function authorizeWithBankID(receivedAccessToken: string, onToken: (token:
     }
 }
 
-async function continueAuthorizeWithBankID(receivedAccessToken: string, onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
+export async function continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
     try {
-        const client = await createAuthenticatedHaapiClient();
+        if (!session.client) {
+            session.client = await createAuthenticatedHaapiClient();
+        }
 
-        const responseView = await authenticateWithBankID(client, session.pollingUrl, session.pollingCount, onToken)
+        const client = session.client;
+
+        console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`)
+
+        const authenticationResponse = await authenticateWithBankID(client, session.pollingUrl)
+
+        if (authenticationResponse.status == 'failed' || session.pollingCount > 30) { // TODO — the value should be configurable, and time-based not count based (store the time of first polling in session?)
+            return {
+                success: false,
+                message: 'Authorization failed. Please try again later.'
+            }
+        }
+
+        session.pollingCount = session.pollingCount + 1;
+
+        if (authenticationResponse.status == 'continue') {
+            session.pollingUrl = authenticationResponse.pollingUrl!;
+
+            return {
+                success: true,
+                message: `Authentication almost done! Please scan the QR code to finish the authorization process.`,
+                qrCode: authenticationResponse.currentQRCode!,
+            };
+        }
+
+        // Authentication done, we have token.
+        onToken(authenticationResponse.accessToken!);
 
         return {
             success: true,
-            message: `Authentication almost done! Please scan the QR code to finish the authorization process.`,
-            qrCode: qrCode,
+            message: 'Authentication finished'
         };
+
     } catch (error) {
         console.error('Error generating QR code:', error);
         return {
@@ -289,9 +322,14 @@ async function continueAuthorizeWithBankID(receivedAccessToken: string, onToken:
     }
 }
 
-async function authorizeWithEmail(receivedAccessToken: string, onToken: (token: string) => void): Promise<AuthorizationResult> {
+async function authorizeWithEmail(receivedAccessToken: string, onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
     try {
-        const client = await createAuthenticatedHaapiClient();
+        if (!session.client) {
+            session.client = await createAuthenticatedHaapiClient();
+        }
+
+        const client = session.client;
+
         const emailView = await runEmailAuthenticationFlow(receivedAccessToken, client);
 
         pollForToken(emailView, client, onToken);
@@ -313,9 +351,15 @@ async function authorizeWithHtmlSql(
     receivedAccesstoken: string,
     onToken: (token: string) => void,
     onElicitation: () => Promise<{ username: string; password: string }>,
+    session: Session
 ): Promise<AuthorizationResult> {
     try {
-        const token = await runHtmlFormAuthenticationFlow(receivedAccesstoken, undefined, onElicitation);
+        if (!session.client) {
+            session.client = await createAuthenticatedHaapiClient();
+        }
+
+        const client = session.client;
+        const token = await runHtmlFormAuthenticationFlow(receivedAccesstoken, client, onElicitation);
         onToken(token);
         return {
             success: true,
