@@ -1,8 +1,8 @@
 import ReactDOM from "react-dom/client";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {useWidgetState} from "./use-widget-state";
 import {useOpenAiGlobal} from "./use-openai-global";
-import {UnknownObject} from "./types";
+
 
 type Todo = {
     id: string,
@@ -17,12 +17,34 @@ type Tool = {
     }
 }
 
-const TodoApp: React.FC<{ toolResponse: UnknownObject | null }> = ({ toolResponse }) => {
+const TodoApp: React.FC = () => {
+    const toolResponse = useOpenAiGlobal('toolOutput');
     const [widgetState, setWidgetState] = useWidgetState(() => ({
-        todoList : toolResponse?.result as Todo[],
-        authMessage: toolResponse?.authMessage as any,
+        todoList : (toolResponse?.structuredContent as any)?.result as Todo[],
+        authMessage: (toolResponse?.structuredContent as any)?.authMessage as any,
         tool: null as Tool | null
     }));
+
+    useEffect(() => {
+        const initialToolResponse = window.openai?.toolOutput;
+        console.log('Initial tool output', initialToolResponse);
+        if ((initialToolResponse?.structuredContent as any)?.result) {
+            console.log('Setting todos');
+            setWidgetState({
+                ...widgetState,
+                todoList: (initialToolResponse?.structuredContent as any)?.result as Todo[]
+            })
+        } else {
+            console.log('Fetching todos');
+            window.openai?.callTool('get_todos', {}).then(toolResponse => {
+                console.log('Got response from tool', toolResponse)
+                setWidgetState({
+                    ...widgetState,
+                    todoList: toolResponse.structuredContent.result as Todo[]
+                });
+            });
+        }
+    }, []);
 
     const pollAuthentication = async () => {
         // Wait 2 seconds before polling
@@ -30,42 +52,47 @@ const TodoApp: React.FC<{ toolResponse: UnknownObject | null }> = ({ toolRespons
 
         const toolResult = await window.openai?.callTool('continue_authorization', { });
 
-        if (toolResult.authMessage?.message === 'Authentication finished') { // TODO — maybe this should use a code or a separate field instead?
+        if (toolResult.structuredContent.authMessage?.message === 'Authentication finished') { // TODO — maybe this should use a code or a separate field instead?
             // Invoke the original tool again
-            const originalToolResult = await window.openai?.callTool(widgetState.tool?.name!, { id: widgetState.tool?.parameters.id! });
-            setWidgetState({
-                ...widgetState,
-                todoList: originalToolResult?.result as Todo[] || widgetState.todoList,
-                authMessage: null,
-                tool: null
-            });
+            if (widgetState?.tool) {
+                const originalToolResult = await window.openai?.callTool(widgetState.tool.name, { id: widgetState.tool.parameters.id });
+                setWidgetState({
+                    ...widgetState,
+                    todoList: originalToolResult?.structuredContent.result as Todo[] || widgetState?.todoList || [],
+                    authMessage: null,
+                    tool: null
+                });
+            }
         }
 
         setWidgetState({
             ...widgetState,
-            authMessage: toolResult?.authMessage,
+            authMessage: toolResult?.structuredContent.authMessage,
         });
 
         pollAuthentication();
     }
 
     const updateTodo = async (id: string, checked: boolean) => {
-        const updatedList = widgetState.todoList.map(todo =>
+        const updatedList = widgetState?.todoList.map(todo =>
             todo.id === id ? { ...todo, completed: checked } : todo
         );
 
-        setWidgetState({
-            ...widgetState,
-            todoList: updatedList
-        });
+        if (updatedList) {
+            setWidgetState({
+                ...widgetState,
+                todoList: updatedList
+            });
+
+        }
 
         const toolName = checked ? 'complete_todo' : 'uncomplete_todo';
         const todoUpdateResult = await window.openai?.callTool(toolName, { id });
 
         setWidgetState({
             ...widgetState,
-            todoList: todoUpdateResult?.result as Todo[] || widgetState.todoList,
-            authMessage: todoUpdateResult?.authMessage,
+            todoList: todoUpdateResult?.structuredContent.result as Todo[] || widgetState?.todoList || [],
+            authMessage: todoUpdateResult?.structuredContent.authMessage,
             tool: {
                 name: toolName,
                 parameters: {
@@ -74,18 +101,24 @@ const TodoApp: React.FC<{ toolResponse: UnknownObject | null }> = ({ toolRespons
             }
         });
 
-        if (todoUpdateResult?.authMessage) {
+        if (todoUpdateResult?.structuredContent.authMessage) {
             pollAuthentication();
         }
     }
 
+    const showTodoList = widgetState?.todoList?.length > 0;
+    console.log('Show todo list? ', showTodoList);
+    console.log('Current todos', widgetState?.todoList);
+    const noTodos = !showTodoList;
+    const showAuthMessage = !(widgetState?.authMessage === null || widgetState?.authMessage === undefined)
+
     return (<div>
-        {widgetState.authMessage && <div>
+        {showAuthMessage && <div>
             <p>{widgetState.authMessage.message}</p>
             {widgetState.authMessage.qrCode && <img src={`data:image/png;base64,${widgetState.authMessage.qrCode}`} alt="QR Code" />}
         </div>}
 
-        {widgetState.todoList.map(todo => (
+        {showTodoList && widgetState.todoList.map(todo => (
             <div key={todo.id}>
 
                 <input
@@ -96,8 +129,9 @@ const TodoApp: React.FC<{ toolResponse: UnknownObject | null }> = ({ toolRespons
                 <label style={{ marginLeft: '8px' }}>{todo.task}</label>
             </div>
         ))}
+        {noTodos && <div>You have no Todos on your list</div>}
     </div>);
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(<TodoApp toolResponse={useOpenAiGlobal("toolOutput")} />);
+root.render(<TodoApp />);

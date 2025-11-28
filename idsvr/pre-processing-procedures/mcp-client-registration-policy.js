@@ -9,8 +9,10 @@ function result(context) {
 
   if (httpMethod === "POST") {
     var body = request.getParsedBodyAsJson();
-    if (body && body.scope) {
-      if (body.scope.split(" ").indexOf("read") !== -1) {
+    if (
+        (body && body.scope && body.scope.split(" ").indexOf("read") !== -1) ||
+        (body && body.client_name && body.client_name === 'ChatGPT') // ChatGPT apps seem not to use MCP's scope selection strategy
+    ) {
 
         // Apply the security policy for MCP clients that access the Todo API
         attributes.require_proof_key = true;
@@ -19,7 +21,6 @@ function result(context) {
 
         // Add a custom property that specifies the audiences of this DCR client
         attributes.audiences = ["https://73d2fa03e178-12486528803601528557.ngrok-free.app/"];
-      }
     }
   }
 

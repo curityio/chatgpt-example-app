@@ -130,7 +130,7 @@ server.registerTool(
     outputSchema: {
         result: z.array(
             z.object({
-                id: z.string(),
+                id: z.number(),
                 task: z.string(),
                 completed: z.boolean()
             })
@@ -165,7 +165,7 @@ server.registerTool(
     outputSchema: {
         result: z.array(
             z.object({
-                id: z.string(),
+                id: z.number(),
                 task: z.string(),
                 completed: z.boolean()
             })
@@ -211,7 +211,7 @@ server.registerTool(
     outputSchema: {
         result: z.array(
             z.object({
-                id: z.string(),
+                id: z.number(),
                 task: z.string(),
                 completed: z.boolean()
             })
@@ -335,7 +335,7 @@ if (useStdio) {
 
   // Serve index.html for the root path and any unmatched routes (SPA support)
   app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../web/index.html'));
+    res.sendFile(path.join(__dirname, './web/index.html'));
   });
 
   // Map to store transports by session ID

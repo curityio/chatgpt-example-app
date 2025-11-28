@@ -58,6 +58,7 @@ fi
 mkdir ../mcp-server/dist/web
 cp app.css ../mcp-server/dist/web/app.css
 cp dist/bundle.js ../mcp-server/dist/web/bundle.js
+cp index.html ../mcp-server/dist/web/index.html
 
 cd ../mcp-server
 
