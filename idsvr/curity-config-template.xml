@@ -1,7 +1,7 @@
 <config xmlns="http://tail-f.com/ns/config/1.0">
   <environments xmlns="https://curity.se/ns/conf/base">
     <environment>
-      <base-url>https://73d2fa03e178-12486528803601528557.ngrok-free.app</base-url>
+      <base-url>https://$BASE_IDSVR_DOMAIN</base-url>
       <admin-service>
         <http>
           <base-url>https://admin.demo.example</base-url>
@@ -88,8 +88,8 @@
                   <id>default-signature-verification-key</id>
                 </key-verification>
                 <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
-                <required-audience>https://73d2fa03e178-12486528803601528557.ngrok-free.app/</required-audience>
-                <required-issuer>https://73d2fa03e178-12486528803601528557.ngrok-free.app/oauth/v2/oauth-anonymous</required-issuer>
+                <required-audience>https://$BASE_MCP_DOMAIN/</required-audience>
+                <required-issuer>https://$BASE_IDSVR_DOMAIN/oauth/v2/oauth-anonymous</required-issuer>
                 <required-scopes>read</required-scopes>
               </access-token>
             </authenticator>
@@ -395,14 +395,14 @@
             <config-backed>
               <client>
                 <id>api-gateway-client</id>
-                <secret>$5$7zfl3Bsen5f/vJsr$fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
+                <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
                 <capabilities>
                   <introspection/>
                 </capabilities>
               </client>
               <client>
                 <id>mcp-server</id>
-                <secret>$5$4VcWtNqulwJgD7Zw$419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
+                <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
                 <scope>stocks/read</scope>
                 <scope>read</scope>
                 <scope>write</scope>
@@ -412,7 +412,7 @@
               </client>
               <client>
                 <id>mcp-server-haapi</id>
-                <secret>$5$8LfFRmKklSw/pcbm$RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
+                <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
                 <redirect-uris>https://mcp.demo.example</redirect-uris>
                 <scope>read</scope>
                 <scope>write</scope>
@@ -431,7 +431,7 @@
               </client>
               <client>
                 <id>oauth-tools</id>
-                <secret>$5$fEqIcKSpTyvVR1/c$8J/wA./UwSAidFH0IwW.HEpt1xk8UX94cLxJpKHExd9</secret>
+                <secret>§5§fEqIcKSpTyvVR1/c§8J/wA./UwSAidFH0IwW.HEpt1xk8UX94cLxJpKHExd9</secret>
                 <redirect-uris>oauth.tools://app/callback/code</redirect-uris>
                 <proof-key>
                   <require-proof-key>true</require-proof-key>
@@ -667,21 +667,21 @@
       <rule>
         <name>tailf-aaa-authentication</name>
         <module-name>tailf-aaa</module-name>
-        <path>/aaa/authentication/users/user[name='$USER']</path>
+        <path>/aaa/authentication/users/user[name='§USER']</path>
         <access-operations>read update</access-operations>
         <action>permit</action>
       </rule>
       <rule>
         <name>tailf-aaa-user</name>
         <module-name>tailf-aaa</module-name>
-        <path>/user[name='$USER']</path>
+        <path>/user[name='§USER']</path>
         <access-operations>create read update delete</access-operations>
         <action>permit</action>
       </rule>
       <rule>
         <name>tailf-webui-user</name>
         <module-name>tailf-webui</module-name>
-        <path>/webui/data-stores/user-profile[username='$USER']</path>
+        <path>/webui/data-stores/user-profile[username='§USER']</path>
         <access-operations>create read update delete</access-operations>
         <action>permit</action>
       </rule>
@@ -694,7 +694,7 @@
           <name>admin</name>
           <uid>0</uid>
           <gid>0</gid>
-          <password>$5$Djn72OHc$MllFUdOOgL5SxT3oilSWskJvfJF8KIcAgIaoz4qRm28</password>
+          <password>§5§Djn72OHc§MllFUdOOgL5SxT3oilSWskJvfJF8KIcAgIaoz4qRm28</password>
           <ssh_keydir>/opt/idsvr/home/admin/.ssh</ssh_keydir>
           <homedir>/opt/idsvr/home/admin</homedir>
         </user>

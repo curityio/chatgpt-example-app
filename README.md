@@ -13,6 +13,16 @@ You need the following tools on your computer in order to run the example:
 - docker
 - node and npm (node, at least v22)
 
+By default, the MCP server and the Curity Identity Server get exposed to the internet via ngrok. This is required to connect to let chatGPT connect to the servers. To properly run this functionality, ensure you have the following installed on your computer:
+- ngrok,
+- curl,
+- jq,
+- envsubst
+
+You will also need an ngrok auth token (https://dashboard.ngrok.com/get-started/your-authtoken) set in NGROK_TOKEN env variable.
+
+If you don't want to use NGROK, update the `USE_NGROK` variable to `0` in `build.sh`.
+
 You also need a valid license to run the Curity Identity Server. Make sure you have the license file locally and point the `LICENSE_FILE_PATH` environment variable to it. For example:
 
 ```shell
@@ -73,6 +83,9 @@ The initial setup comes with a pre-registered user account. Use `john.doe@demo.e
 
 You can register other users and log in as them. The Todo API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
 
+### Test the ChatGPT App
+
+// TODO
 
 ### Test with MCP Inspector
 

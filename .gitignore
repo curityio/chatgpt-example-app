@@ -5,3 +5,8 @@ dist/
 .vscode/
 npm-debug.log
 
+/apigateway/kong.yml
+/idsvr/curity-config.xml
+/idsvr/pre-processing-procedures/mcp-client-registration-policy.js
+/idsvr/token-procedures/set-access-token-audience.js
+/mcp-server/.env

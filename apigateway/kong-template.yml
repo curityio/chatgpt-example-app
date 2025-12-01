@@ -15,7 +15,7 @@ services:
   routes:
   - name: mcp-server-route
     hosts:
-    - 73d2fa03e178-12486528803601528557.ngrok-free.app
+    - $BASE_MCP_DOMAIN
     paths:
     - /mcp
   plugins:
@@ -35,7 +35,7 @@ services:
       client_id: api-gateway-client
       client_secret: Password1
       token_cache_seconds: 900
-      resource_metadata_url: https://73d2fa03e178-12486528803601528557.ngrok-free.app/.well-known/oauth-protected-resource
+      resource_metadata_url: https://$BASE_MCP_DOMAIN/.well-known/oauth-protected-resource
       scope: read
 
 #
@@ -49,7 +49,7 @@ services:
   routes:
   - name: mcp-server-resource-metadata-route
     hosts:
-    - 73d2fa03e178-12486528803601528557.ngrok-free.app
+    - $BASE_MCP_DOMAIN
     paths:
     - /.well-known/oauth-protected-resource
   plugins:
@@ -87,7 +87,7 @@ services:
   routes:
   - name: authorization-server-metadata-reroute
     hosts:
-    - 73d2fa03e178-12486528803601528557.ngrok-free.app
+    - $BASE_IDSVR_DOMAIN
     paths:
     - /.well-known/oauth-authorization-server
   plugins:
@@ -105,7 +105,7 @@ services:
   routes:
   - name: authorization-server-registration
     hosts:
-    - 73d2fa03e178-12486528803601528557.ngrok-free.app
+    - $BASE_IDSVR_DOMAIN
     paths:
     - /oauth/v2/oauth-registration
   plugins:
@@ -132,7 +132,7 @@ services:
   routes:
   - name: oauth-route
     hosts:
-    - 73d2fa03e178-12486528803601528557.ngrok-free.app
+    - $BASE_IDSVR_DOMAIN
     paths:
     - /
   plugins:

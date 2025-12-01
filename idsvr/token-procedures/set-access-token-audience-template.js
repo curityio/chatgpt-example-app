@@ -31,7 +31,7 @@ function result(context) {
   if (context.client.name === 'ChatGPT') {
       // ChatGPT apps seem to not send the resource parameter, or the parameter gets lost somewhere.
       // For now set the audience manually.
-      accessTokenData.aud = ['https://73d2fa03e178-12486528803601528557.ngrok-free.app/'];
+      accessTokenData.aud = ['https://$BASE_IDSVR_DOMAIN/'];
   }
 
 
