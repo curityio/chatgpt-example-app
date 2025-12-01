@@ -96,10 +96,9 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
         session);
     if (output.success) {
         const structuredContent = {
-            result: [], // Empty todo list
             authMessage: {
                 message: output.message,
-                qrcode: output.qrCode
+                qrCode: output.qrCode
             }
         };
         return {
@@ -160,20 +159,18 @@ server.registerTool(
   {
     description: 'Sets the completion status of a todo item to true.',
     inputSchema: {
-      id: z.string(),
+      id: z.number(),
     },
     outputSchema: {
-        result: z.array(
-            z.object({
-                id: z.number(),
-                task: z.string(),
-                completed: z.boolean()
-            })
-        ),
-        authMessage: z.object({
+        result: z.optional(z.object({
+            id: z.number(),
+            task: z.string(),
+            completed: z.boolean()
+        })),
+        authMessage: z.optional(z.object({
             message: z.string(),
-            qrCode: z.string().nullable()
-        }).nullable()
+            qrCode: z.optional(z.string())
+        }))
     },
     _meta: {
         "openai/outputTemplate": "ui://widget/todo-widget.html",
@@ -206,20 +203,18 @@ server.registerTool(
   {
     description: 'Sets the completion status of a todo item to false.',
     inputSchema: {
-      id: z.string(),
+      id: z.number(),
     },
     outputSchema: {
-        result: z.array(
-            z.object({
-                id: z.number(),
-                task: z.string(),
-                completed: z.boolean()
-            })
-        ),
-        authMessage: z.object({
+        result: z.optional(z.object({
+            id: z.number(),
+            task: z.string(),
+            completed: z.boolean()
+        })),
+        authMessage: z.optional(z.object({
             message: z.string(),
-            qrCode: z.string().nullable()
-        }).nullable()
+            qrCode: z.optional(z.string())
+        }))
     },
     _meta: {
         "openai/outputTemplate": "ui://widget/todo-widget.html",
@@ -258,7 +253,7 @@ server.registerTool(
         outputSchema: {
             authMessage: z.object({
                 message: z.string(),
-                qrCode: z.string().nullable()
+                qrCode: z.optional(z.string())
             })
         },
         // @ts-ignore
@@ -280,7 +275,7 @@ server.registerTool(
             structuredContent: {
                 authMessage: {
                     message: authorizationResult.message,
-                    qrcode: authorizationResult.qrCode
+                    qrCode: authorizationResult.qrCode
                 }
             }
         }

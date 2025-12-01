@@ -43,7 +43,7 @@ services:
       REDIRECT_URI: 'https://mcp.demo.example'
       AUTHN_SERVER_BASE_URL: 'http://idsvr:8443'
       EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://login.demo.example'
-      ACR: 'urn:se:curity:authentication:bankid:bank-id'
+      ACR: 'urn:se:curity:authentication:access-token:access-token'
 
   #
   # The Todo API that uses OAuth to secure access

@@ -22,7 +22,7 @@ export async function getTodos(token: string): Promise<CallToolResult> {
   return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
 }
 
-export async function setTodoCompletion(id: string, completed: boolean, token: string): Promise<CallToolResult> {
+export async function setTodoCompletion(id: number, completed: boolean, token: string): Promise<CallToolResult> {
   const response = await fetch(`${config.apiUrl}/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ completed: completed }),

@@ -64,19 +64,24 @@
           <persisted-sso-session>true</persisted-sso-session>
           <authentication-actions>
             <authentication-action>
-              <id>set-subject-from-authenticator</id>
-              <script-transformer xmlns="https://curity.se/ns/ext-conf/script-transformer">
-                <attributes-location>context-attributes</attributes-location>
-                <transformation-procedure>set-subject</transformation-procedure>
-              </script-transformer>
+              <id>second-factor-authentication</id>
+              <multi-factor-condition xmlns="https://curity.se/ns/ext-conf/multi-factor-condition">
+                <disable-second-factor-subject-check>true</disable-second-factor-subject-check>
+                <always>
+                  <second-factor>
+                    <id>bank-id</id>
+                  </second-factor>
+                  <allow-authentication-with-sso-for-second-factor>false</allow-authentication-with-sso-for-second-factor>
+                </always>
+              </multi-factor-condition>
             </authentication-action>
           </authentication-actions>
           <authenticators>
             <authenticator>
               <id>access-token</id>
               <authentication-actions>
-                <login>set-subject-from-authenticator</login>
-                <sso>set-subject-from-authenticator</sso>
+                <login>second-factor-authentication</login>
+                <sso>second-factor-authentication</sso>
               </authentication-actions>
               <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
                 <key-verification>
@@ -90,7 +95,6 @@
             </authenticator>
             <authenticator>
               <id>bank-id</id>
-              <previous-authenticator>access-token</previous-authenticator>
               <bankid xmlns="https://curity.se/ns/conf/authenticators/bankid">
                 <http-client>bankid-client</http-client>
                 <mode>test</mode>
@@ -413,9 +417,7 @@
                 <scope>read</scope>
                 <scope>write</scope>
                 <user-authentication>
-                  <allowed-authenticators>bank-id</allowed-authenticators>
-                  <allowed-authenticators>email-for-mcp</allowed-authenticators>
-                  <allowed-authenticators>htmlForm</allowed-authenticators>
+                  <allowed-authenticators>access-token</allowed-authenticators>
                 </user-authentication>
                 <capabilities>
                   <code>

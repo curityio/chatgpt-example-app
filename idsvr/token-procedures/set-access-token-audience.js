@@ -28,12 +28,11 @@ function result(context) {
     }
   }
 
-    console.log('>>> Setting attributes');
-    console.log('>>> access token data ');
-    console.log(accessTokenData);
-    console.log('>>> context attributes ');
-    console.log(context.contextAttributes());
-    console.log('>>> Original subject: ' + context.contextAttributes().originalSubject);
+  if (context.client.name === 'ChatGPT') {
+      // ChatGPT apps seem to not send the resource parameter, or the parameter gets lost somewhere.
+      // For now set the audience manually.
+      accessTokenData.aud = ['https://73d2fa03e178-12486528803601528557.ngrok-free.app/'];
+  }
 
 
     var issuedAccessToken = null;

@@ -1,5 +1,5 @@
 import { DPoPOAuthClient } from './oauth_client';
-import {bankIdAcr, htmlFormAcr, type Config, emailAcr} from './types/config';
+import {bankIdAcr, htmlFormAcr, type Config, emailAcr, accessTokenAcr} from './types/config';
 import type {
     AccessTokenAuthenticatorView,
     BankdIDAuthenticatorView,
@@ -231,7 +231,8 @@ export async function obtainAuthorization(
 ): Promise<AuthorizationResult> {
     console.log('>>> Obtaining authorization with token: ' + receivedAccessToken);
     const acr = config.acr;
-    if (acr === bankIdAcr) {
+    if (acr === bankIdAcr || acr === accessTokenAcr) { // When AT authenticator is used as the main, assume the BankID path.
+        // TODO — this should be implemented so that authentication is driven by the Curity Identity Server, and is not configured here.
         return authorizeWithBankID(receivedAccessToken, session);
     } else if (acr === htmlFormAcr) {
         return authorizeWithHtmlSql(receivedAccessToken, onToken, onElicitation, session);
