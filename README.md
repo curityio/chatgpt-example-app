@@ -93,7 +93,7 @@ In chatGPT web interface go to **Settings** -> **Apps and Connectors** -> **Adva
 
 When you connect the app you should be redirected to the Curity Identity Server to log in. Use the instructions above to log in with the pre-configured user. Once the app connects you should see a list of the tools offered by the MCP server. You can then prompt chatGPT to list or update your todos. You should also see the widget. If you struggle with chatGPT to run your tools you can start the prompt with the name of your app. This will instruct the LLM to use your app in this prompt.
 
-If you restart the Curity Identity Server container you need to delete the application from chatGPT and create a new one. This will force a new client registration from chatGPT.
+If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from chatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data.
 
 If you run to connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.
 

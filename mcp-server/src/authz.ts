@@ -19,6 +19,8 @@ export type AuthorizationResult = { success: boolean; message: string; qrCode?: 
 
 const config = new Configuration();
 
+const qrCodeMessage = 'Please confirm the action by scanning the QR code with you BankID app.';
+
 async function configUsernameAndPassword(): Promise<{ username: string; password: string }> {
     if (!config.username) {
         throw new Error('User credentials not configured in environment');
@@ -263,7 +265,7 @@ async function authorizeWithBankID(receivedAccessToken: string, session: Session
 
         return {
             success: true,
-            message: `Authentication almost done! Please scan the QR code to finish the authorization process.`,
+            message: qrCodeMessage,
             qrCode: qrCode,
         };
     } catch (error) {
@@ -301,7 +303,7 @@ export async function continueAuthorizeWithBankID(onToken: (token: string) => vo
 
             return {
                 success: true,
-                message: `Authentication almost done! Please scan the QR code to finish the authorization process.`,
+                message: qrCodeMessage,
                 qrCode: authenticationResponse.currentQRCode!,
             };
         }

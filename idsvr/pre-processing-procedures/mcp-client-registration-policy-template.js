@@ -16,8 +16,8 @@ function result(context) {
 
         // Apply the security policy for MCP clients that access the Todo API
         attributes.require_proof_key = true;
-        attributes.access_token_ttl = 900;
-        attributes.refresh_token_ttl = 0;
+        attributes.access_token_ttl = 900; // 30 minutes
+        attributes.refresh_token_ttl = 3600; // 1 hour
 
         // Add a custom property that specifies the audiences of this DCR client
         attributes.audiences = ["https://$BASE_IDSVR_DOMAIN/"];

@@ -12,7 +12,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 #
 
 USE_NGROK=1
-# NGROK_DOMAIN="73d2fa03e178-12486528803601528557.ngrok-free.app"
+#NGROK_DOMAIN="73d2fa03e178-12486528803601528557.ngrok-free.app"
 
 
 DEFAULT_MCP_DOMAIN="=mcp.demo.example"
@@ -132,7 +132,11 @@ cd ..
 #
 
 if [ "$USE_NGROK" == "1" ]; then
-  echo ">>> Starting ngrok"
+  echo ">>> Using ngrok"
+  echo ">>> Stop current instances of ngrok"
+  kill -9 $(pgrep ngrok) 2>/dev/null
+
+  echo ">>> Start new instance of ngrok"
 
   if [ -z "$NGROK_DOMAIN" ]; then
     ngrok http 443 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml > /dev/null &
@@ -140,7 +144,7 @@ if [ "$USE_NGROK" == "1" ]; then
     sleep 2
     NGROK_DOMAIN=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto == "https") | .public_url')
   else
-    ngrok http 443 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml --url $NGROK_DOMAIN &
+    ngrok http 443 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml --url $NGROK_DOMAIN > /dev/null &
     # Allow ngrok to start
     sleep 2
   fi
@@ -149,7 +153,7 @@ if [ "$USE_NGROK" == "1" ]; then
   export BASE_IDSVR_DOMAIN=$(echo "$NGROK_DOMAIN" | sed 's/^https:\/\///')
 
 else
-  echo ">>> Starting environment without ngrok. Use default URLs"
+  echo ">>> Start environment without ngrok. Use default URLs"
   export BASE_MCP_DOMAIN=$DEFAULT_MCP_DOMAIN
   export BASE_IDSVR_DOMAIN=$DEFAULT_BASE_IDSVR_DOMAIN
 fi
