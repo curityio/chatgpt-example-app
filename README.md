@@ -85,7 +85,17 @@ You can register other users and log in as them. The Todo API checks authorizati
 
 ### Test the ChatGPT App
 
-// TODO
+To test the app directly in chatGPT you need to enable developer mode. Any paid account should have access to developer mode, but if you are part of an organization you might need Admin rights or special permissions.
+
+In chatGPT web interface go to **Settings** -> **Apps and Connectors** -> **Advanced**. Enable **Developer Mode**. You can then create a new App from the **Apps and Connectors** panel. Give it a name and description and point it to the ngrok domain you got when building the app with `/mcp` path, e.g. `https://615a015ea5f3.ngrok-free.app/mcp`.
+
+![A filled in form for creating a new app in chat GPT](/docs/chat-gpt-create-app.png)
+
+When you connect the app you should be redirected to the Curity Identity Server to log in. Use the instructions above to log in with the pre-configured user. Once the app connects you should see a list of the tools offered by the MCP server. You can then prompt chatGPT to list or update your todos. You should also see the widget. If you struggle with chatGPT to run your tools you can start the prompt with the name of your app. This will instruct the LLM to use your app in this prompt.
+
+If you restart the Curity Identity Server container you need to delete the application from chatGPT and create a new one. This will force a new client registration from chatGPT.
+
+If you run to connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.
 
 ### Test with MCP Inspector
 
