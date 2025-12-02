@@ -3,8 +3,8 @@ import Configuration from "./configuration";
 
 const config = new Configuration();
 
-export async function getTodos(token: string): Promise<CallToolResult> {
-  console.log('Fetching todos from', config.apiUrl);
+export async function getPortfolio(token: string): Promise<CallToolResult> {
+  console.log('Fetching portfolio from', config.apiUrl);
   const response = await fetch(config.apiUrl, {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
   });
@@ -15,17 +15,17 @@ export async function getTodos(token: string): Promise<CallToolResult> {
   }
 
   if (response.status !== 200) {
-    throw new Error('Failed to fetch todos');
+    throw new Error('Failed to fetch portfolio');
   }
-  const todos = await response.json();
-  const output = { result: todos };
+  const portfolio = await response.json();
+  const output = { result: portfolio };
   return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
 }
 
-export async function setTodoCompletion(id: number, completed: boolean, token: string): Promise<CallToolResult> {
+export async function buyOrSellStock(id: string, delta: number, token: string): Promise<CallToolResult> {
   const response = await fetch(`${config.apiUrl}/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ completed: completed }),
+    body: JSON.stringify({ delta }),
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
   });
 
@@ -35,7 +35,7 @@ export async function setTodoCompletion(id: number, completed: boolean, token: s
   }
 
   if (response.status !== 200) {
-    throw new Error('Failed to toggle todo');
+    throw new Error('Failed to buy or sell stocks');
   }
   const result = await response.json();
   return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { result } };

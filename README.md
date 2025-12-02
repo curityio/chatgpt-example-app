@@ -1,4 +1,4 @@
-# Example ChatGPT App (Todo app)
+# Example ChatGPT App (Portfolio app)
 
 [![Quality](https://img.shields.io/badge/quality-demo-red)](https://curity.io/resources/code-examples/status/)
 [![Availability](https://img.shields.io/badge/availability-source-blue)](https://curity.io/resources/code-examples/status/)
@@ -33,9 +33,9 @@ export LICENSE_FILE_PATH=/license/license.json
 
 The example consists of the following components:
 
-- **MCP Server** — an OAuth-protected MCP server, that is capable of exchanging access tokens using HAAPI, and implements tools for calling the Todo API.
+- **MCP Server** — an OAuth-protected MCP server, that is capable of exchanging access tokens using HAAPI, and implements tools for calling the Portfolio API.
 - **The Curity Identity Server** — serves as the authorization server which protects both access to the MCP Server and to the APIs. It is also responsible for authenticating users.
-- **Todo API** — a simple API to manage a list of to-dos. It exposes endpoints for listing the tasks and marking them either as done or undone. The API is protected with OAuth access tokens.
+- **Portfolio API** — a simple API to manage a user's stocks portfolio. It exposes endpoints for listing the stocks, buying and selling. The API is protected with OAuth access tokens.
 - **API Gateway** — the Kong API gateway is used for the phantom token flow — it exchanges opaque access tokens handled by the MCP client into JWTs required by the MCP server.
 
 The following diagram shows an overview of an end-to-end flow implemented in this example:
@@ -81,7 +81,7 @@ To test the complete flow, you need to use a compatible MCP client. See the opti
 
 The initial setup comes with a pre-registered user account. Use `john.doe@demo.example` whenever prompted for an email. The email authenticator will send a one-time-password to the user's email. This example uses a local maildev server to catch all outgoing emails. Navigate to `https://mail.demo.example` to access the dev inbox. You will see all the OTP emails there.
 
-You can register other users and log in as them. The Todo API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
+You can register other users and log in as them. The Portfolio API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
 
 ### Test the ChatGPT App
 
@@ -91,7 +91,7 @@ In chatGPT web interface go to **Settings** -> **Apps and Connectors** -> **Adva
 
 ![A filled in form for creating a new app in chat GPT](/docs/chat-gpt-create-app.png)
 
-When you connect the app you should be redirected to the Curity Identity Server to log in. Use the instructions above to log in with the pre-configured user. Once the app connects you should see a list of the tools offered by the MCP server. You can then prompt chatGPT to list or update your todos. You should also see the widget. If you struggle with chatGPT to run your tools you can start the prompt with the name of your app. This will instruct the LLM to use your app in this prompt.
+When you connect the app you should be redirected to the Curity Identity Server to log in. Use the instructions above to log in with the pre-configured user. Once the app connects you should see a list of the tools offered by the MCP server. You can then prompt chatGPT to list your portfolio, or buy or sell the stocks you have. You should also see the widget. If you struggle with chatGPT to run your tools you can start the prompt with the name of your app. This will instruct the LLM to use your app in this prompt.
 
 If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from chatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data.
 

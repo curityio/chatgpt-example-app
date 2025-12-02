@@ -1,9 +1,9 @@
 {
-  "name": "todo-widget",
+  "name": "portfolio-widget",
   "version": "1.0.0",
-  "main": "src/todo.tsx",
+  "main": "src/portfolio.tsx",
   "scripts": {
-    "build": "esbuild src/todo.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"
+    "build": "esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"
   },
   "keywords": [],
   "author": "",

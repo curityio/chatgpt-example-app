@@ -12,7 +12,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 #
 
 USE_NGROK=1
-#NGROK_DOMAIN="73d2fa03e178-12486528803601528557.ngrok-free.app"
+#NGROK_DOMAIN="abcdef.ngrok-free.app"
 
 
 DEFAULT_MCP_DOMAIN="=mcp.demo.example"
@@ -26,10 +26,10 @@ if [ "$USE_NGROK" == "1" ]; then
 fi
 
 #
-# Build the Todo API to a Docker container
+# Build the Portfolio API to a Docker container
 #
-echo '>>> Building Todo API ...'
-cd todo-api
+echo '>>> Building Portfolio API ...'
+cd portfolio-api
 npm install
 if [ $? -ne 0 ]; then
   echo ">>> Problem installing dependencies for the API"
@@ -42,7 +42,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-docker build --no-cache -t todo-api:1.0 .
+docker build --no-cache -t portfolio-api:1.0 .
 if [ $? -ne 0 ]; then
   echo ">>> Problem building the API Docker image"
   exit 1
@@ -81,7 +81,6 @@ fi
 mkdir ../mcp-server/dist/web
 cp app.css ../mcp-server/dist/web/app.css
 cp dist/bundle.js ../mcp-server/dist/web/bundle.js
-cp index.html ../mcp-server/dist/web/index.html
 
 cd ../mcp-server
 
@@ -134,7 +133,15 @@ cd ..
 if [ "$USE_NGROK" == "1" ]; then
   echo ">>> Using ngrok"
   echo ">>> Stop current instances of ngrok"
-  kill -9 $(pgrep ngrok) 2>/dev/null
+
+  NGROK_PID=$(pgrep ngrok)
+  if [ ! -z "$NGROK_PID" ]; then
+    echo ">>> Stopping ngrok process with PID $NGROK_PID"
+    kill -15 $NGROK_PID
+    sleep 2
+  else
+    echo ">>> No running ngrok processes found"
+  fi
 
   echo ">>> Start new instance of ngrok"
 
@@ -160,10 +167,18 @@ fi
 
 echo ">>> Use the following MCP Server URL to connect: https://$BASE_MCP_DOMAIN"
 
-# Replace values in kong-template.yml and curity-config-template.xml
+# Echo the base domain variables to a file so it can be sourced by the deployment script
+
+cat > .env.build << EOL
+export BASE_MCP_DOMAIN=$BASE_MCP_DOMAIN
+export BASE_IDSVR_DOMAIN=$BASE_IDSVR_DOMAIN
+EOL
+
+# Replace values in relevant files
 
 envsubst < ./apigateway/kong-template.yml > ./apigateway/kong.yml
 envsubst < ./idsvr/curity-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-config.xml
 envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-template.js > ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js
 envsubst < ./idsvr/token-procedures/set-access-token-audience-template.js > ./idsvr/token-procedures/set-access-token-audience.js
 envsubst < ./mcp-server/.env-template > ./mcp-server/.env
+

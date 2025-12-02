@@ -14,7 +14,7 @@ function result(context) {
         (body && body.client_name && body.client_name === 'ChatGPT') // ChatGPT apps seem not to use MCP's scope selection strategy
     ) {
 
-        // Apply the security policy for MCP clients that access the Todo API
+        // Apply the security policy for MCP clients that access the Portfolio API
         attributes.require_proof_key = true;
         attributes.access_token_ttl = 900; // 30 minutes
         attributes.refresh_token_ttl = 3600; // 1 hour

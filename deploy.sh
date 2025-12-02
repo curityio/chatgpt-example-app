@@ -16,6 +16,9 @@ if [ "$LICENSE_KEY" == '' ]; then
   exit 1
 fi
 
+# Load the base domain values
+source .env.build
+
 ##
 ## Some MCP clients, like Claude, require HTTPS connections.
 ## Therefore, create development SSL certificates for external URLs.

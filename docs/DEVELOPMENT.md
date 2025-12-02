@@ -28,12 +28,12 @@ node --env-file=.env dist/index.js
 
 The Curity Identity Server uses an access token authenticator to properly authenticate HAAPI requests. The first time you build the project, the sbuild scripts downloads the code for the plugin into idsvr/plugins/access-token-authenticator. If the code for the plugin is updated in the remote repo, make sure to update it by running `git pull`, or simply delete the `plugins` folder and rebuild the project.
 
-## Running Todo API
+## Running Portfolio API
 
 To run the API locally, use these commands:
 
 ```
-cd todo-api
+cd portfolio-api
 npm i
 npm run dev
 ```

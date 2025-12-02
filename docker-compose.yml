@@ -33,24 +33,24 @@ services:
       PORT: '8081'
       HAAPI_CLIENT_ID: 'mcp-server-haapi'
       HAAPI_CLIENT_PASSWORD: 'Password1'
-      EXTERNAL_BASE_URL: https://mcp.demo.example
-      AUTHORIZATION_SERVER_BASE_URL: https://login.demo.example
-      API_URL: 'http://todo-api:8080/api/todos'
+      EXTERNAL_BASE_URL: 'https://${BASE_MCP_DOMAIN}'
+      AUTHORIZATION_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
+      API_URL: 'http://portfolio-api:8080/api/portfolio'
       TOKEN_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-token'
       AUTHORIZATION_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-authorize'
-      SCOPE_SUPPORTED: 'read'
-      SCOPE: 'write'
+      SCOPE_SUPPORTED: 'portfolio'
+      SCOPE: 'transactions'
       REDIRECT_URI: 'https://mcp.demo.example'
       AUTHN_SERVER_BASE_URL: 'http://idsvr:8443'
-      EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://login.demo.example'
+      EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
       ACR: 'urn:se:curity:authentication:access-token:access-token'
 
   #
-  # The Todo API that uses OAuth to secure access
+  # The Portfolio API that uses OAuth to secure access
   #
-  todo-api:
-    image: todo-api:1.0
-    hostname: todo-api
+  portfolio-api:
+    image: portfolio-api:1.0
+    hostname: portfolio-api
 #    environment:
 #      PORT: '8080'
 #      JWKS_URI: 'http://idsvr:8443/oauth/v2/oauth-anonymous/jwks'

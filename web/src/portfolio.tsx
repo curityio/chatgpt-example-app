@@ -1,0 +1,192 @@
+import ReactDOM from "react-dom/client";
+import React, {useEffect} from "react";
+import {useWidgetState} from "./use-widget-state";
+import {useOpenAiGlobal} from "./use-openai-global";
+
+
+type Stock = {
+    id: string,
+    name: string,
+    currentPrice: number,
+    quantity: number
+}
+
+type Tool = {
+    name: string,
+    parameters: {
+        id: string,
+        delta: number
+    }
+}
+
+const compareArrays = (array1: Stock[], array2: Stock[]): boolean => {
+    return array1.length === array2.length && array1.every((element, index) => element === array2[index]);
+}
+
+const portfoliosDifferent = (portfolioFromTool: unknown | undefined, portfolioFromState: Stock[] | undefined): boolean => {
+    if (portfolioFromTool && portfolioFromState) {
+        return !compareArrays(portfolioFromTool as Stock[], portfolioFromState);
+    }
+
+    return !!portfolioFromTool;
+}
+
+const PortfolioApp: React.FC = () => {
+    const toolOutput = useOpenAiGlobal('toolOutput');
+    const [widgetState, setWidgetState] = useWidgetState(() => ({
+        portfolio : toolOutput?.result as Stock[],
+        authMessage: toolOutput?.authMessage as any,
+        tool: null as Tool | null
+    }));
+
+    useEffect(() => {
+        console.log('>>> Current tool output', toolOutput);
+
+        const portfoliosAreDifferent = portfoliosDifferent(toolOutput?.result, widgetState?.portfolio);
+        const authMessageDifferent = toolOutput?.authMessage && widgetState?.authMessage != toolOutput?.authMessage
+
+        if (portfoliosAreDifferent || authMessageDifferent) {
+            console.log('>>> Found differences ', portfoliosAreDifferent, authMessageDifferent);
+            console.log('>> Setting portfolios in state');
+            console.log('AuthMessage in state ', widgetState?.authMessage);
+
+            setWidgetState({
+                ...widgetState,
+                portfolio: toolOutput?.result as Stock[],
+                authMessage: toolOutput?.authMessage
+            });
+        }
+    }, [toolOutput]);
+
+    const pollAuthentication = async (originalTool: Tool) => {
+        console.log('>>> Current widget state ', widgetState);
+        // Wait 1 second before polling
+        await setTimeout(() => Promise.resolve(), 1000);
+
+        const toolResult = await window.openai?.callTool('continue_authorization', { });
+
+        console.log('>>> Result of polling ', toolResult);
+
+        if (toolResult.structuredContent.authMessage?.message === 'Authentication finished') { // TODO — maybe this should use a code or a separate field instead?
+            // Invoke the original tool again
+            const originalToolResult = await window.openai?.callTool(originalTool.name, { id: originalTool.parameters.id, delta: originalTool.parameters.delta });
+
+            if (originalToolResult?.structuredContent?.result) {
+                // Update the stock in state
+                const stockToUpdate = originalToolResult.structuredContent.result as Stock;
+                const updatedPortfolio = widgetState?.portfolio.map(stock => {
+                    if (stock.id === stockToUpdate.id) {
+                        return stockToUpdate;
+                    }
+
+                    return stock;
+                });
+
+                setWidgetState({
+                    ...widgetState,
+                    portfolio: updatedPortfolio,
+                    authMessage: undefined,
+                    tool: null
+                });
+            }
+        } else {
+            setWidgetState({
+                ...widgetState,
+                authMessage: toolResult?.structuredContent.authMessage,
+            });
+
+            if (!toolResult?.structuredContent?.authMessage?.message.startsWith('Authorization failed')) {
+                pollAuthentication(originalTool);
+            }
+        }
+    }
+
+    const buyStock = async (id: string, delta: number) => {
+        const toolToCall = {
+            name: 'buy_stock',
+            parameters: { id, delta }
+        }
+
+        updateStock(toolToCall, id, delta);
+    }
+
+    const sellStock = async (id: string, delta: number) => {
+        const toolToCall = {
+            name: 'sell_stock',
+            parameters: { id, delta }
+        }
+
+        updateStock(toolToCall, id, delta);
+    }
+
+    const updateStock = async (toolToCall: Tool, id: string, delta: number) => {
+
+        const updateStockResult = await window.openai?.callTool(toolToCall.name, { id, delta });
+        console.log(`>>> Result of call to ${toolToCall.name} `, updateStockResult);
+
+        const newState = {} as any;
+
+        if (updateStockResult?.structuredContent?.result) {
+            // Update the stock in state
+            const stockToUpdate = updateStockResult.structuredContent.result as Stock;
+            newState.portfolio = widgetState?.portfolio.map(stock => {
+                if (stock.id === stockToUpdate.id) {
+                    return stockToUpdate;
+                }
+
+                return stock;
+            });
+        }
+
+        if (updateStockResult?.structuredContent?.authMessage) {
+            newState.authMessage = updateStockResult?.structuredContent.authMessage;
+
+            pollAuthentication(toolToCall);
+        }
+
+        setWidgetState({
+            ...widgetState,
+            ...newState
+        });
+    }
+
+    const hasPortfolio = widgetState?.portfolio !== undefined;
+    const portfolioNotEmpty = hasPortfolio && widgetState?.portfolio?.length > 0;
+    const noPortfolio = !hasPortfolio;
+    const portfolioEmpty = !portfolioNotEmpty;
+    const showAuthMessage = !(widgetState?.authMessage === null || widgetState?.authMessage === undefined);
+
+    console.log('Show portfolio? Is it empty?', hasPortfolio, portfolioNotEmpty);
+    console.log('>>> Current widget state ', widgetState);
+
+    return (<div className="widget_content">
+        {noPortfolio && <div>Loading...</div>}
+
+        {showAuthMessage && <div>
+            <p>{widgetState.authMessage.message}</p>
+            {widgetState.authMessage.qrCode && <img src={`data:image/png;base64,${widgetState.authMessage.qrCode}`} alt="QR Code" />}
+        </div>}
+
+        {portfolioEmpty && <div>You don't have any stocks in your portfolio</div>}
+
+        {portfolioNotEmpty && widgetState.portfolio.map(stock => (
+            <div key={stock.id}>
+                <span>{stock.id}: {stock.name}</span>, currently at <span>{stock.currentPrice}</span> USD. You own: <span>{stock.quantity}</span>
+                <input type="number" defaultValue="1" id={`delta_${stock.id}`} />
+                <button onClick={() => {
+                    const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
+                    const delta = input ? parseInt(input.value, 10) : 1;
+                    buyStock(stock.id, delta);
+                }}>Buy</button>
+                <button onClick={() => {
+                    const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
+                    const delta = input ? parseInt(input.value, 10) : 1;
+                    sellStock(stock.id, delta);
+                }}>Sell</button>
+            </div>
+        ))}
+    </div>);
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+root.render(<PortfolioApp />);

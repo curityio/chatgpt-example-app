@@ -1,18 +1,30 @@
 import express from 'express';
-import cors from 'cors';
 import morgan from 'morgan';
 import jwt from 'jsonwebtoken';
-import config from '../config.json';
 
-const todos = [
-  { id: 1, task: 'Buy milk', completed: false },
-  { id: 2, task: 'Walk the dog', completed: true },
-  { id: 3, task: 'Do laundry', completed: false },
+const portfolio = [
+    {
+        "id": "MSFT",
+        "name": "Microsoft Corporation",
+        currentPrice: 486.74,
+        quantity: 23,
+    },
+    {
+        "id": "NVDA",
+        "name": "NVIDIA Corp",
+        currentPrice: 183.65,
+        quantity: 56,
+    },
+    {
+        "id": "AAPL",
+        "name": "Apple Inc",
+        currentPrice: 282.56,
+        quantity: 12
+    },
 ];
 
 const app = express();
 app.use(morgan('combined'));
-app.use(cors(config.cors));
 app.use(express.json());
 
 // JWT middleware for authorization, should actually validate the JWT.
@@ -38,14 +50,14 @@ const authenticateToken = (req: express.Request, res: express.Response, next: ex
     // Apply authorization logic. Here we simply require concrete scopes for HTTP method. In a real scenario this could delegate authorization to a policy engine
 
       if (req.method === 'GET') {
-            if (!decoded.scope || !decoded.scope.includes('read')) {
-                console.log('Token missing scope `read`: ', decoded.scope);
-                return res.status(403).json({ error: 'Insufficient scope. The token needs scope `read`.'})
+            if (!decoded.scope || !decoded.scope.includes('portfolio')) {
+                console.log('Token missing scope `portfolio`: ', decoded.scope);
+                return res.status(403).json({ error: 'Insufficient scope. The token needs scope `portfolio`.'})
             }
       } else if (req.method === 'PUT') {
-          if (!decoded.scope || !decoded.scope.includes('write')) {
-              console.log('Token missing scope `write`: ', decoded.scope);
-              return res.status(403).json({ error: 'Insufficient scope. The token needs scope `write`.'})
+          if (!decoded.scope || !decoded.scope.includes('transactions')) {
+              console.log('Token missing scope `transactions`: ', decoded.scope);
+              return res.status(403).json({ error: 'Insufficient scope. The token needs scope `transactions`.'})
           }
       }
 
@@ -55,26 +67,19 @@ const authenticateToken = (req: express.Request, res: express.Response, next: ex
   }
 };
 
-app.get('/api/todos', (req, res) => {
-  res.json(todos);
+app.get('/api/portfolio', (req, res) => {
+  res.json(portfolio);
 });
 
-app.get('/api/todos/:id', (req, res) => {
-  const todo = todos.find(t => t.id === parseInt(req.params.id));
-  if (todo) {
-    res.json(todo);
+app.put('/api/portfolio/:id', authenticateToken, (req, res) => {
+  const stockIndex = portfolio.findIndex(t => t.id === req.params.id);
+  if (stockIndex !== -1) {
+    const delta = req.body.delta;
+    const newQuantity = portfolio[stockIndex].quantity + delta;
+    portfolio[stockIndex].quantity = newQuantity;
+    res.json(portfolio[stockIndex]);
   } else {
-    res.status(404).json({ error: 'Todo not found' });
-  }
-});
-
-app.put('/api/todos/:id', authenticateToken, (req, res) => {
-  const todoIndex = todos.findIndex(t => t.id === parseInt(req.params.id));
-  if (todoIndex !== -1) {
-    todos[todoIndex] = { ...todos[todoIndex], ...req.body };
-    res.json(todos[todoIndex]);
-  } else {
-    res.status(404).json({ error: 'Todo not found' });
+    res.status(404).json({ error: 'Stock not found' });
   }
 });
 

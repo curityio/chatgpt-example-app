@@ -90,7 +90,7 @@
                 <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
                 <required-audience>https://$BASE_MCP_DOMAIN/</required-audience>
                 <required-issuer>https://$BASE_IDSVR_DOMAIN/oauth/v2/oauth-anonymous</required-issuer>
-                <required-scopes>read</required-scopes>
+                <required-scopes>portfolio</required-scopes>
               </access-token>
             </authenticator>
             <authenticator>
@@ -222,14 +222,12 @@
               <claims>zoneinfo</claims>
             </scope>
             <scope>
-              <id>read</id>
+              <id>portfolio</id>
+              <description>Read information from the user's portfolio</description>
             </scope>
             <scope>
-              <id>stocks/read</id>
-              <description>Read only information about financial stocks and their current prices</description>
-            </scope>
-            <scope>
-              <id>write</id>
+              <id>transactions</id>
+              <description>Buy and sell stocks from the user's portfolio</description>
             </scope>
           </scopes>
           <claims>
@@ -403,9 +401,8 @@
               <client>
                 <id>mcp-server</id>
                 <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
-                <scope>stocks/read</scope>
-                <scope>read</scope>
-                <scope>write</scope>
+                <scope>portfolio</scope>
+                <scope>transactions</scope>
                 <capabilities>
                   <oauth-token-exchange/>
                 </capabilities>
@@ -414,8 +411,8 @@
                 <id>mcp-server-haapi</id>
                 <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
                 <redirect-uris>https://mcp.demo.example</redirect-uris>
-                <scope>read</scope>
-                <scope>write</scope>
+                <scope>portfolio</scope>
+                <scope>transactions</scope>
                 <user-authentication>
                   <allowed-authenticators>access-token</allowed-authenticators>
                 </user-authentication>
@@ -437,7 +434,7 @@
                   <require-proof-key>true</require-proof-key>
                 </proof-key>
                 <refresh-token-ttl>disabled</refresh-token-ttl>
-                <scope>read</scope>
+                <scope>portfolio</scope>
                 <user-authentication>
                   <allowed-authenticators>email</allowed-authenticators>
                 </user-authentication>
@@ -459,7 +456,7 @@
               </capabilities>
               <default-refresh-token-ttl>3600</default-refresh-token-ttl>
               <scopes>
-                <scope>read</scope>
+                <scope>portfolio</scope>
               </scopes>
               <authenticators>
                 <authenticator>email</authenticator>

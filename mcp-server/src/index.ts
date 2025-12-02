@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
-import { getTodos, setTodoCompletion } from './api_calls';
+import { getPortfolio, buyOrSellStock } from './api_calls';
 import {Session, SessionManager} from './session-manager';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 import {continueAuthorizeWithBankID, obtainAuthorization} from './authz';
@@ -42,7 +42,7 @@ function missingAuthorizationResponse(): CallToolResult {
   };
 }
 
-const server = new McpServer({ name: 'todo-server', version: '1.0.0' });
+const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 async function onElicitationUserNameAndPasswordRequired(): Promise<{ username: string; password: string }> {
   console.log('Eliciting user credentials for authorization...');
@@ -122,23 +122,24 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
 
 
 server.registerTool(
-  'get_todos',
+  'get_portfolio',
   {
-    title: 'Get Todos',
-    description: 'Returns the full list of todos.',
+    title: 'Get portfolio',
+    description: "Returns the contents of the user's portfolio.",
     outputSchema: {
         result: z.array(
             z.object({
-                id: z.number(),
-                task: z.string(),
-                completed: z.boolean()
+                id: z.string(),
+                name: z.string(),
+                currentPrice: z.number(),
+                quantity: z.number()
             })
         )
     },
     _meta: {
-        "openai/outputTemplate": "ui://widget/todo-widget.html",
-        "openai/toolInvocation/invoking": "Checking your todos...",
-        "openai/toolInvocation/invoked": "Todo list ready",
+        "openai/outputTemplate": "ui://widget/portfolio-widget.html",
+        "openai/toolInvocation/invoking": "Getting your portfolio...",
+        "openai/toolInvocation/invoked": "Portfolio ready",
     },
     // @ts-ignore
     securitySchemes: [
@@ -150,22 +151,24 @@ server.registerTool(
       const session = sessionManager.getOrCreateSession(context.sessionId);
       const token = await getAccessToken(session, receivedAccessToken);
 
-      return getTodos(token);
+      return getPortfolio(token);
   },
 );
 
 server.registerTool(
-  'complete_todo',
+  'buy_stock',
   {
-    description: 'Sets the completion status of a todo item to true.',
+    description: 'Buys stocks of the given company',
     inputSchema: {
-      id: z.number(),
+      id: z.string(),
+      quantity: z.number()
     },
     outputSchema: {
         result: z.optional(z.object({
-            id: z.number(),
-            task: z.string(),
-            completed: z.boolean()
+            id: z.string(),
+            name: z.string(),
+            currentPrice: z.number(),
+            quantity: z.number()
         })),
         authMessage: z.optional(z.object({
             message: z.string(),
@@ -173,9 +176,9 @@ server.registerTool(
         }))
     },
     _meta: {
-        "openai/outputTemplate": "ui://widget/todo-widget.html",
-        "openai/toolInvocation/invoking": "Completing a todo...",
-        "openai/toolInvocation/invoked": "Completing a todo done.",
+        "openai/outputTemplate": "ui://widget/portfolio-widget.html",
+        "openai/toolInvocation/invoking": "Buying more stocks...",
+        "openai/toolInvocation/invoked": "Stock bought.",
     },
     // @ts-ignore
     securitySchemes: [
@@ -187,8 +190,8 @@ server.registerTool(
       const session = sessionManager.getOrCreateSession(context.sessionId);
       const token = await getAccessToken(session, receivedAccessToken);
 
-        console.log(`Completing todo ${input.id} for session ${session.id}`);
-        const completionResponse = await setTodoCompletion(input.id, true, token);
+        console.log(`Buying ${input.quantity} stocks ${input.id} for session ${session.id}`);
+        const completionResponse = await buyOrSellStock(input.id, input.quantity, token);
 
         if (completionResponse.isError) {
             return await requestAuthorization(receivedAccessToken, session);
@@ -199,17 +202,19 @@ server.registerTool(
 );
 
 server.registerTool(
-  'uncomplete_todo',
+  'sell_stock',
   {
-    description: 'Sets the completion status of a todo item to false.',
+    description: 'Sells the given quantity of stocks',
     inputSchema: {
-      id: z.number(),
+      id: z.string(),
+      quantity: z.number()
     },
     outputSchema: {
         result: z.optional(z.object({
-            id: z.number(),
-            task: z.string(),
-            completed: z.boolean()
+            id: z.string(),
+            name: z.string(),
+            currentPrice: z.number(),
+            quantity: z.number()
         })),
         authMessage: z.optional(z.object({
             message: z.string(),
@@ -217,9 +222,9 @@ server.registerTool(
         }))
     },
     _meta: {
-        "openai/outputTemplate": "ui://widget/todo-widget.html",
-        "openai/toolInvocation/invoking": "Uncompleting a todo...",
-        "openai/toolInvocation/invoked": "Uncompleting a todo done.",
+        "openai/outputTemplate": "ui://widget/portfolio-widget.html",
+        "openai/toolInvocation/invoking": "Selling some stock...",
+        "openai/toolInvocation/invoked": "Stock sold.",
     },
     // @ts-ignore
     securitySchemes: [
@@ -231,8 +236,8 @@ server.registerTool(
       const session = sessionManager.getOrCreateSession(context.sessionId);
       const token = await getAccessToken(session, receivedAccessToken);
 
-      console.log(`Uncompleting todo ${input.id} for session ${session.id}`);
-      const completionResponse = await setTodoCompletion(input.id, false, token);
+      console.log(`Selling ${input.quantity} of stock ${input.id} for session ${session.id}`);
+      const completionResponse = await buyOrSellStock(input.id, -input.quantity, token);
 
       if (completionResponse.isError) {
           return await requestAuthorization(receivedAccessToken, session);
@@ -286,13 +291,13 @@ const widgetAppBundle = readFileSync("dist/web/bundle.js", "utf8");
 const css = readFileSync("dist/web/app.css", "utf8");
 
 server.registerResource(
-    "todo-widget",
-    "ui://widget/todo-widget.html",
+    "portfolio-widget",
+    "ui://widget/portfolio-widget.html",
     {},
     async () => ({
         contents: [
             {
-                uri: "ui://widget/todo-widget.html",
+                uri: "ui://widget/portfolio-widget.html",
                 mimeType: "text/html+skybridge",
                 text: `
 <div id="root"></div>
@@ -308,142 +313,124 @@ server.registerResource(
 );
 
 
+const app = express();
+app.use(morgan('combined'));
+app.use(express.json());
 
-// Check if stdio transport is requested via command line argument
-const useStdio = process.argv.includes('--stdio');
+// Serve static files from the web directory
+app.use(express.static(path.join(__dirname, '../../web')));
 
-if (useStdio) {
-  // Run with stdio transport
-  console.error('Starting MCP server with stdio transport...');
-  const transport = new StdioServerTransport();
-  server.connect(transport).catch((error) => {
-    console.error('Failed to start stdio transport:', error);
-    process.exit(1);
-  });
-} else {
-  const app = express();
-  app.use(morgan('combined'));
-  app.use(express.json());
 
-  // Serve static files from the web directory
-  app.use(express.static(path.join(__dirname, '../../web')));
+// Map to store transports by session ID
+const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
-  // Serve index.html for the root path and any unmatched routes (SPA support)
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, './web/index.html'));
-  });
+/*
+ * The MCP server makes the access token available to tools that call upstream APIs
+ */
+  const setAuthInfo = (request: Request) => {
 
-  // Map to store transports by session ID
-  const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+      let accessToken = '';
 
-    /*
-     * The MCP server makes the access token available to tools that call upstream APIs
-     */
-      const setAuthInfo = (request: Request) => {
-
-          let accessToken = '';
-
-          const authorizationHeader = request.header('authorization');
-          if (authorizationHeader) {
-              const parts = authorizationHeader.split(' ');
-              if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
-                  accessToken = parts[1];
-              }
+      const authorizationHeader = request.header('authorization');
+      if (authorizationHeader) {
+          const parts = authorizationHeader.split(' ');
+          if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+              accessToken = parts[1];
           }
-
-        const authInfo: AuthInfo = {
-            token: accessToken,
-            clientId: '',
-            scopes: [],
-        };
-        (request as any).auth = authInfo;
-    }
-
-  app.post('/', async (req, res) => {
-
-      setAuthInfo(req);
-      if (!(req as any).auth?.token) {
-
-          return res
-              .status(401)
-              .header('Content-Type', 'application/json')
-              .header('WWW-Authenticate', `Bearer error="invalid_token", error_description="Missing, invalid or expired access token", resource_metadata="${config.externalBaseUrl}/.well-known/oauth-protected-resource", scope="read"`)
-              .send({'error': 'invalid_token', 'code': 'invalid_token', message: 'Missing, invalid or expired access token'})
       }
 
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-    let transport: StreamableHTTPServerTransport;
-    if (sessionId && transports[sessionId]) {
-      transport = transports[sessionId];
-    } else {
-      transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => sessionManager.createSession().id,
-        onsessioninitialized: (sessionId) => {
-          console.log(`Session initialized: ${sessionId}`);
-          transports[sessionId] = transport;
-        },
-      });
-      transport.onclose = () => {
-        if (transport.sessionId) {
-          console.log(`Session closed: ${transport.sessionId}`);
-          delete transports[transport.sessionId];
-          sessionManager.deleteSession(transport.sessionId);
-        }
-      };
-      await server.connect(transport);
-    }
-    await transport.handleRequest(req, res, req.body);
-  });
-
-  // Reusable handler for GET and DELETE requests
-  const handleSessionRequest = async (req: express.Request, res: express.Response) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
-    if (!sessionId || !transports[sessionId]) {
-      res.status(400).send('Invalid or missing session ID');
-      return;
-    }
-
-    const transport = transports[sessionId];
-    await transport.handleRequest(req, res);
-  };
-
-    /*
-     * The MCP server returns its resource information and points clients to its authorization server
-     * Some example clients require a resource identifier that ends with a trailing backslash
-     * Return the scopes_supported that some MCP clients use in their scope selection strategy
-     * - https://modelcontextprotocol.io/specification/draft/basic/authorization#scope-selection-strategy
-     */
-      const handleGetResourceMetadata = async (request: Request, response: Response)=> {
-
-          const config = new Configuration();
-        const metadata = {
-            resource: `${config.externalBaseUrl}/`,
-            resource_name: 'MCP Server',
-            authorization_servers: [config.authorizationServerBaseUrl],
-            scopes_supported: [config.scopeSupported],
-        };
-
-        response.setHeader('content-type', 'application/json');
-        response.status(200).send(JSON.stringify(metadata));
-    }
-
-  // Handle GET requests for server-to-client notifications via SSE
-  app.get('/', handleSessionRequest);
-
-  // Handle DELETE requests for session termination
-  app.delete('/', handleSessionRequest);
-
-  // Handle protected resource metadata
-  app.get('/.well-known/oauth-protected-resource', handleGetResourceMetadata);
-
-  // Run with HTTP transport (default behavior)
-    const config = new Configuration();
-    const port = config.port;
-
-  app.listen(port, () => {
-    console.log(`MCP endpoint available at http://localhost:${port}/mcp`);
-  });
+    const authInfo: AuthInfo = {
+        token: accessToken,
+        clientId: '',
+        scopes: [],
+    };
+    (request as any).auth = authInfo;
 }
+
+app.post('/', async (req, res) => {
+
+  setAuthInfo(req);
+  if (!(req as any).auth?.token) {
+
+      return res
+          .status(401)
+          .header('Content-Type', 'application/json')
+          .header('WWW-Authenticate', `Bearer error="invalid_token", error_description="Missing, invalid or expired access token", resource_metadata="${config.externalBaseUrl}/.well-known/oauth-protected-resource", scope="read"`)
+          .send({'error': 'invalid_token', 'code': 'invalid_token', message: 'Missing, invalid or expired access token'})
+  }
+
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+let transport: StreamableHTTPServerTransport;
+if (sessionId && transports[sessionId]) {
+  transport = transports[sessionId];
+} else {
+  transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => sessionManager.createSession().id,
+    onsessioninitialized: (sessionId) => {
+      console.log(`Session initialized: ${sessionId}`);
+      transports[sessionId] = transport;
+    },
+  });
+  transport.onclose = () => {
+    if (transport.sessionId) {
+      console.log(`Session closed: ${transport.sessionId}`);
+      delete transports[transport.sessionId];
+      sessionManager.deleteSession(transport.sessionId);
+    }
+  };
+  await server.connect(transport);
+}
+await transport.handleRequest(req, res, req.body);
+});
+
+// Reusable handler for GET and DELETE requests
+const handleSessionRequest = async (req: express.Request, res: express.Response) => {
+const sessionId = req.headers['mcp-session-id'] as string | undefined;
+if (!sessionId || !transports[sessionId]) {
+  res.status(400).send('Invalid or missing session ID');
+  return;
+}
+
+const transport = transports[sessionId];
+await transport.handleRequest(req, res);
+};
+
+/*
+ * The MCP server returns its resource information and points clients to its authorization server
+ * Some example clients require a resource identifier that ends with a trailing backslash
+ * Return the scopes_supported that some MCP clients use in their scope selection strategy
+ * - https://modelcontextprotocol.io/specification/draft/basic/authorization#scope-selection-strategy
+ */
+  const handleGetResourceMetadata = async (request: Request, response: Response)=> {
+
+      const config = new Configuration();
+    const metadata = {
+        resource: `${config.externalBaseUrl}/`,
+        resource_name: 'MCP Server',
+        authorization_servers: [config.authorizationServerBaseUrl],
+        scopes_supported: [config.scopeSupported],
+    };
+
+    response.setHeader('content-type', 'application/json');
+    response.status(200).send(JSON.stringify(metadata));
+}
+
+// Handle GET requests for server-to-client notifications via SSE
+app.get('/', handleSessionRequest);
+
+// Handle DELETE requests for session termination
+app.delete('/', handleSessionRequest);
+
+// Handle protected resource metadata
+app.get('/.well-known/oauth-protected-resource', handleGetResourceMetadata);
+
+// Run with HTTP transport (default behavior)
+const config = new Configuration();
+const port = config.port;
+
+app.listen(port, () => {
+console.log(`MCP endpoint available at http://localhost:${port}/mcp`);
+});
 
 // Graceful shutdown handling
 process.on('SIGINT', () => {
