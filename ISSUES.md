@@ -6,12 +6,12 @@ Here are some thoughts with ideas for improvement as well as some issues the wid
 
 - **mcp-server needs two clients** — Currently, the MCP server needs to be represented by two separate clients in the Curity Identity Server. This is because a HAAPI client can't run token exchange.
 
+- **Use ChatGPT styles** — there is a UI SDK from OPenAI (https://openai.github.io/apps-sdk-ui/?path=/docs/overview-introduction--docs). We could use it to create the widget using OpenAI's official styles and components.
+
 - **bank ID identity** — when you authenticate with the bankID, currently the flow does not verify the identity. There is no link between the logged-in user and the user that authenticates with bankID. I think that the user's account should have the SSN and then match it with the one it gets from the bankID authentication.
 
 - **signing consentor** — use a signing consentor instead of the bankID authenticator. Have the user sign a concrete transaction (buyin/selling stocks).
 
 - **development certs** — Currently, there are some certificates pushed to the repo that are used in the development setup. The chatGPT app version of the demo needs ngrok to run, so the certs are practically only used for mail.demo.example, api.demo.example, and admin.demo.example. Still, the certs are valid for a year, so eventually the demo will stop working. Instead of having the certs in the repo, the build step should generate them. There is a script for generating certs, and we use similar approach in other repos (e.g. here: https://github.com/curityio/mcp-authorization-secured-api/blob/main/deploy.sh)
-
-- **Idea**: The QR code from Bank ID could be shown in a separate dialog.
 
 - **OIDC authenticator instead of AT authenticator?** — Currently, we use the access token authenticator to ensure that the HAAPI flow is run for the user logged in to the MCP server. We were thinking whether we could use OIDC instead for this purpose. I think it's not possible, because an MCP client does not send an ID token to the MCP server (as expected).
