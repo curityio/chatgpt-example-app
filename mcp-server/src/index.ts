@@ -113,7 +113,7 @@ async function requestAuthorization(receivedAccessToken: string, session: Sessio
             structuredContent,
         };
     }
-    const structuredContent = { success: false, result: [], authMessage: { message: output.message, qrCode: null }};
+    const structuredContent = { success: false, authMessage: { message: output.message, qrCode: null }};
     return {
         content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
         structuredContent,

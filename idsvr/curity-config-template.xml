@@ -515,6 +515,10 @@
           <uri>/oauth/v2/oauth-token</uri>
           <endpoint-kind>oauth-token</endpoint-kind>
           <token-endpoint-procedures>
+              <flow>oauth-token-refresh</flow>
+              <procedure>set-audience-during-refresh</procedure>
+          </token-endpoint-procedures>
+          <token-endpoint-procedures>
             <flow>oauth-token-authorization-code</flow>
             <procedure>set-access-token-audience</procedure>
           </token-endpoint-procedures>
