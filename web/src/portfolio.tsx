@@ -20,7 +20,10 @@ type Tool = {
 }
 
 const compareArrays = (array1: Stock[], array2: Stock[]): boolean => {
-    return array1.length === array2.length && array1.every((element, index) => element === array2[index]);
+    return array1.length === array2.length && array1.every((stock1, index) => {
+        const stock2 = array2[index];
+        return stock1.id === stock2.id && stock1.name === stock2.name && stock1.currentPrice === stock2.currentPrice && stock1.quantity === stock2.quantity;
+    });
 }
 
 const portfoliosDifferent = (portfolioFromTool: unknown | undefined, portfolioFromState: Stock[] | undefined): boolean => {
@@ -69,7 +72,7 @@ const PortfolioApp: React.FC = () => {
 
         if (toolResult.structuredContent.authMessage?.message === 'Authentication finished') { // TODO — maybe this should use a code or a separate field instead?
             // Invoke the original tool again
-            const originalToolResult = await window.openai?.callTool(originalTool.name, { id: originalTool.parameters.id, delta: originalTool.parameters.delta });
+            const originalToolResult = await window.openai?.callTool(originalTool.name, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
 
             if (originalToolResult?.structuredContent?.result) {
                 // Update the stock in state
@@ -121,7 +124,7 @@ const PortfolioApp: React.FC = () => {
 
     const updateStock = async (toolToCall: Tool, id: string, delta: number) => {
 
-        const updateStockResult = await window.openai?.callTool(toolToCall.name, { id, delta });
+        const updateStockResult = await window.openai?.callTool(toolToCall.name, { id, quantity: delta });
         console.log(`>>> Result of call to ${toolToCall.name} `, updateStockResult);
 
         const newState = {} as any;
@@ -156,7 +159,7 @@ const PortfolioApp: React.FC = () => {
     const portfolioEmpty = !portfolioNotEmpty;
     const showAuthMessage = !(widgetState?.authMessage === null || widgetState?.authMessage === undefined);
 
-    console.log('Show portfolio? Is it empty?', hasPortfolio, portfolioNotEmpty);
+    console.log('Is there a portfolio? Are there elements in the portfolio?', hasPortfolio, portfolioNotEmpty);
     console.log('>>> Current widget state ', widgetState);
 
     return (<div className="widget_content">
