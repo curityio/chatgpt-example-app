@@ -92,26 +92,29 @@ fi
 cd ..
 
 #
-# Potentially download and build the token authentication plugin
+# Build the access token authenticator plugin
 #
-
 cd idsvr
-
-if [ ! -d "plugins/access-token-authenticator" ]; then
-  echo '>>> Downloading the access token authenticator plugin'
-  mkdir -p plugins/access-token-authenticator
-  git clone git@github.com:curityio/access-token-authenticator.git plugins/access-token-authenticator
+echo '>>> Downloading the access token authenticator plugin'
+rm -rf plugins/access-token-authenticator
+mkdir -p plugins/access-token-authenticator
+git clone https://github.com/curityio/access-token-authenticator plugins/access-token-authenticator
+if [ $? -ne 0 ]; then
+  echo ">>> Problem cloning the access token plugin"
+  exit 1
 fi
 
 echo ">>> Building the plugin"
 cd plugins/access-token-authenticator
-
 mvn package
+if [ $? -ne 0 ]; then
+  echo ">>> Problem building the access token plugin"
+  exit 1
+fi
 
 # Copy the relevant jars into a directory for an easier mount
 mkdir target/plugin
 cp target/*.jar target/plugin
-
 cd ../../..
 
 #
@@ -125,11 +128,9 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
-
 #
 # Handle exposing the project with ngrok
 #
-
 if [ "$USE_NGROK" == "1" ]; then
   echo ">>> Using ngrok"
   echo ">>> Stop current instances of ngrok"
