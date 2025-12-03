@@ -10,7 +10,7 @@ function result(context) {
   if (httpMethod === "POST") {
     var body = request.getParsedBodyAsJson();
     if (
-        (body && body.scope && body.scope.split(" ").indexOf("read") !== -1) ||
+        (body && body.scope && body.scope.split(" ").indexOf("portfolio") !== -1) ||
         (body && body.client_name && body.client_name === 'ChatGPT') // ChatGPT apps seem not to use MCP's scope selection strategy
     ) {
 

@@ -36,7 +36,7 @@ services:
       client_secret: Password1
       token_cache_seconds: 900
       resource_metadata_url: https://$BASE_MCP_DOMAIN/.well-known/oauth-protected-resource
-      scope: read
+      scope: portfolio
 
 #
 # The MCP server exposes OAuth protected resource metadata that points MCP clients to the authorization server
