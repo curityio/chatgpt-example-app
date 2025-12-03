@@ -44,21 +44,36 @@ const PortfolioApp: React.FC = () => {
 
     useEffect(() => {
         console.log('>>> Current tool output', toolOutput);
+        // It seems that once the tool output from window.openai is set it doesn't change. If I understand things correctly, when chatGPT contiunes the conversation
+        // and makes another tool call on its own, then it will start a new instance of the widget, which will then get a new value in toolOutput.
+        // This why I'm overriting the widget's state with the tool's response only when it is empty — so only when the widget is spun up.
+        // Again, this is my understanding of this, I might be wrong ;)
 
-        const portfoliosAreDifferent = portfoliosDifferent(toolOutput?.result, widgetState?.portfolio);
-        const authMessageDifferent = toolOutput?.authMessage && widgetState?.authMessage != toolOutput?.authMessage
-
-        if (portfoliosAreDifferent || authMessageDifferent) {
-            console.log('>>> Found differences ', portfoliosAreDifferent, authMessageDifferent);
-            console.log('>> Setting portfolios in state');
-            console.log('AuthMessage in state ', widgetState?.authMessage);
-
+        if (toolOutput?.result && !widgetState?.portfolio) {
             setWidgetState({
                 ...widgetState,
                 portfolio: toolOutput?.result as Stock[],
                 authMessage: toolOutput?.authMessage
             });
         }
+
+        // Originally, I tried this approach, but it kept overwriting the state with the initial tool output whenever I changed it from the widget itself.
+        // So you could buy some stocks clicking on the widget, but it would overwrite the state with the initial quantity.
+
+        // const portfoliosAreDifferent = portfoliosDifferent(toolOutput?.result, widgetState?.portfolio);
+        // const authMessageDifferent = toolOutput?.authMessage && widgetState?.authMessage != toolOutput?.authMessage
+
+        // if (portfoliosAreDifferent || authMessageDifferent) {
+        //     console.log('>>> Found differences ', portfoliosAreDifferent, authMessageDifferent);
+        //     console.log('>> Setting portfolios in state');
+        //     console.log('AuthMessage in state ', widgetState?.authMessage);
+        //
+        //     setWidgetState({
+        //         ...widgetState,
+        //         portfolio: toolOutput?.result as Stock[],
+        //         authMessage: toolOutput?.authMessage
+        //     });
+        // }
     }, [toolOutput]);
 
     const pollAuthentication = async (originalTool: Tool) => {
@@ -156,11 +171,12 @@ const PortfolioApp: React.FC = () => {
     const hasPortfolio = widgetState?.portfolio !== undefined;
     const portfolioNotEmpty = hasPortfolio && widgetState?.portfolio?.length > 0;
     const noPortfolio = !hasPortfolio;
-    const portfolioEmpty = !portfolioNotEmpty;
+    const portfolioEmpty = hasPortfolio && !portfolioNotEmpty;
     const showAuthMessage = !(widgetState?.authMessage === null || widgetState?.authMessage === undefined);
 
     console.log('Is there a portfolio? Are there elements in the portfolio?', hasPortfolio, portfolioNotEmpty);
     console.log('>>> Current widget state ', widgetState);
+
 
     return (<div className="widget_content">
         {noPortfolio && <div>Loading...</div>}
