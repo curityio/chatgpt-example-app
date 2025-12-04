@@ -45,6 +45,9 @@ services:
       EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
       ACR: 'urn:se:curity:authentication:access-token:access-token'
 
+      # See mcp-server/src/session-manager.ts createSession() for explanation
+      DEVELOPER_MODE: 1
+
   #
   # The Portfolio API that uses OAuth to secure access
   #
