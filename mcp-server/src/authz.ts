@@ -19,7 +19,7 @@ export type AuthorizationResult = { success: boolean; message: string; qrCode?: 
 
 const config = new Configuration();
 
-const qrCodeMessage = 'Please confirm the action by scanning the QR code with you BankID app.';
+const qrCodeMessage = 'Please confirm the action by scanning the QR code with your BankID app.';
 
 async function configUsernameAndPassword(): Promise<{ username: string; password: string }> {
     if (!config.username) {

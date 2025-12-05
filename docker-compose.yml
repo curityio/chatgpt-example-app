@@ -6,17 +6,13 @@ services:
   api-gateway:
     image: kong-api-gateway:1.0
     ports:
-      - 443:3001
+      - 80:3001
     volumes:
       - ./apigateway/kong.yml:/usr/local/kong/declarative/kong.yml
-      - ./apigateway/certs/example.ssl.crt:/usr/local/share/certs/example.ssl.crt
-      - ./apigateway/certs/example.ssl.key:/usr/local/share/certs/example.ssl.key
     environment:
       KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: '/usr/local/kong/declarative/kong.yml'
-      KONG_PROXY_LISTEN: '0.0.0.0:3001 http2 ssl'
-      KONG_SSL_CERT: '/usr/local/share/certs/example.ssl.crt'
-      KONG_SSL_CERT_KEY: './usr/local/share/certs/example.ssl.key'
+      KONG_PROXY_LISTEN: '0.0.0.0:3001'
       KONG_LOG_LEVEL: 'info'
       KONG_PLUGINS: 'bundled,phantom-token'
       KONG_NGINX_HTTP_LUA_SHARED_DICT: 'phantom-token 10m'
@@ -40,7 +36,7 @@ services:
       AUTHORIZATION_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-authorize'
       SCOPE_SUPPORTED: 'portfolio'
       SCOPE: 'transactions'
-      REDIRECT_URI: 'https://mcp.demo.example'
+      REDIRECT_URI: 'haapi:callback'
       AUTHN_SERVER_BASE_URL: 'http://idsvr:8443'
       EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
       ACR: 'urn:se:curity:authentication:access-token:access-token'
@@ -58,7 +54,7 @@ services:
 #      PORT: '8080'
 #      JWKS_URI: 'http://idsvr:8443/oauth/v2/oauth-anonymous/jwks'
 #      REQUIRED_JWT_ALGORITHM: 'PS256'
-#      REQUIRED_JWT_ISSUER: 'https://login.demo.example/oauth/v2/oauth-anonymous'
+#      REQUIRED_JWT_ISSUER: 'https://NGROK_BASE_URL/oauth/v2/oauth-anonymous'
 #      REQUIRED_JWT_AUDIENCE: 'https://api.demo.example'
 #      REQUIRED_SCOPE: 'stocks/read'
 
@@ -68,6 +64,8 @@ services:
   authorization-server:
     image: curity.azurecr.io/curity/idsvr:latest
     hostname: idsvr
+    ports:
+      - 6749:6749
     volumes:
       - ./idsvr/curity-config.xml:/opt/idsvr/etc/init/curity-config.xml
       - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
@@ -101,6 +99,8 @@ services:
   mail-server:
     image: maildev/maildev:latest
     hostname: smtpserver
+    ports:
+      - 1080:1080
     environment:
       MAILDEV_INCOMING_USER: 'noreply@maildev'
       MAILDEV_INCOMING_PASSWORD: 'Password1'

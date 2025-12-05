@@ -4,7 +4,6 @@
       <base-url>https://$BASE_IDSVR_DOMAIN</base-url>
       <admin-service>
         <http>
-          <base-url>https://admin.demo.example</base-url>
           <web-ui>
           </web-ui>
           <restconf>
@@ -410,7 +409,7 @@
               <client>
                 <id>mcp-server-haapi</id>
                 <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
-                <redirect-uris>https://mcp.demo.example</redirect-uris>
+                <redirect-uris>haapi:callback</redirect-uris>
                 <scope>portfolio</scope>
                 <scope>transactions</scope>
                 <user-authentication>
