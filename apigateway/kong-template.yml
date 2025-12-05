@@ -140,27 +140,3 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
-
-#
-# The admin UI for the Curity Identity Server
-#
-- name: admin-ui
-  url: http://idsvr:6749
-  routes:
-  - name: admin-ui-route
-    hosts:
-    - admin.demo.example
-    paths:
-    - /
-
-#
-# The email inbox for testing
-#
-- name: email-inbox
-  url: http://smtpserver:1080
-  routes:
-  - name: email-inbox-route
-    hosts:
-    - mail.demo.example
-    paths:
-    - /

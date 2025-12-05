@@ -8,7 +8,7 @@ The Hypermedia Authentication API enables step-up authentication with a simple u
 
 ## Security Flow
 
-The following diagram shows an overview of an end-to-end flow implemented in this example:
+The following diagram shows an overview of the example's main security flow:
 
 ![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.jpg)
 
@@ -66,19 +66,6 @@ The deployment outputs the URL of a secured MCP server:
 Use the following MCP Server URL to connect: https://815faa4bc463.ngrok-free.app/mcp
 ```
 
-Add the following line into your local `/etc/hosts` file, to use the example's domain names:
-
-```
-127.0.0.1 api.demo.example mcp.demo.example admin.demo.example login.demo.example mail.demo.example
-```
-
-Also trust the OpenSSL issued root certificate authority that the deployment creates at the following location.\
-For example, on macOS add it to Keychain Access under **System / Certificates**:
-
-```text
-apigateway/certs/example.ca.crt
-```
-
 Later, once you've finished testing, run this command to free all Docker resources:
 
 ```shell
@@ -97,15 +84,23 @@ Then, select the MCP server as an application
 
 ![ChatGPT App](images/chatgpt-app.jpg)
 
-## User Logins
+## Initial User Login
 
 ChatGPT's MCP client triggers an MCP authorization flow that requires email verification.\
-Enter the email `john.doe@demo.example` and use a one-time code from the test inbox at `https://mail.demo.example`.\
+Enter the email `john.doe@demo.example` and use a one-time code from the test inbox at `http://localhost:1080`.\
 The user then consents to ChatGPT's level of data access:
 
 ![ChatGPT Consent](images/chatgpt-consent.jpg)
 
-## Test with MCP Inspector
+## Admin UI for the Curity Identity Server
+
+Connect to the Admin UI with the following details:
+
+- URL: `http://localhost:6749/admin`
+- Username: `admin`
+- Password: `Password1`
+
+## View MCP Requests with MCP Inspector
 
 You can also follow the [MCP Inspector README](clients/mcp-inspector/README.md) to test with that tool.\
 Doing so enables you to take a closer look at MCP requests and responses.

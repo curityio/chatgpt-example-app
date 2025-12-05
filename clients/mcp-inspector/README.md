@@ -17,7 +17,7 @@ Wait for a few seconds and the MCP inspector opens in the browser.\
 Configure the following properties in the browser frontend:
 
 - **Transport Type**: Streamable HTTP
-- **URL**: `https://mcp.demo.example/mcp`
+- **URL**: The ngrok MCP URL, such as https://815faa4bc463.ngrok-free.app/mcp
 - **Connection Type**: Direct 
 
 Click the `Connect` button. This will trigger the initial OAuth flow. The client uses Dynamic Client Registration to register itself at the authorization server, then authenticates a user to get access to the MCP server.

@@ -33,10 +33,10 @@ if [ -z "$NGROK_PID" ]; then
   echo ">>> Start new instance of ngrok"
 
   if [ -z "$NGROK_DOMAIN" ]; then
-    ngrok http 443 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml > /dev/null &
+    ngrok http 80 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml > /dev/null &
     sleep 2
   else
-    ngrok http 443 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml --url $NGROK_DOMAIN > /dev/null &
+    ngrok http 80 --authtoken $NGROK_TOKEN --config ngrok_no_ui.yml --url $NGROK_DOMAIN > /dev/null &
     sleep 2
   fi
 fi
@@ -52,15 +52,6 @@ envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-temp
 envsubst < ./idsvr/token-procedures/set-access-token-audience-template.js > ./idsvr/token-procedures/set-access-token-audience.js
 envsubst < ./idsvr/token-procedures/set-audience-during-refresh-template.js > ./idsvr/token-procedures/set-audience-during-refresh.js
 envsubst < ./mcp-server/.env-template > ./mcp-server/.env
-
-#
-# HAAPI connections in the backend may require HTTPS and use https://mcp.demo.example
-# Therefore the first deployment creates development certificates
-#
-./apigateway/certs/create.sh
-if [ $? -ne 0 ]; then
-  exit 1
-fi
 
 #
 # Deploy all components
