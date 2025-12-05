@@ -29,7 +29,7 @@ The user authenticates with BankID to approve the transaction and the widget ren
 ## Deploy the System
 
 You need the following tools on your computer in order to run the deployment.\
-The ngrok tools exposes the MCP server and the Curity Identity Server to the internet.\
+The ngrok tool exposes the MCP server and the Curity Identity Server to the internet.\
 ChatGPT can then connect to components running on the local computer.
 
 - Docker
@@ -42,8 +42,8 @@ ChatGPT can then connect to components running on the local computer.
 
 You also need the following free resources:
 
-- An [ngrok account and auth token](https://dashboard.ngrok.com/get-started/your-authtoken).
-- A [trial license for the Curity Identity Server](https://developer.curity.io/) with access to the HAAPI feature.
+- An [ngrok account and auth token](https://dashboard.ngrok.com/get-started/your-authtoken)
+- A [trial license for the Curity Identity Server](https://developer.curity.io/) with access to the HAAPI feature
 
 First, build the project files by running the following command:
 
@@ -74,7 +74,7 @@ Later, once you've finished testing, run this command to free all Docker resourc
 
 ## ChatGPT Setup
 
-You will need a ChatGPT paid account and access to **Developer Mode**.\
+Log in to ChatGPT's web interface with a paid account that has access to **Developer Mode**.\
 In ChatGPT's web interface, go to **Settings** -> **Apps and Connectors** -> **Advanced** and enable **Developer Mode**.\
 Use the MCP server URL to create a new App from the **Apps and Connectors** panel:
 
