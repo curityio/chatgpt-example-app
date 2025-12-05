@@ -24,6 +24,12 @@ node --env-file=.env dist/index.js
 ./deploy.sh
 ```
 
+Then, add the following API entry to the hosts file so that the MCP server can call the portfolio API:
+
+```text
+127.0.0.1 api.demo.example
+```
+
 ## Updating the Authenticator Plugin
 
 The Curity Identity Server uses an access token authenticator to properly authenticate HAAPI requests. The first time you build the project, the sbuild scripts downloads the code for the plugin into idsvr/plugins/access-token-authenticator. If the code for the plugin is updated in the remote repo, make sure to update it by running `git pull`, or simply delete the `plugins` folder and rebuild the project.
