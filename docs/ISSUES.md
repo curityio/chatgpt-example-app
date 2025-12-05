@@ -12,8 +12,6 @@ Here are some thoughts with ideas for improvement as well as some issues the wid
 
 - **signing consentor** — use a signing consentor instead of the bankID authenticator. Have the user sign a concrete transaction (buyin/selling stocks).
 
-- **development certs** — Currently, there are some certificates pushed to the repo that are used in the development setup. The chatGPT app version of the demo needs ngrok to run, so the certs are practically only used for mail.demo.example, api.demo.example, and admin.demo.example. Still, the certs are valid for a year, so eventually the demo will stop working. Instead of having the certs in the repo, the build step should generate them. There is a script for generating certs, and we use similar approach in other repos (e.g. here: https://github.com/curityio/mcp-authorization-secured-api/blob/main/deploy.sh)
-
 - **OIDC authenticator instead of AT authenticator?** — Currently, we use the access token authenticator to ensure that the HAAPI flow is run for the user logged in to the MCP server. We were thinking whether we could use OIDC instead for this purpose. I think it's not possible, because an MCP client does not send an ID token to the MCP server (as expected).
 
 ## Troubleshooting
