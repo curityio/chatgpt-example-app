@@ -10,7 +10,7 @@ The Hypermedia Authentication API enables step-up authentication with a simple u
 
 The following diagram shows an overview of an end-to-end flow implemented in this example:
 
-![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.png)
+![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.jpg)
 
 ChatGPT's MCP client triggers user authentication with the system browser.\
 The MCP client then receives an initial low-privilege access token.\
