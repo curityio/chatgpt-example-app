@@ -56,7 +56,7 @@ Supply an ngrok auth token and the path to your Curity Identity Server license f
 
 ```shell
 export NGROK_TOKEN=1oLFIAYu7ZS0lD5S....
-export LICENSE_FILE_PATH=/Desktop/license-trial.json
+export LICENSE_FILE_PATH=~/Desktop/license-trial.json
 ./deploy.sh
 ```
 
