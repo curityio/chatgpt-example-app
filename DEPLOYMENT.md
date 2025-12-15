@@ -29,24 +29,6 @@ First, build the project files by running the following command:
 ./build.sh
 ```
 
-## Use MCP Server Configuration
-
-The MCP server uses the following environment variables as configuration settings.\
-You can use all default values to run a working deployment.
-
-- `PORT` - port on which the MCP server is started. If you change this setting, make sure to also change `apigateway/kong.yml` to point to the correct port.
-- `HAAPI_CLIENT_ID` and `HAAPI_CLIENT_PASSWORD` — credentials of the OAuth client that performs the HAAPI flow.
-- `EXTERNAL_BASE_URL` — the external base URL of the MCP server
-- `API_URL` — the base URL of the API. This could be an internal or external URL depending on where you deploy the MCP server. 
-- `AUTHORIZATION_SERVER_BASE_URL` — the base external URL of the authorization server
-- `TOKEN_ENDPOINT` — the authorization server's token endpoint URL. This could be an internal or external URL depending on where you deploy the MCP server.
-- `AUTHORIZATION_ENDPOINT` — the authorization server's authorization endpoint URL. This could be an internal or external URL depending on where you deploy the MCP server.
-- `SCOPE` — the scope that the MCP client will receive in its' access tokens and for which the MCP server will ask when running the HAAPI flow.
-- `REDIRECT_URI` — the redirect URI that the MCP server has registered at the authorization server. This URL is not used to make any redirects, but needs to match the URI registered in the authorization server.
-- `AUTHN_SERVER_BASE_URL` — the base URL for the HAAPI flow. This could be an internal or external URL depending on where you deploy the MCP server.
-- `EXTERNAL_AUTHN_SERVER_BASE_URL` — the external base URL for the HAAPI flow. The external URL is used in DPoP tokens.
-- `ACR` — the authentication method that should be used in the HAAPI flow. See below.
-
 ## Deploy Backend Components
 
 Then, start all the Docker containers by running the following commands.\
@@ -82,10 +64,12 @@ Then, select the MCP server as an application
 
 ![ChatGPT App](images/chatgpt-app.jpg)
 
-## View MCP Requests
+## Use Test Clients
 
-You can also follow the [MCP Inspector README](clients/mcp-inspector/README.md) to test with that tool.\
-Doing so enables you to take a closer look at MCP requests and responses.
+You can also use the following test clients to gain better visibility into MCP requests:
+
+- [TypeScript SDK Example Client](clients/typescript-sdk/run.sh)
+- [MCP Inspector](clients/mcp-inspector/run.sh)
 
 ## Handle Redeployments
 

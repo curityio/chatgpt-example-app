@@ -1,12 +1,8 @@
 # Tasks
 
+- Run this and understand the token logic it uses
+- Do JWT authentication
+- Error handling and logging to refine
 - Fix MCP Inspector and debug with MITM proxy
 - Do a real test with BankID
-
-## MCP Server
-
-- Do JWT authentication
-- Get HAAPI test working - handle developer setup aspect
-- Error handling and logging to refine
-
-## GitHub Summary in Main PR
+- Merge sub-branch and add some notes to the main PR
