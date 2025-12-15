@@ -31,7 +31,7 @@ function result(context) {
   if (context.client.name === 'ChatGPT') {
       // ChatGPT apps seem to not send the resource parameter, or the parameter gets lost somewhere.
       // For now set the audience manually.
-      accessTokenData.aud = ['https://$BASE_IDSVR_DOMAIN/'];
+      accessTokenData.aud = ['$EXTERNAL_BASE_URL/'];
   }
 
 

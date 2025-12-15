@@ -1,7 +1,7 @@
 <config xmlns="http://tail-f.com/ns/config/1.0">
   <environments xmlns="https://curity.se/ns/conf/base">
     <environment>
-      <base-url>https://$BASE_IDSVR_DOMAIN</base-url>
+      <base-url>$EXTERNAL_BASE_URL</base-url>
       <admin-service>
         <http>
           <web-ui>
@@ -87,8 +87,8 @@
                   <id>default-signature-verification-key</id>
                 </key-verification>
                 <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
-                <required-audience>https://$BASE_MCP_DOMAIN/</required-audience>
-                <required-issuer>https://$BASE_IDSVR_DOMAIN/oauth/v2/oauth-anonymous</required-issuer>
+                <required-audience>$EXTERNAL_BASE_URL/</required-audience>
+                <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
                 <required-scopes>portfolio</required-scopes>
               </access-token>
             </authenticator>

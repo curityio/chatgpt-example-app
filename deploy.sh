@@ -3,7 +3,7 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 #
-# First check there is a valid license file for the Curity Identity Server
+# Check prerequisites
 #
 if [ "$LICENSE_FILE_PATH" == '' ]; then
   echo '*** Please provide a LICENSE_FILE_PATH environment variable with the path to a Curity Identity Server license file'
@@ -16,16 +16,13 @@ if [ "$LICENSE_KEY" == '' ]; then
   exit 1
 fi
 
-#
-# The deployment requires ngrok
-#
 if [ -z "$NGROK_TOKEN" ]; then
   echo ">>> NGROK_TOKEN environment variable is not set. Please set it to your ngrok authentication token."
   exit 1
 fi
 
 #
-# Handle exposing the project with ngrok and support an explicit NGROK domain parameter
+# Handle exposing the project with ngrok and support an explicit NGROK_DOMAIN parameter
 #
 NGROK_PID=$(pgrep ngrok)
 if [ -z "$NGROK_PID" ]; then
@@ -40,12 +37,23 @@ if [ -z "$NGROK_PID" ]; then
     sleep 2
   fi
 fi
-NGROK_DOMAIN=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto == "https") | .public_url')
-export BASE_MCP_DOMAIN=$(echo "$NGROK_DOMAIN" | sed 's/^https:\/\///')
-export BASE_IDSVR_DOMAIN=$(echo "$NGROK_DOMAIN" | sed 's/^https:\/\///')
-echo ">>> Use the following MCP Server URL to connect: https://$BASE_MCP_DOMAIN/mcp"
+export EXTERNAL_BASE_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto == "https") | .public_url')
+export EXTERNAL_HOST_NAME=$(echo "$EXTERNAL_BASE_URL" | sed 's/^https:\/\///')
+echo ">>> Use the following MCP Server URL to connect: $EXTERNAL_BASE_URL/mcp"
 
-# Replace values in relevant files
+#
+# Set the MCP server's default internal URL, which can be overridden for development
+#
+if [ "$MCP_SERVER_INTERNAL_URL" == '' ]; then
+  export MCP_SERVER_INTERNAL_URL='http://mcp-server:8081'
+fi
+if [ "$PORTFOLIO_API_INTERNAL_URL" == '' ]; then
+  export PORTFOLIO_API_INTERNAL_URL='http://portfolio-api:8080'
+fi
+
+#
+# Since ngrok URLs are not predictable we must perform URL replacements
+#
 envsubst < ./apigateway/kong-template.yml > ./apigateway/kong.yml
 envsubst < ./idsvr/curity-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-config.xml
 envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-template.js > ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js

@@ -20,7 +20,7 @@ function result(context) {
         attributes.refresh_token_ttl = 3600; // 1 hour
 
         // Add a custom property that specifies the audiences of this DCR client
-        attributes.audiences = ["https://$BASE_IDSVR_DOMAIN/"];
+        attributes.audiences = ["$EXTERNAL_BASE_URL/"];
     }
   }
 

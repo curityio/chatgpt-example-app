@@ -29,8 +29,8 @@ services:
       PORT: '8081'
       HAAPI_CLIENT_ID: 'mcp-server-haapi'
       HAAPI_CLIENT_PASSWORD: 'Password1'
-      EXTERNAL_BASE_URL: 'https://${BASE_MCP_DOMAIN}'
-      AUTHORIZATION_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
+      EXTERNAL_BASE_URL: '${EXTERNAL_BASE_URL}'
+      AUTHORIZATION_SERVER_BASE_URL: '${EXTERNAL_BASE_URL}'
       API_URL: 'http://portfolio-api:8080/api/portfolio'
       TOKEN_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-token'
       AUTHORIZATION_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-authorize'
@@ -38,7 +38,7 @@ services:
       SCOPE: 'transactions'
       REDIRECT_URI: 'haapi:callback'
       AUTHN_SERVER_BASE_URL: 'http://idsvr:8443'
-      EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
+      EXTERNAL_AUTHN_SERVER_BASE_URL: '${EXTERNAL_BASE_URL}'
       ACR: 'urn:se:curity:authentication:access-token:access-token'
 
       # See mcp-server/src/session-manager.ts createSession() for explanation
@@ -50,13 +50,13 @@ services:
   portfolio-api:
     image: portfolio-api:1.0
     hostname: portfolio-api
-#    environment:
-#      PORT: '8080'
-#      JWKS_URI: 'http://idsvr:8443/oauth/v2/oauth-anonymous/jwks'
-#      REQUIRED_JWT_ALGORITHM: 'PS256'
-#      REQUIRED_JWT_ISSUER: 'https://NGROK_BASE_URL/oauth/v2/oauth-anonymous'
-#      REQUIRED_JWT_AUDIENCE: 'https://api.demo.example'
-#      REQUIRED_SCOPE: 'stocks/read'
+    #environment:
+    #  PORT: '8080'
+    #  JWKS_URI: 'http://idsvr:8443/oauth/v2/oauth-anonymous/jwks'
+    #  REQUIRED_JWT_ALGORITHM: 'PS256'
+    #  REQUIRED_JWT_ISSUER: 'https://NGROK_BASE_URL/oauth/v2/oauth-anonymous'
+    #  REQUIRED_JWT_AUDIENCE: 'https://api.demo.example'
+    #  REQUIRED_SCOPE: 'stocks/read'
 
   #
   # The Curity Identity Server implements security standards and issues access tokens to MCP clients used by AI agents

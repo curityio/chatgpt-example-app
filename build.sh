@@ -24,7 +24,6 @@ if [ $? -ne 0 ]; then
   echo ">>> Problem building the API Docker image"
   exit 1
 fi
-
 cd ..
 
 #
@@ -68,7 +67,7 @@ fi
 cd ..
 
 #
-# Build the access token authenticator plugin
+# Build the Access Token Authenticator plugin
 #
 cd idsvr
 echo '>>> Downloading the access token authenticator plugin'
@@ -88,7 +87,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Copy the relevant jars into a directory for an easier mount
 mkdir target/plugin
 cp target/*.jar target/plugin
 cd ../../..
