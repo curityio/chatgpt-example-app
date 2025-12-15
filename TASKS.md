@@ -1,19 +1,12 @@
 # Tasks
 
-## Minor
-
-- Fix MCP Inspector
-- HAAPI license file check
+- Fix MCP Inspector and debug with MITM proxy
+- Do a real test with BankID
 
 ## MCP Server
 
-- Tidy up environment variables
-- HAAPI utils internal v external URLs?
-- Get HAAPI test working
-- Error handling and logging to review
-
-## Reduce Curity Identity Server Configuration 
-
-- Remove password and email authenticators
+- Do JWT authentication
+- Get HAAPI test working - handle developer setup aspect
+- Error handling and logging to refine
 
 ## GitHub Summary in Main PR

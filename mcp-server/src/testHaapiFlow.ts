@@ -17,7 +17,12 @@
 import {createAuthenticatedHaapiClient, runBankIDAuthenticationFlow} from './security/authz.js';
 import {authenticateWithBankID} from './security/bankid.js';
 
-const initialAccessToken = '';
+// Create the HAAPI client
 const client = await createAuthenticatedHaapiClient();
+
+// Get an initial access token for testing and run the HAAPI flow entry point
+const initialAccessToken = '';
 const bankIDView = await runBankIDAuthenticationFlow(initialAccessToken, client);
+
+// Complete the authentication
 await authenticateWithBankID(client, '');

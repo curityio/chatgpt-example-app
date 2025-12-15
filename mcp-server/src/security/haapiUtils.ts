@@ -65,14 +65,9 @@ export async function haapiResponseView<View extends HaapiView>(
 export function ensureAbsoluteUrl(url: string): string {
 
     if (url.startsWith('http')) {
-        // Make sure to always use an internal URL for making requests
-        if (configuration.authnServerBaseUrl !== configuration.externalAuthnServerBaseUrl) {
-            return url.replace(configuration.externalAuthnServerBaseUrl, configuration.authnServerBaseUrl);
-        }
-
         return url;
     }
 
-    // turn the URL into an absolute one if it's relative
-    return new URL(url, configuration.authnServerBaseUrl).toString();
+    // Turn the URL into an absolute one if it's relative
+    return new URL(url, configuration.authorizationServerBaseUrl).toString();
 }

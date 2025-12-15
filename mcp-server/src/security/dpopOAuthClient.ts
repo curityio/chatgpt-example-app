@@ -50,8 +50,10 @@ export class DPoPOAuthClient {
         this.clientId = config.haapiClientId;
         this.clientPassword = config.haapiClientSecret;
         this.keyPair = this.generateKeyPair();
-        this.authnBaseUrl = config.authnServerBaseUrl;
-        this.externalAuthnBaseUrl = config.externalAuthnServerBaseUrl;
+        
+        // The `htu` claim in DPoP must always be created using the authorization server's external URL
+        this.authnBaseUrl = config.authorizationServerBaseUrl;
+        this.externalAuthnBaseUrl = config.authorizationServerBaseUrl;
         this.tokenEndpoint = config.tokenEndpoint;
 
         // In some developer setups it is useful to create an HTTPS agent that ignores self-signed certificates

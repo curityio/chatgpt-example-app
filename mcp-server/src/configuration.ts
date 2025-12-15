@@ -15,56 +15,39 @@
  */
 
 /*
- * Configuration settings for the OAuth-secured MCP server that acts as an API gateway
+ * Configuration settings for the OAuth-secured MCP server that runs in front of the Portfolio API
  */
 export default class Configuration {
     public port: string;
+    public haapiClientId: string;
+    public haapiClientSecret: string;
     public externalBaseUrl: string;
     public apiUrl: string;
     public authorizationServerBaseUrl: string;
     public tokenEndpoint: string;
     public authorizationEndpoint: string;
-
-    /**
-     * This parameter is used in the example to request high-privilege scope during HAAPI flow. In a real-life scenario this could be dictated by 403 responses from API.
-     */
-    public scope: string;
-
-    /**
-     * scopeSupported are the scopes that the MCP client should request when getting initial access token to connect to the server.
-     * These are the scopes that will enable the client ot list tools and perform low-privilege actions.
-      */
-
-    public scopeSupported: string;
+    public lowPrivilegeScope: string;
+    public highPrivilegeScope: string;
     public redirectUri: string;
-    public authnServerBaseUrl: string;
-    // The MCP server can connect to the authorization server using internal network (e.g. through http://idsvr:8443 when running on Docker), but `htu` claim in DPoP needs to be created using the authorization server's public address.
-    public externalAuthnServerBaseUrl: string;
     public acr: string;
-    public backendAccessToken: string;
-    public username: string;
-    public password: string;
-    public haapiClientId: string;
-    public haapiClientSecret: string;
-
+    public developerMode: boolean;
+    public haapiTestAccessToken: string;
+    
     public constructor() {
         this.port = this.getValue('PORT');
+        this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
+        this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
         this.externalBaseUrl = this.getValue('EXTERNAL_BASE_URL');
         this.apiUrl = this.getValue('API_URL');
         this.authorizationServerBaseUrl = this.getValue('AUTHORIZATION_SERVER_BASE_URL');
         this.tokenEndpoint = this.getValue('TOKEN_ENDPOINT');
         this.authorizationEndpoint = this.getValue('AUTHORIZATION_ENDPOINT');
-        this.scope = this.getValue('SCOPE');
-        this.scopeSupported = this.getValue('SCOPE_SUPPORTED');
+        this.lowPrivilegeScope = this.getValue('LOW_PRIVILEGE_SCOPE');
+        this.highPrivilegeScope = this.getValue('HIGH_PRIVILEGE_SCOPE');
         this.redirectUri = this.getValue('REDIRECT_URI');
-        this.authnServerBaseUrl = this.getValue('AUTHN_SERVER_BASE_URL');
-        this.externalAuthnServerBaseUrl = this.getValue('EXTERNAL_AUTHN_SERVER_BASE_URL');
         this.acr = this.getValue('ACR');
-        this.backendAccessToken = this.getValue('BACKEND_ACCESS_TOKEN', '');
-        this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
-        this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
-        this.username = this.getValue('USERNAME', 'testuser');
-        this.password = this.getValue('PASSWORD', 'password');
+        this.developerMode = this.getValue('DEVELOPER_MODE') === '1';
+        this.haapiTestAccessToken = this.getValue('HAAPI_TEST_ACCESS_TOKEN', '');
     }
 
     private getValue(name: string, defaultValue?: string): string {

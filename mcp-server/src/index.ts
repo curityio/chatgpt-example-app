@@ -241,7 +241,7 @@ server.registerTool(
 );
 
 /*
- * Basic Express server routes
+ * Create the Express application
  */
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -260,7 +260,7 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
         resource: `${configuration.externalBaseUrl}/`,
         resource_name: 'MCP Server',
         authorization_servers: [config.authorizationServerBaseUrl],
-        scopes_supported: [config.scopeSupported],
+        scopes_supported: [config.lowPrivilegeScope],
     };
 
     response.setHeader('content-type', 'application/json');
@@ -287,9 +287,8 @@ const setAuthInfo = (request: Request) => {
     (request as any).auth = authInfo;
 }
 
-
 /*
- * MCP boiler plate setup
+ * Do the MCP boiler plate setup
  */
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 app.post('/', async (req, res) => {

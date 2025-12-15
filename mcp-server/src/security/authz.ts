@@ -27,7 +27,7 @@ const config = new Configuration();
 const qrCodeMessage = 'Please confirm the action by scanning the QR code with your BankID app.';
 
 /*
- * Creates a HAAPI client
+ * Create a HAAPI client
  */
 export async function createAuthenticatedHaapiClient(): Promise<DPoPOAuthClient> {
     const client = new DPoPOAuthClient();
@@ -36,17 +36,19 @@ export async function createAuthenticatedHaapiClient(): Promise<DPoPOAuthClient>
 }
 
 /*
- * Starts OAuth authorization for the end user via HAAPI
+ * Start HAAPI OAuth authorization with a high privilege scope
+ * Use prompt=login so that every step-up prompts the user
  */
 async function sendAuthorizationRequest(client: DPoPOAuthClient): Promise<Response> {
-    // 
+    
     const url = new URL(ensureAbsoluteUrl(config.authorizationEndpoint));
     url.searchParams.append('response_type', 'code');
     url.searchParams.append('client_id', config.haapiClientId);
     url.searchParams.append('redirect_uri', config.redirectUri);
-    url.searchParams.append('scope', config.scope);
+    url.searchParams.append('scope', config.highPrivilegeScope);
     url.searchParams.append('state', 'random-state-value');
     url.searchParams.append('acr', config.acr);
+    url.searchParams.append('prompt', 'login');
     return client.get(url.toString(), haapiHeaders)
 }
 
@@ -102,7 +104,7 @@ export async function authorizeWithBankID(receivedAccessToken: string, session: 
 }
 
 /**
- * Run the HAAPI authentication flow up to the BankID authenticator.
+ * Start the HAAPI authentication flow and run the BankID authenticator
  *
  * The Curity Server must be configured such that the BankID authenticator
  * has a pre-requisite authenticator of type "access_token" for this to work.
@@ -134,7 +136,7 @@ export async function runBankIDAuthenticationFlow(receivedAccessToken: string, o
 }
 
 /*
- *
+ * Called when ChatGPT app sends a polling notification
  */
 export async function continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
     try {
@@ -167,7 +169,7 @@ export async function continueAuthorizeWithBankID(onToken: (token: string) => vo
             };
         }
 
-        // Authentication done, we have token.
+        // Authentication done, we have the high privilege access token
         onToken(authenticationResponse.accessToken!);
 
         return {
