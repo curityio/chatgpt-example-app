@@ -9,5 +9,5 @@ COPY --chown=10001:10000 dist           /usr/api/dist
 RUN npm install --omit=dev
 
 USER 10001
-  
+
 CMD ["node", "dist/index.js"]

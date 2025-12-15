@@ -1,7 +1,29 @@
-import express from 'express';
-import morgan from 'morgan';
-import jwt from 'jsonwebtoken';
+/*
+ *  Copyright 2025 Curity AB
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
+import express, { Request, Response } from 'express';
+import morgan from 'morgan';
+import { OAuthFilter } from './security/oauthFilter.js';
+import { Configuration } from './configuration.js';
+import { ErrorHandler } from './errors/errorHandler.js';
+import { ApiError } from './errors/apiError.js';
+
+/*
+ * This API uses hard coded initial stocks for any test user
+ */
 const portfolio = [
     {
         "id": "MSFT",
@@ -23,67 +45,56 @@ const portfolio = [
     },
 ];
 
+/*
+ * Load configuration and create helper objects
+ */
+const configuration = new Configuration();
+const oauthFilter = new OAuthFilter(configuration);
+const errorHander = new ErrorHandler();
+
+/*
+ * Configure middleware
+ */
 const app = express();
 app.use(morgan('combined'));
 app.use(express.json());
+app.use(oauthFilter.validateAccessToken);
 
-// JWT middleware for authorization, should actually validate the JWT.
-// Here we just decode it and check for a specific user for demonstration purposes.
-const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+/*
+ * Only a low privilege scope is required to view the portfolio balances
+ */
+app.get('/api/portfolio', (request: Request, response: Response) => {
+    
+    (response.locals as any).claimsPrincipal.enforceScope(configuration.lowPrivilegeScope);
+    response.json(portfolio);
+});
 
-  if (!token) {
-    return res.status(401).json({ error: 'You must obtain authorization.' });
-  }
+/*
+ * A high privilege scope is required to execute transactions
+ */
+app.put('/api/portfolio/:id', (request: Request, response: Response) => {
 
-  try {
-    const decoded = jwt.decode(token) as any;
+    (response.locals as any).claimsPrincipal.enforceScope(configuration.highPrivilegeScope);
 
-    console.log(`Received ${req.method} request to ${req.path} with token ${token}. Decoded token: `, decoded);
-
-    if (!decoded || decoded.sub !== 'john.doe@demo.example') {
-        console.log('Invalid subject in token: ' + decoded.sub);
-      return res.status(403).json({ error: 'Invalid token or unauthorized user' });
+    const stockIndex = portfolio.findIndex(t => t.id === request.params.id);
+    if (!stockIndex) {
+        throw new ApiError(404, 'stock_not_found', 'Unable to update data for the requested stock');
     }
 
-    // Apply authorization logic. Here we simply require concrete scopes for HTTP method. In a real scenario this could delegate authorization to a policy engine
-
-      if (req.method === 'GET') {
-            if (!decoded.scope || !decoded.scope.includes('portfolio')) {
-                console.log('Token missing scope `portfolio`: ', decoded.scope);
-                return res.status(403).json({ error: 'Insufficient scope. The token needs scope `portfolio`.'})
-            }
-      } else if (req.method === 'PUT') {
-          if (!decoded.scope || !decoded.scope.includes('transactions')) {
-              console.log('Token missing scope `transactions`: ', decoded.scope);
-              return res.status(403).json({ error: 'Insufficient scope. The token needs scope `transactions`.'})
-          }
-      }
-
-    next();
-  } catch (error) {
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-};
-
-app.get('/api/portfolio', (req, res) => {
-  res.json(portfolio);
-});
-
-app.put('/api/portfolio/:id', authenticateToken, (req, res) => {
-  const stockIndex = portfolio.findIndex(t => t.id === req.params.id);
-  if (stockIndex !== -1) {
-    const delta = req.body.delta;
+    const delta = request.body.delta;
     const newQuantity = portfolio[stockIndex].quantity + delta;
     portfolio[stockIndex].quantity = newQuantity;
-    res.json(portfolio[stockIndex]);
-  } else {
-    res.status(404).json({ error: 'Stock not found' });
-  }
+    response.json(portfolio[stockIndex]);
 });
 
-const port = 8080;
-app.listen(port, () => {
-  console.log(`🚀 API Server listening on http://localhost:${port} with hot reloading!`);
+/*
+ * Process unhandled exceptions
+ */
+app.use(errorHander.onUnhandledException)
+
+/*
+ * Start the API
+ */
+app.listen(configuration.port, () => {
+    console.log(`🚀 API Server listening on http://localhost:${configuration.port} ...`);
 });

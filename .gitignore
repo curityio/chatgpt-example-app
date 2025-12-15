@@ -1,3 +1,4 @@
+license.json
 node_modules/
 dist/
 .env
@@ -11,4 +12,3 @@ typescript-sdk
 /idsvr/pre-processing-procedures/mcp-client-registration-policy.js
 /idsvr/token-procedures/set-access-token-audience.js
 /idsvr/token-procedures/set-audience-during-refresh.js
-/mcp-server/.env

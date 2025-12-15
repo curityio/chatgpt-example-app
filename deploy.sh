@@ -60,6 +60,7 @@ envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-temp
 envsubst < ./idsvr/token-procedures/set-access-token-audience-template.js > ./idsvr/token-procedures/set-access-token-audience.js
 envsubst < ./idsvr/token-procedures/set-audience-during-refresh-template.js > ./idsvr/token-procedures/set-audience-during-refresh.js
 envsubst < ./mcp-server/.env-template > ./mcp-server/.env
+envsubst < ./portfolio-api/.env-template > ./portfolio-api/.env
 
 #
 # Deploy all components
