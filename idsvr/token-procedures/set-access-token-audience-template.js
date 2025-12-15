@@ -28,10 +28,26 @@ function result(context) {
     }
   }
 
-  var issuedAccessToken = context.accessTokenIssuer.issue(
-    accessTokenData,
-    issuedDelegation
-  );
+  if (context.client.name === 'ChatGPT') {
+      // ChatGPT apps seem to not send the resource parameter, or the parameter gets lost somewhere.
+      // For now set the audience manually.
+      accessTokenData.aud = ['https://$BASE_IDSVR_DOMAIN/'];
+  }
+
+
+    var issuedAccessToken = null;
+
+    if (context.client.id === 'mcp-server-haapi') { // Issue JWTs in the HAAPI flow
+        issuedAccessToken = context.getDefaultAccessTokenJwtIssuer().issue(
+            accessTokenData,
+            issuedDelegation
+        );
+    } else {
+        issuedAccessToken = context.accessTokenIssuer.issue(
+            accessTokenData,
+            issuedDelegation
+        );
+    }
 
   var refreshTokenData = context.getDefaultRefreshTokenData();
   var issuedRefreshToken = context.refreshTokenIssuer.issue(

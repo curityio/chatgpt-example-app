@@ -15,14 +15,15 @@ services:
   routes:
   - name: mcp-server-route
     hosts:
-    - mcp.demo.example
+    - $BASE_MCP_DOMAIN
     paths:
-    - /
+    - /mcp
   plugins:
   - name: cors # This is required for the MCP inspector to work properly
     config:
       origins:
         - 'http://localhost:6274'
+        - 'https://chatgpt.com'
       exposed_headers:
         - 'content-type'
         - 'authorization'
@@ -34,8 +35,8 @@ services:
       client_id: api-gateway-client
       client_secret: Password1
       token_cache_seconds: 900
-      resource_metadata_url: https://mcp.demo.example/.well-known/oauth-protected-resource
-      scope: read
+      resource_metadata_url: https://$BASE_MCP_DOMAIN/.well-known/oauth-protected-resource
+      scope: portfolio
 
 #
 # The MCP server exposes OAuth protected resource metadata that points MCP clients to the authorization server
@@ -48,7 +49,7 @@ services:
   routes:
   - name: mcp-server-resource-metadata-route
     hosts:
-    - mcp.demo.example
+    - $BASE_MCP_DOMAIN
     paths:
     - /.well-known/oauth-protected-resource
   plugins:
@@ -56,14 +57,15 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
+      - 'https://chatgpt.com'
 
 #
-# The main Todo API route serves other types of API clients
+# The main Portfolio API route serves other types of API clients
 #
-- name: todo-api
-  url: http://todo-api:8080/
+- name: portfolio-api
+  url: http://portfolio-api:8080/
   routes:
-  - name: todo-api-route
+  - name: portfolio-api-route
     hosts:
     - api.demo.example
     paths:
@@ -85,7 +87,7 @@ services:
   routes:
   - name: authorization-server-metadata-reroute
     hosts:
-    - login.demo.example
+    - $BASE_IDSVR_DOMAIN
     paths:
     - /.well-known/oauth-authorization-server
   plugins:
@@ -103,7 +105,7 @@ services:
   routes:
   - name: authorization-server-registration
     hosts:
-    - login.demo.example
+    - $BASE_IDSVR_DOMAIN
     paths:
     - /oauth/v2/oauth-registration
   plugins:
@@ -130,7 +132,7 @@ services:
   routes:
   - name: oauth-route
     hosts:
-    - login.demo.example
+    - $BASE_IDSVR_DOMAIN
     paths:
     - /
   plugins:
@@ -138,27 +140,3 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
-
-#
-# The admin UI for the Curity Identity Server
-#
-- name: admin-ui
-  url: http://idsvr:6749
-  routes:
-  - name: admin-ui-route
-    hosts:
-    - admin.demo.example
-    paths:
-    - /
-
-#
-# The email inbox for testing
-#
-- name: email-inbox
-  url: http://smtpserver:1080
-  routes:
-  - name: email-inbox-route
-    hosts:
-    - mail.demo.example
-    paths:
-    - /

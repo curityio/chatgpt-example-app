@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import {DPoPOAuthClient} from "./oauth_client";
 
 /**
  * Represents session-specific state and data
@@ -9,6 +10,9 @@ export interface Session {
     lastAccessedAt: Date;
     token: string | undefined;
     authorizationExpiry?: Date;
+    pollingUrl: string;
+    pollingCount: number;
+    client: DPoPOAuthClient | null;
 }
 
 /**
@@ -50,11 +54,25 @@ export class SessionManager {
      * Creates a new session
      */
     createSession(): Session {
-        const id = this.generateSessionId();
-
         // Clean up old sessions if we're at the limit
         if (this.sessions.size >= this.config.maxSessions) {
             this.cleanupExpiredSessions();
+        }
+
+        let id = this.generateSessionId();
+
+        if (process.env.DEVELOPER_MODE) {
+            // ChatGPT seems to have some issue with keeping the MCP session.
+            // This causes the frontend to initiate a new MCP session on every tool call.
+            // Which, obviously, means that we're losing the session data between tool calls...
+            // As a temporary fix, we're using just one session for the demo purposes.
+            id = 'static_development_session';
+
+            const existingSession = this.sessions.get(id);
+
+            if (existingSession) {
+                return existingSession;
+            }
         }
 
         const session: Session = {
@@ -62,6 +80,9 @@ export class SessionManager {
             createdAt: new Date(),
             lastAccessedAt: new Date(),
             token: undefined,
+            pollingUrl: '',
+            pollingCount: 0,
+            client: null
         };
 
         this.sessions.set(id, session);
@@ -74,7 +95,7 @@ export class SessionManager {
         if (session) {
           return session;
         }
-      } 
+      }
       const session = this.createSession();
       return session;
     }

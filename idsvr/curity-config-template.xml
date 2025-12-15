@@ -1,10 +1,9 @@
 <config xmlns="http://tail-f.com/ns/config/1.0">
   <environments xmlns="https://curity.se/ns/conf/base">
     <environment>
-      <base-url>https://login.demo.example</base-url>
+      <base-url>https://$BASE_IDSVR_DOMAIN</base-url>
       <admin-service>
         <http>
-          <base-url>https://admin.demo.example</base-url>
           <web-ui>
           </web-ui>
           <restconf>
@@ -15,7 +14,7 @@
         <zones>
           <default-zone>
             <email-provider>smtp</email-provider>
-            <symmetric-key>data:text/plain;aes,v:S.UzR3dUVEeVZsMnZuY3lVWQ==.ZnnvdlY_x0oUMlrGcK1n3g==.oaYwN2YxVIoGrVtkVGM5d8u6k-3yUOnl1nZeCumtdPUaefjhbMfj3MW3NWeutB6iww6-5h_7Oq7d-tPeFopA8NOnFBJnHSnkKbNrkX2p7Wg=.rDgMZ-_qXxUlon7m6kP3qDPQeGvnhnOUQCxQEU7qflE=</symmetric-key>
+            <symmetric-key>data:text/plain;aes,v:S.NjE1SnhQMFlJalM2NHpPcQ==.AOBFzPDQM_cr6xCZHan4Nw==.bJFaUEAIZJx86WWRjOhV9kx2MjQl3DYxZctfqZvm37YWwvu1UdAdqRjJElB0DYZY255wse8_JKxLcBBJX45SrUUjvoPNpDYNfkOO66uSHas=.nEmv1hje5PcdtPlp31z6Y9zs_mA0zuB6nwH8rtPV2Wk=</symmetric-key>
           </default-zone>
         </zones>
         <service-role>
@@ -62,22 +61,39 @@
       <settings>
         <authentication-service xmlns="https://curity.se/ns/conf/profile/authentication">
           <persisted-sso-session>true</persisted-sso-session>
+          <authentication-actions>
+            <authentication-action>
+              <id>second-factor-authentication</id>
+              <multi-factor-condition xmlns="https://curity.se/ns/ext-conf/multi-factor-condition">
+                <disable-second-factor-subject-check>true</disable-second-factor-subject-check>
+                <always>
+                  <second-factor>
+                    <id>bank-id</id>
+                  </second-factor>
+                  <allow-authentication-with-sso-for-second-factor>false</allow-authentication-with-sso-for-second-factor>
+                </always>
+              </multi-factor-condition>
+            </authentication-action>
+          </authentication-actions>
           <authenticators>
-              <authenticator>
-                  <id>access-token</id>
-                  <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
-                      <key-verification>
-                          <id>default-signature-verification-key</id>
-                      </key-verification>
-                      <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
-                      <required-audience>https://mcp.demo.example/</required-audience>
-                      <required-issuer>https://login.demo.example/oauth/v2/oauth-anonymous</required-issuer>
-                      <required-scopes>read</required-scopes>
-                  </access-token>
-              </authenticator>
+            <authenticator>
+              <id>access-token</id>
+              <authentication-actions>
+                <login>second-factor-authentication</login>
+                <sso>second-factor-authentication</sso>
+              </authentication-actions>
+              <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
+                <key-verification>
+                  <id>default-signature-verification-key</id>
+                </key-verification>
+                <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
+                <required-audience>https://$BASE_MCP_DOMAIN/</required-audience>
+                <required-issuer>https://$BASE_IDSVR_DOMAIN/oauth/v2/oauth-anonymous</required-issuer>
+                <required-scopes>portfolio</required-scopes>
+              </access-token>
+            </authenticator>
             <authenticator>
               <id>bank-id</id>
-              <previous-authenticator>access-token</previous-authenticator>
               <bankid xmlns="https://curity.se/ns/conf/authenticators/bankid">
                 <http-client>bankid-client</http-client>
                 <mode>test</mode>
@@ -104,6 +120,15 @@
                   <id>smtp</id>
                 </email-provider>
               </email>
+            </authenticator>
+            <authenticator>
+              <id>htmlForm</id>
+              <previous-authenticator>access-token</previous-authenticator>
+              <html-form xmlns="https://curity.se/ns/conf/authenticators/html-form">
+                <account-manager>default-account-manager</account-manager>
+                <credential-manager>default-credential-manager</credential-manager>
+                <email-provider>smtp</email-provider>
+              </html-form>
             </authenticator>
           </authenticators>
           <protocols>
@@ -196,11 +221,12 @@
               <claims>zoneinfo</claims>
             </scope>
             <scope>
-              <id>read</id>
+              <id>portfolio</id>
+              <description>Read information from the user's portfolio</description>
             </scope>
             <scope>
-              <id>stocks/read</id>
-              <description>Read only information about financial stocks and their current prices</description>
+              <id>transactions</id>
+              <description>Buy and sell stocks from the user's portfolio</description>
             </scope>
           </scopes>
           <claims>
@@ -366,27 +392,28 @@
             <config-backed>
               <client>
                 <id>api-gateway-client</id>
-                <secret>$5$7zfl3Bsen5f/vJsr$fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
+                <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
                 <capabilities>
                   <introspection/>
                 </capabilities>
               </client>
               <client>
                 <id>mcp-server</id>
-                <secret>$5$4VcWtNqulwJgD7Zw$419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
-                <scope>stocks/read</scope>
+                <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
+                <scope>portfolio</scope>
+                <scope>transactions</scope>
                 <capabilities>
                   <oauth-token-exchange/>
                 </capabilities>
               </client>
               <client>
                 <id>mcp-server-haapi</id>
-                <secret>$5$8LfFRmKklSw/pcbm$RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
-                <redirect-uris>https://mcp.demo.example</redirect-uris>
-                <scope>read</scope>
+                <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
+                <redirect-uris>haapi:callback</redirect-uris>
+                <scope>portfolio</scope>
+                <scope>transactions</scope>
                 <user-authentication>
-                  <allowed-authenticators>email-for-mcp</allowed-authenticators>
-                  <allowed-authenticators>bank-id</allowed-authenticators>
+                  <allowed-authenticators>access-token</allowed-authenticators>
                 </user-authentication>
                 <capabilities>
                   <code>
@@ -395,6 +422,26 @@
                     <allow-without-attestation>true</allow-without-attestation>
                     <use-legacy-dpop>true</use-legacy-dpop>
                   </haapi>
+                </capabilities>
+                <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
+              </client>
+              <client>
+                <id>oauth-tools</id>
+                <secret>§5§fEqIcKSpTyvVR1/c§8J/wA./UwSAidFH0IwW.HEpt1xk8UX94cLxJpKHExd9</secret>
+                <redirect-uris>oauth.tools://app/callback/code</redirect-uris>
+                <proof-key>
+                  <require-proof-key>true</require-proof-key>
+                </proof-key>
+                <refresh-token-ttl>disabled</refresh-token-ttl>
+                <scope>portfolio</scope>
+                <user-authentication>
+                  <allowed-authenticators>email</allowed-authenticators>
+                </user-authentication>
+                <allowed-origins>https://oauth.tools</allowed-origins>
+                <capabilities>
+                  <code>
+                  </code>
+                  <introspection/>
                 </capabilities>
                 <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
               </client>
@@ -408,7 +455,7 @@
               </capabilities>
               <default-refresh-token-ttl>3600</default-refresh-token-ttl>
               <scopes>
-                <scope>read</scope>
+                <scope>portfolio</scope>
               </scopes>
               <authenticators>
                 <authenticator>email</authenticator>
@@ -467,8 +514,16 @@
           <uri>/oauth/v2/oauth-token</uri>
           <endpoint-kind>oauth-token</endpoint-kind>
           <token-endpoint-procedures>
+              <flow>oauth-token-refresh</flow>
+              <procedure>set-audience-during-refresh</procedure>
+          </token-endpoint-procedures>
+          <token-endpoint-procedures>
             <flow>oauth-token-authorization-code</flow>
             <procedure>set-access-token-audience</procedure>
+          </token-endpoint-procedures>
+          <token-endpoint-procedures>
+            <flow>oauth-token-oauth-token-exchange</flow>
+            <procedure>mcp-token-exchange</procedure>
           </token-endpoint-procedures>
         </endpoint>
         <endpoint>
@@ -504,11 +559,11 @@
       <data-source>
         <id>default-datasource</id>
         <jdbc xmlns="https://curity.se/ns/ext-conf/jdbc">
-          <connection-string>data:text/plain;aes,v:S.bDladEVDU3NxS1E5QlB3Ng==.l69a0vg2d8IlSmx8qhtSlg==.knoMt5ELkgZ4p8JZlfC3PY0abmvuOaX5qsd53XwJ9QeXkJvKMYHX4rE3zBbiUooL.RPP3FtJCdsfzL18K3NbY1a10NqbpYtwWsNrx6zjljsQ=</connection-string>
+          <connection-string>data:text/plain;aes,v:S.OW5zYTd4MHUxZjFVUms4WQ==.Yw6iTRyVg_tRDsUOuZdUXA==.kqF0iNeTXu-GwYwBK2s-Mw269YXdqaaSJO-VSHL7pMnYriLamZVWhUpgrKkvEBF7.eySMGWTpV68eALrk5BlMEkmixyNrmpK8R8OlNOhCiJw=</connection-string>
           <standard-credentials-mode>
           </standard-credentials-mode>
           <driver>org.postgresql.Driver</driver>
-          <password>data:text/plain;aes,v:S.OUVVUnZSYTBpdDJsWGpwRw==.knRZD8bQ0ETds0U0QjxEjQ==.GBljFGtL26pnxSim4TZImw==.BV6TJ7KWQdFiK4JlZ2IVrSUiKylB_LHpskWluDjXsAk=</password>
+          <password>data:text/plain;aes,v:S.SW5oSDVCQzNvZGFjdzl4Vw==.F0KbZLlWC4ozsfLMTK6cUg==.anxcBW5GwWTM3vUpLzBgrg==.kKkwukVk3oKnx9rqEsNvyVpdsVufnLsKq4eMOB-QF24=</password>
           <username>postgres</username>
         </jdbc>
       </data-source>
@@ -612,21 +667,21 @@
       <rule>
         <name>tailf-aaa-authentication</name>
         <module-name>tailf-aaa</module-name>
-        <path>/aaa/authentication/users/user[name='$USER']</path>
+        <path>/aaa/authentication/users/user[name='§USER']</path>
         <access-operations>read update</access-operations>
         <action>permit</action>
       </rule>
       <rule>
         <name>tailf-aaa-user</name>
         <module-name>tailf-aaa</module-name>
-        <path>/user[name='$USER']</path>
+        <path>/user[name='§USER']</path>
         <access-operations>create read update delete</access-operations>
         <action>permit</action>
       </rule>
       <rule>
         <name>tailf-webui-user</name>
         <module-name>tailf-webui</module-name>
-        <path>/webui/data-stores/user-profile[username='$USER']</path>
+        <path>/webui/data-stores/user-profile[username='§USER']</path>
         <access-operations>create read update delete</access-operations>
         <action>permit</action>
       </rule>
@@ -639,7 +694,7 @@
           <name>admin</name>
           <uid>0</uid>
           <gid>0</gid>
-          <password>$5$Djn72OHc$MllFUdOOgL5SxT3oilSWskJvfJF8KIcAgIaoz4qRm28</password>
+          <password>§5§Djn72OHc§MllFUdOOgL5SxT3oilSWskJvfJF8KIcAgIaoz4qRm28</password>
           <ssh_keydir>/opt/idsvr/home/admin/.ssh</ssh_keydir>
           <homedir>/opt/idsvr/home/admin</homedir>
         </user>

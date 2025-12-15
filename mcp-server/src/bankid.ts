@@ -3,35 +3,40 @@ import {BankdIDAuthenticatorView, type OAuthAuthorizationResponseView, type Poll
 import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapi_utils';
 import Configuration from "./configuration";
 
+export type AuthenticateWithBankIDResult = {
+    status: 'continue' | 'done' | 'failed',
+    currentQRCode: string | undefined,
+    pollingUrl: string | undefined,
+    accessToken: string | undefined
+}
+
 export async function authenticateWithBankID(
     client: DPoPOAuthClient,
-    bankIDView: BankdIDAuthenticatorView,
-    onToken: (token: string) => void
-) {
-    const qrCode = findQrCode(bankIDView);
-    console.log('BankID QR Code (base64):', qrCode);
+    pollingUrl: string
+): Promise<AuthenticateWithBankIDResult> {
 
-    let bankIDViewCurrent = bankIDView;
+    // Check status of authorization
+    const bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
+        await client.get(ensureAbsoluteUrl(pollingUrl), haapiHeaders),
+        client
+    );
+    console.log('>>> BankID poll response status:', bankIDViewCurrent);
 
-    let timeoutCounter = 0;
-    let status = bankIDViewCurrent.properties.status
+    const status = bankIDViewCurrent.properties.status;
 
-    // keep polling once every 2 seconds, until authentication is complete, but only for half a minute (12 times)
-    while (status !== 'done' && timeoutCounter < 12) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const pollAction = findPollAction(bankIDViewCurrent);
-        bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
-            await client.get(ensureAbsoluteUrl(pollAction.model.href), haapiHeaders),
-            client
-        );
-        console.log('>>> BankID poll response status:', bankIDViewCurrent);
-
-        status = bankIDViewCurrent.properties.status;
-        timeoutCounter++;
+    if (status == 'failed') {
+        return {
+            status: 'failed'
+        } as AuthenticateWithBankIDResult;
     }
 
-    if (status !== 'done') {
-        throw new Error('Authentication did not finish. Current status: ' + status);
+    if (status == 'pending') {
+        const pollAction = findPollAction(bankIDViewCurrent);
+        return {
+            status: 'continue',
+            pollingUrl: pollAction.model.href,
+            currentQRCode: findQrCode(bankIDViewCurrent)
+        } as AuthenticateWithBankIDResult;
     }
 
     // Finish authentication and eventually set token in the session
@@ -77,8 +82,10 @@ export async function authenticateWithBankID(
 
     console.log('OAuth token response:', tokenResponse);
 
-    onToken(tokenResponse.access_token);
-
+    return {
+        status: 'done',
+        accessToken: tokenResponse.access_token
+    } as AuthenticateWithBankIDResult;
 }
 
 export function findQrCode(view: BankdIDAuthenticatorView): string {
@@ -101,7 +108,7 @@ function findAction(view: BankdIDAuthenticatorView, kind: string) {
 }
 
 
-function findPollAction(view: BankdIDAuthenticatorView): PollAction {
+export function findPollAction(view: BankdIDAuthenticatorView): PollAction {
     return findAction(view, 'poll') as PollAction
 }
 

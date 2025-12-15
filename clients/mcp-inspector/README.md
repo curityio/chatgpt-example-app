@@ -17,12 +17,12 @@ Wait for a few seconds and the MCP inspector opens in the browser.\
 Configure the following properties in the browser frontend:
 
 - **Transport Type**: Streamable HTTP
-- **URL**: `https://mcp.demo.example/mcp`
+- **URL**: The ngrok MCP URL, such as https://815faa4bc463.ngrok-free.app/mcp
 - **Connection Type**: Direct 
 
 Click the `Connect` button. This will trigger the initial OAuth flow. The client uses Dynamic Client Registration to register itself at the authorization server, then authenticates a user to get access to the MCP server.
 
-Once the flow completes, you can list the available tools. To use any tool that calls the Todo API, you need to first run the `obtain_authorization` tool. This tool runs the HAAPI flow with the MCP client's initial access token to get a higher-privileged access token. The HAAPI flow requires the user to re-authenticate with a stronger credential — bank ID. After this tool completes, the higher-privileged token remains in the MCP server's memory and is tied to the user's session. This token is never revealed to the MCP client.
+Once the flow completes, you can list the available tools. When you use any tool that requires high-privilege tokens you will be prompted for additional authentication. The MCP server runs the HAAPI flow with the MCP client's initial access token to get a higher-privileged access token. The HAAPI flow requires the user to re-authenticate with a stronger credential — bank ID. Once you confirm authentication with your bank ID app, run the `continue_authorization` tool. After this tool completes, the higher-privileged token remains in the MCP server's memory and is tied to the user's session. This token is never revealed to the MCP client.
 
 ## Restarting Environment
 

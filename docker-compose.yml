@@ -6,17 +6,13 @@ services:
   api-gateway:
     image: kong-api-gateway:1.0
     ports:
-      - 443:3001
+      - 80:3001
     volumes:
       - ./apigateway/kong.yml:/usr/local/kong/declarative/kong.yml
-      - ./apigateway/certs/example.ssl.crt:/usr/local/share/certs/example.ssl.crt
-      - ./apigateway/certs/example.ssl.key:/usr/local/share/certs/example.ssl.key
     environment:
       KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: '/usr/local/kong/declarative/kong.yml'
-      KONG_PROXY_LISTEN: '0.0.0.0:3001 http2 ssl'
-      KONG_SSL_CERT: '/usr/local/share/certs/example.ssl.crt'
-      KONG_SSL_CERT_KEY: './usr/local/share/certs/example.ssl.key'
+      KONG_PROXY_LISTEN: '0.0.0.0:3001'
       KONG_LOG_LEVEL: 'info'
       KONG_PLUGINS: 'bundled,phantom-token'
       KONG_NGINX_HTTP_LUA_SHARED_DICT: 'phantom-token 10m'
@@ -33,28 +29,32 @@ services:
       PORT: '8081'
       HAAPI_CLIENT_ID: 'mcp-server-haapi'
       HAAPI_CLIENT_PASSWORD: 'Password1'
-      EXTERNAL_BASE_URL: https://mcp.demo.example
-      AUTHORIZATION_SERVER_BASE_URL: https://login.demo.example
-      API_URL: 'http://todo-api:8080/api/todos'
+      EXTERNAL_BASE_URL: 'https://${BASE_MCP_DOMAIN}'
+      AUTHORIZATION_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
+      API_URL: 'http://portfolio-api:8080/api/portfolio'
       TOKEN_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-token'
       AUTHORIZATION_ENDPOINT: 'http://idsvr:8443/oauth/v2/oauth-authorize'
-      SCOPE: 'read'
-      REDIRECT_URI: 'https://mcp.demo.example'
+      SCOPE_SUPPORTED: 'portfolio'
+      SCOPE: 'transactions'
+      REDIRECT_URI: 'haapi:callback'
       AUTHN_SERVER_BASE_URL: 'http://idsvr:8443'
-      EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://login.demo.example'
-      ACR: 'urn:se:curity:authentication:bankid:bank-id'
+      EXTERNAL_AUTHN_SERVER_BASE_URL: 'https://${BASE_IDSVR_DOMAIN}'
+      ACR: 'urn:se:curity:authentication:access-token:access-token'
+
+      # See mcp-server/src/session-manager.ts createSession() for explanation
+      DEVELOPER_MODE: 1
 
   #
-  # The Todo API that uses OAuth to secure access
+  # The Portfolio API that uses OAuth to secure access
   #
-  todo-api:
-    image: todo-api:1.0
-    hostname: todo-api
+  portfolio-api:
+    image: portfolio-api:1.0
+    hostname: portfolio-api
 #    environment:
 #      PORT: '8080'
 #      JWKS_URI: 'http://idsvr:8443/oauth/v2/oauth-anonymous/jwks'
 #      REQUIRED_JWT_ALGORITHM: 'PS256'
-#      REQUIRED_JWT_ISSUER: 'https://login.demo.example/oauth/v2/oauth-anonymous'
+#      REQUIRED_JWT_ISSUER: 'https://NGROK_BASE_URL/oauth/v2/oauth-anonymous'
 #      REQUIRED_JWT_AUDIENCE: 'https://api.demo.example'
 #      REQUIRED_SCOPE: 'stocks/read'
 
@@ -64,15 +64,20 @@ services:
   authorization-server:
     image: curity.azurecr.io/curity/idsvr:latest
     hostname: idsvr
+    ports:
+      - 6749:6749
     volumes:
       - ./idsvr/curity-config.xml:/opt/idsvr/etc/init/curity-config.xml
       - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
       - ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js:/opt/idsvr/etc/init/pre-processing-procedures/mcp-client-registration-policy.js
       - ./idsvr/token-procedures/set-access-token-audience.js:/opt/idsvr/etc/init/token-procedures/oauth-token-authorization-code/set-access-token-audience.js
+      - ./idsvr/token-procedures/mcp-token-exchange.js:/opt/idsvr/etc/init/token-procedures/oauth-token-oauth-token-exchange/mcp-token-exchange.js
+      - ./idsvr/token-procedures/set-audience-during-refresh.js:/opt/idsvr/etc/init/token-procedures/oauth-token-refresh/set-audience-during-refresh.js
+      - ./idsvr/authentication-actions/set-subject.js:/opt/idsvr/etc/init/transformation-procedures/set-subject.js
     environment:
       ADMIN: 'true'
       LICENSE_KEY: "${LICENSE_KEY}"
-      LOGGING_LEVEL: 'INFO'
+      LOGGING_LEVEL: 'DEBUG'
 
   #
   # The SQL database used by the Curity Identity Server
@@ -94,6 +99,8 @@ services:
   mail-server:
     image: maildev/maildev:latest
     hostname: smtpserver
+    ports:
+      - 1080:1080
     environment:
       MAILDEV_INCOMING_USER: 'noreply@maildev'
       MAILDEV_INCOMING_PASSWORD: 'Password1'

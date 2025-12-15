@@ -360,6 +360,9 @@ COMMENT ON COLUMN buckets.attributes IS 'All attributes stored for this subject/
 COMMENT ON COLUMN buckets.created IS 'When this bucket was created';
 COMMENT ON COLUMN buckets.updated IS 'When this bucket was last updated';
 
+INSERT INTO credentials (id, subject, password, attributes, created, updated) VALUES ('fba58f95-2445-4016-a1dd-6adb21998968', 'john.doe@demo.example', '$5$rounds=20000$VF9DwEYV5Gs4zSnQ$/FXN0S/.znDXzKvYSTpwHL5rQp2d9a6O0u5cwsci.z2', '{}', '2025-11-21 13:23:52.386427', '2025-11-21 13:23:52.386427');
+
+
 --
 -- Restore test user accounts that use email authentication
 --

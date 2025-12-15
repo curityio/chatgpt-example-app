@@ -1,91 +1,115 @@
-# Example ChatGPT App (Todo app)
+# Example ChatGPT App Widget with MCP Security
 
 [![Quality](https://img.shields.io/badge/quality-demo-red)](https://curity.io/resources/code-examples/status/)
 [![Availability](https://img.shields.io/badge/availability-source-blue)](https://curity.io/resources/code-examples/status/)
 
-An example that shows how an AI application can securely call APIs with elevated permissions and human-in-the-loop.
+An example that shows how a ChatGPT widget can securely call APIs with human-in-the-loop approval.\
+The Hypermedia Authentication API enables step-up authentication with a simple user experience.
 
-## Prerequisites
+## Security Flow
 
-You need the following tools on your computer in order to run the example:
+The following diagram shows an overview of the example's main security flow:
 
-- maven
-- docker
-- node and npm (node, at least v22)
+![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.jpg)
 
-You also need a valid license to run the Curity Identity Server. Make sure you have the license file locally and point the `LICENSE_FILE_PATH` environment variable to it. For example:
+ChatGPT's MCP client triggers user authentication with the system browser.\
+The MCP client then receives an initial low-privilege access token.\
+The MCP server returns an HTML widget as an MCP resource.\
+The widget's JavaScript calls an MCP tool to get portfolio data and render it.
 
-```shell
-export LICENSE_FILE_PATH=/license/license.json
-```
+![ChatGPT View](images/chatgpt-view.jpg)
 
-## Overview
+The user can interact with the widget to invoke a tool to buy or sell stocks.\
+The tool triggers a server side API-driven authentication flow using the Hypermedia Authentication API.\
+The tool returns BankID's animated QR code to the widget, which polls the MCP server for completion.\
+The user authenticates with BankID to approve the transaction and the widget renders an updated balance.
 
-The example consists of the following components:
+![ChatGPT BankID](images/chatgpt-bankid.jpg)
 
-- **MCP Server** — an OAuth-protected MCP server, that is capable of exchanging access tokens using HAAPI, and implements tools for calling the Todo API.
-- **The Curity Identity Server** — serves as the authorization server which protects both access to the MCP Server and to the APIs. It is also responsible for authenticating users.
-- **Todo API** — a simple API to manage a list of to-dos. It exposes endpoints for listing the tasks and marking them either as done or undone. The API is protected with OAuth access tokens.
-- **API Gateway** — the Kong API gateway is used for the phantom token flow — it exchanges opaque access tokens handled by the MCP client into JWTs required by the MCP server.
+## Deploy the System
 
-The following diagram shows an overview of an end-to-end flow implemented in this example:
+You need the following tools on your computer in order to run the deployment.\
+The ngrok tool exposes the MCP server and the Curity Identity Server to the internet.\
+ChatGPT can then connect to components running on the local computer.
 
-![Overview of an end-to-end flow implemented by this example](docs/end-to-end-overview.png)
+- Docker
+- Node.js 22+
+- Maven
+- ngrok
+- curl
+- jq
+- envsubst
 
-## Running the Example
+You also need the following free resources:
 
-Follow these steps to run the example:
+- An [ngrok account and auth token](https://dashboard.ngrok.com/get-started/your-authtoken)
+- A [trial license for the Curity Identity Server](https://developer.curity.io/) with access to the HAAPI feature
 
-1. Add the following line into your local `/etc/hosts` file (or equivalent for your operating system):
-
-```
-127.0.0.1 api.demo.example mcp.demo.example admin.demo.example login.demo.example mail.demo.example
-```
-
-2. Make sure the `LICENSE_FILE_PATH` environment variable points to a license for the Curity Identity Server. For example:
-
-```shell
-export LICENSE_FILE_PATH=/license/license.json
-```
-
-3. Build the project files by running the following command from the project's root directory:
+First, build the project files by running the following command:
 
 ```shell
 ./build.sh
 ```
-4. Start all the Docker containers by running the following command from the project's root directory:
+
+Then, start all the Docker containers by running the following commands.\
+Supply an ngrok auth token and the path to your Curity Identity Server license file.
 
 ```shell
+export NGROK_TOKEN=1oLFIAYu7ZS0lD5S....
+export LICENSE_FILE_PATH=~/Desktop/license-trial.json
 ./deploy.sh
 ```
 
-Once you're finished working with the project, use the following command from the project's root directory to free up resources:
+The deployment outputs the URL of a secured MCP server:
+
+```text
+Use the following MCP Server URL to connect: https://815faa4bc463.ngrok-free.app/mcp
+```
+
+Later, once you've finished testing, run this command to free all Docker resources:
 
 ```shell
 ./teardown.sh
 ```
 
-## Testing the End to End Flow
+## ChatGPT Setup
 
-To test the complete flow, you need to use a compatible MCP client. See the options below for instructions on how to use some popular clients.
+Log in to ChatGPT's web interface with a paid account that has access to **Developer Mode**.\
+In ChatGPT's web interface, go to **Settings** -> **Apps and Connectors** -> **Advanced** and enable **Developer Mode**.\
+Use the MCP server URL to create a new App from the **Apps and Connectors** panel:
 
-The initial setup comes with a pre-registered user account. Use `john.doe@demo.example` whenever prompted for an email. The email authenticator will send a one-time-password to the user's email. This example uses a local maildev server to catch all outgoing emails. Navigate to `https://mail.demo.example` to access the dev inbox. You will see all the OTP emails there.
+![ChatGPT Register](images/chatgpt-register.jpg)
 
-You can register other users and log in as them. The Todo API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
+Then, select the MCP server as an application
 
+![ChatGPT App](images/chatgpt-app.jpg)
 
-### Test with MCP Inspector
+## Initial User Login
 
-The simplest way is to test the solution with the MCP inspector tool. See the [MCP Inspector readme](clients/mcp-inspector/README.md) for details of installing and running the tool.
+ChatGPT's MCP client triggers an MCP authorization flow that requires email verification.\
+Enter the email `john.doe@demo.example` and use a one-time code from the test inbox at `http://localhost:1080`.\
+The user then consents to ChatGPT's level of data access:
 
-### Test with Claude Desktop
+![ChatGPT Consent](images/chatgpt-consent.jpg)
 
-// TODO
+## Admin UI for the Curity Identity Server
+
+Connect to the Admin UI with the following details:
+
+- URL: `http://localhost:6749/admin`
+- Username: `admin`
+- Password: `Password1`
+
+## View MCP Requests with MCP Inspector
+
+You can also follow the [MCP Inspector README](clients/mcp-inspector/README.md) to test with that tool.\
+Doing so enables you to take a closer look at MCP requests and responses.
+
+## Redeployments
+
+If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from ChatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data. If you run to connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.
 
 ## Development
 
-See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for details on how to work with the code locally.
-
-## Work In Progress
-
-See the [Work In Progress](docs/WIP.md) document to read about components that are in progress.
+- See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for details on how to work with the code locally.
+- See the [Work In Progress](docs/WIP.md) document to read about components that are in progress.

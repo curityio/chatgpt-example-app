@@ -1,11 +1,10 @@
 {
-  "name": "mcp-todo-server",
+  "name": "mcp-portfolio-server",
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "start": "node --loader ts-node/esm src/index.ts",
-    "start:stdio": "node --loader ts-node/esm src/index.ts --stdio",
     "dev": "node scripts/dev.js",
     "haapi": "node scripts/run-haapi.js",
     "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=esm --packages=external",
@@ -19,19 +18,19 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@types/express": "^5.0.4",
-    "@types/node": "^24.9.1",
-    "chokidar": "^4.0.3",
-    "esbuild": "^0.25.11",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "chokidar": "^5.0.0",
+    "esbuild": "^0.27.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@modelcontextprotocol/sdk": "^1.24.1",
     "@types/morgan": "^1.9.10",
     "dpop": "^2.1.1",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "morgan": "^1.10.1",
-    "zod": "^3.25.76"
+    "zod": "^4.1.13"
   }
 }

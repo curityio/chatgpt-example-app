@@ -24,16 +24,22 @@ node --env-file=.env dist/index.js
 ./deploy.sh
 ```
 
+Then, add the following API entry to the hosts file so that the MCP server can call the portfolio API:
+
+```text
+127.0.0.1 api.demo.example
+```
+
 ## Updating the Authenticator Plugin
 
 The Curity Identity Server uses an access token authenticator to properly authenticate HAAPI requests. The first time you build the project, the sbuild scripts downloads the code for the plugin into idsvr/plugins/access-token-authenticator. If the code for the plugin is updated in the remote repo, make sure to update it by running `git pull`, or simply delete the `plugins` folder and rebuild the project.
 
-## Running Todo API
+## Running Portfolio API
 
 To run the API locally, use these commands:
 
 ```
-cd todo-api
+cd portfolio-api
 npm i
 npm run dev
 ```
@@ -61,22 +67,21 @@ The following settings can be configured using environment variables
 
 ### Authentication Method
 
-The Curity Identity Server needs to be configured with the `access_token` authenticator as a pre-requisite of the _main_ authenticator.
-That is used because before starting strong user authentication via HAAPI, we need to ensure the current user has authenticated against the
-MCP Server itself (which they do via the MCP Client, normally).
+The Curity Identity Server is configured with the `access_token` authenticator as the _main_ authenticator, followed by a strong MFA authentication (BankID by default).
+That is used because before starting strong user authentication via HAAPI, we need to ensure the current user has authenticated against the  MCP Server itself (which they do via the MCP Client, normally).
 
 Once the token is validated (the authenticator can validate audience, issuer, purpose),
-the HAAPI client will arrive at the _main_ authenticator, which should be one of the following:
+the HAAPI client will arrive at the 2nd factor authenticator, which can be one of the following:
 
-* **BankID**: set the `ACR` to `urn:se:curity:authentication:bankid:bank-id`.
-* **HTML Form**: set the `ACR` to `urn:se:curity:authentication:html-form:htmlFormJson`.
-* **Email magic link**: set the `ACR` to `urn:se:curity:email:email-for-mcp`
+* **BankID**, 
+* **HTML Form**,
+* **Email magic link**.
 
 In the case of the BankID authenticator, the MCP Server will return a QR code to the MCP client which allows them to authenticate.
 
 In the case of the HTML Form authenticator, the MCP Server sends an _elicitation_ to the MCP client, asking the user for username and password.
 
-**NOTE** Currently, when using BankID, we do not refresh the QR code, since that would require sending multiple image message back to the MCP Client. The clients don't yet support swapping images in responses, so this will be a poor UX.
+**NOTE** Currently, when using BankID, we do not refresh the QR code, since that would require sending multiple image message back to the MCP Client. The clients don't yet support swapping images in responses, so this will be a poor UX. This functionality will work in the ChatGPT widget.
 
 ## Other Modes
 
