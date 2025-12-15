@@ -15,14 +15,12 @@
  */
 
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
-import Configuration from './configuration.js';
-
-const configuration = new Configuration();
+import Configuration from '../configuration.js';
 
 /*
  * Call the portfolio API with the low privilege access token
  */
-export async function getPortfolio(token: string): Promise<CallToolResult> {
+export async function getPortfolio(configuration: Configuration, token: string): Promise<CallToolResult> {
 
     console.log('Fetching portfolio from', configuration.apiUrl);
     const response = await fetch(configuration.apiUrl, {
@@ -45,7 +43,7 @@ export async function getPortfolio(token: string): Promise<CallToolResult> {
 /*
  * Call the portfolio API with the high privilege access token
  */
-export async function buyOrSellStock(id: string, delta: number, token: string): Promise<CallToolResult> {
+export async function buyOrSellStock(configuration: Configuration, id: string, delta: number, token: string): Promise<CallToolResult> {
 
     const response = await fetch(`${configuration.apiUrl}/${id}`, {
         method: 'PUT',

@@ -24,16 +24,18 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {z} from 'zod';
 import Configuration from './configuration.js';
-import {getPortfolio, buyOrSellStock} from './portfolioApiClient.js';
-import {continueAuthorizeWithBankID} from './security/authz.js';
-import {SessionManager} from './security/sessionManager.js';
-import {exchangeAccessToken, requestAuthorization} from './security/stepUp.js';
+import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
+import {exchangeAccessToken} from './oauth/tokenExchange.js';
+import {Authorizer} from './stepup/authorizer.js';
+import {SessionManager} from './stepup/sessionManager.js';
+import {requestAuthorization} from './stepup/start.js';
 
 /*
  * Create main objects
  */
 const configuration = new Configuration();
 const sessionManager = new SessionManager();
+const authorizer = new Authorizer(configuration);
 const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 /*
@@ -94,8 +96,8 @@ server.registerTool(
     async (context) => {
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const token = await exchangeAccessToken(session, receivedAccessToken);
-        return getPortfolio(token);
+        const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
+        return getPortfolio(configuration, token);
     },
 );
 
@@ -135,13 +137,13 @@ server.registerTool(
     async (input, context) => {
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const token = await exchangeAccessToken(session, receivedAccessToken);
+        const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
 
         console.log(`Buying ${input.quantity} stocks ${input.id} for session ${session.id}`);
-        const completionResponse = await buyOrSellStock(input.id, input.quantity, token);
+        const completionResponse = await buyOrSellStock(configuration, input.id, input.quantity, token);
 
         if (completionResponse.isError) {
-            return await requestAuthorization(receivedAccessToken, session);
+            return await requestAuthorization(authorizer, receivedAccessToken, session);
         }
 
         return completionResponse;
@@ -184,13 +186,13 @@ server.registerTool(
     async (input, context) => {
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const token = await exchangeAccessToken(session, receivedAccessToken);
+        const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
 
         console.log(`Selling ${input.quantity} of stock ${input.id} for session ${session.id}`);
-        const completionResponse = await buyOrSellStock(input.id, -input.quantity, token);
+        const completionResponse = await buyOrSellStock(configuration, input.id, -input.quantity, token);
 
         if (completionResponse.isError) {
-            return await requestAuthorization(receivedAccessToken, session);
+            return await requestAuthorization(authorizer, receivedAccessToken, session);
         }
 
         return completionResponse;
@@ -221,7 +223,7 @@ server.registerTool(
     },
     async (context) => {
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const authorizationResult = await continueAuthorizeWithBankID(
+        const authorizationResult = await authorizer.continueAuthorizeWithBankID(
             (token) => {
                 console.log('>>> Setting new token in session: ' + token);
                 session.token = token
@@ -255,12 +257,11 @@ app.use(express.json());
  */
 app.get('/.well-known/oauth-protected-resource', (request: Request, response: Response) => {
 
-    const config = new Configuration();
     const metadata = {
         resource: `${configuration.externalBaseUrl}/`,
         resource_name: 'MCP Server',
-        authorization_servers: [config.authorizationServerBaseUrl],
-        scopes_supported: [config.lowPrivilegeScope],
+        authorization_servers: [configuration.authorizationServerBaseUrl],
+        scopes_supported: [configuration.lowPrivilegeScope],
     };
 
     response.setHeader('content-type', 'application/json');

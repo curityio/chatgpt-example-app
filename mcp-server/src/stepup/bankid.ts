@@ -15,7 +15,7 @@
  */
 
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
-import {BankdIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction} from './haapiTypes.js';
+import {BankIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction} from './haapiTypes.js';
 import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapiUtils.js';
 import Configuration from '../configuration.js';
 
@@ -27,13 +27,15 @@ export type AuthenticateWithBankIDResult = {
 }
 
 export async function authenticateWithBankID(
+    configuration: Configuration,
     client: DPoPOAuthClient,
     pollingUrl: string
 ): Promise<AuthenticateWithBankIDResult> {
 
     // Check status of authorization
-    const bankIDViewCurrent = await haapiResponseView<BankdIDAuthenticatorView>(
-        await client.get(ensureAbsoluteUrl(pollingUrl), haapiHeaders),
+    const bankIDViewCurrent = await haapiResponseView<BankIDAuthenticatorView>(
+        configuration.authorizationServerBaseUrl,
+        await client.get(ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, pollingUrl), haapiHeaders),
         client
     );
     console.log('>>> BankID poll response status:', bankIDViewCurrent);
@@ -60,7 +62,7 @@ export async function authenticateWithBankID(
 
     console.log('>>> Continue authentication', formAction)
 
-    const url = ensureAbsoluteUrl(formAction.model.href);
+    const url = ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, formAction.model.href);
     console.log('>>> Redirecting after successful authentication: ', formAction);
 
     let redirectResponse = null;
@@ -77,7 +79,8 @@ export async function authenticateWithBankID(
         throw new Error(`Unsupported redirect method: ${formAction.model.method}`);
     }
 
-    const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(redirectResponse as Response, client);
+    const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(
+        configuration.authorizationServerBaseUrl, redirectResponse as Response, client);
 
     console.log('Final authenticator response:', JSON.stringify(finalView, null, 2));
 
@@ -91,9 +94,7 @@ export async function authenticateWithBankID(
         throw new Error('No authorization-response link found in final OAuth authorization response view');
     }
 
-    const config = new Configuration();
-
-    const tokenResponse = await client.postAuthorizationCode(config.tokenEndpoint,
+    const tokenResponse = await client.postAuthorizationCode(configuration.tokenEndpoint,
         finalView.properties.code, oauthCallbackUrl.substring(0, oauthCallbackUrl.indexOf('?')));
 
     console.log('OAuth token response:', tokenResponse);
@@ -104,7 +105,7 @@ export async function authenticateWithBankID(
     } as AuthenticateWithBankIDResult;
 }
 
-export function findQrCode(view: BankdIDAuthenticatorView): string {
+export function findQrCode(view: BankIDAuthenticatorView): string {
     const qrCodeLink = view.links.find(link => link.rel === 'activation' && link.type === 'image/png');
     if (!qrCodeLink) {
         throw new Error('QR code link not found in BankID authenticator view');
@@ -115,7 +116,7 @@ export function findQrCode(view: BankdIDAuthenticatorView): string {
     throw new Error('QR code link is not a base64 data URL: ' + qrCodeLink.href);
 }
 
-function findAction(view: BankdIDAuthenticatorView, kind: string) {
+function findAction(view: BankIDAuthenticatorView, kind: string) {
     const action = view.actions.find(action => action.kind === kind);
     if (!action) {
         throw new Error(`${kind} action not found in BankID authenticator view`);
@@ -124,10 +125,10 @@ function findAction(view: BankdIDAuthenticatorView, kind: string) {
 }
 
 
-export function findPollAction(view: BankdIDAuthenticatorView): PollAction {
+export function findPollAction(view: BankIDAuthenticatorView): PollAction {
     return findAction(view, 'poll') as PollAction
 }
 
-function findFormAction(view: BankdIDAuthenticatorView): RedirectAction {
+function findFormAction(view: BankIDAuthenticatorView): RedirectAction {
     return findAction(view, 'form') as RedirectAction
 }

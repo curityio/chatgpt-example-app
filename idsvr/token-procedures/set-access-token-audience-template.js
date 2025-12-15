@@ -4,50 +4,41 @@
 function result(context) {
   var delegationData = context.getDefaultDelegationData();
   var issuedDelegation = context.delegationIssuer.issue(delegationData);
-
   var accessTokenData = context.getDefaultAccessTokenData();
 
-  // Support for resource identifier and audience restricted access tokens
+  // By default, require a correct resource parameter
   var resource = context.getRequest().getFormParameter("resource");
-
-  if (resource) {
-    // Allow if the requested resource value is part of the client's configured audiences
-    if (context.client.audiencesAsString.split(" ").indexOf(resource) != -1) {
-      accessTokenData.aud = [resource];
-    }
-    // Allow if the requested resource value is configured in client properties (DCR clients)
-    else if (context.client.properties.audiences.indexOf(resource) != -1) {
-      accessTokenData.aud = [resource];
-    }
-    // Reject the request if the client is unauthorized to the resource.
-    else {
-      throw exceptionFactory.badRequestException(
-        "invalid_target",
-        "Resource parameter is invalid or unknown."
-      );
-    }
+  if (resource && context.client.audiencesAsString && context.client.audiencesAsString.split(" ").indexOf(resource) != -1) {
+    accessTokenData.aud = [resource];
+  }
+  else if (resource && context.client.properties.audiences && context.client.properties.audiences.indexOf(resource) != -1) {
+    accessTokenData.aud = [resource];
+  }
+  else if (context.client.name === 'ChatGPT') {
+    // ChatGPT apps seem to not send the resource parameter, so set the audience manually
+    accessTokenData.aud = ['$EXTERNAL_BASE_URL/'];
+  }
+  else {
+    throw exceptionFactory.badRequestException(
+      "invalid_target",
+      "Resource parameter is invalid or unknown."
+    );
   }
 
-  if (context.client.name === 'ChatGPT') {
-      // ChatGPT apps seem to not send the resource parameter, or the parameter gets lost somewhere.
-      // For now set the audience manually.
-      accessTokenData.aud = ['$EXTERNAL_BASE_URL/'];
+  var issuedAccessToken = null;
+
+  // Issue JWTs for internal requests
+  if (context.client.id === 'mcp-server-haapi') {
+    issuedAccessToken = context.getDefaultAccessTokenJwtIssuer().issue(
+      accessTokenData,
+      issuedDelegation
+    );
+  } else {
+    issuedAccessToken = context.accessTokenIssuer.issue(
+      accessTokenData,
+      issuedDelegation
+    );
   }
-
-
-    var issuedAccessToken = null;
-
-    if (context.client.id === 'mcp-server-haapi') { // Issue JWTs in the HAAPI flow
-        issuedAccessToken = context.getDefaultAccessTokenJwtIssuer().issue(
-            accessTokenData,
-            issuedDelegation
-        );
-    } else {
-        issuedAccessToken = context.accessTokenIssuer.issue(
-            accessTokenData,
-            issuedDelegation
-        );
-    }
 
   var refreshTokenData = context.getDefaultRefreshTokenData();
   var issuedRefreshToken = context.refreshTokenIssuer.issue(
@@ -67,7 +58,6 @@ function result(context) {
   if (idTokenData) {
     var idTokenIssuer = context.idTokenIssuer;
     idTokenData.at_hash = idTokenIssuer.atHash(issuedAccessToken);
-
     responseData.id_token = idTokenIssuer.issue(idTokenData, issuedDelegation);
   }
 

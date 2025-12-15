@@ -7,7 +7,7 @@ services:
 # All MCP client API requests use this API gateway entry point
 # The MCP server connection is secured by opaque access tokens
 # The phantom token plugin returns a 401 that points the MCP client to resource metadata
-# CORS allows access to the ChatGPT and MCP Inspector web clients
+# CORS allows access to the MCP Inspector
 #
 - name: mcp-server
   url: ${MCP_SERVER_INTERNAL_URL}
@@ -22,11 +22,9 @@ services:
     config:
       origins:
         - 'http://localhost:6274'
-        - 'https://chatgpt.com'
       exposed_headers:
         - 'www-authenticate'
         - 'content-type'
-        - 'authorization'
         - 'mcp-session-id'
         - 'mcp-protocol-version'
   - name: phantom-token
@@ -55,7 +53,6 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
-      - 'https://chatgpt.com'
 
 #
 # MCP authorization requires a root level OAuth authorization server metadata endpoint
@@ -73,7 +70,34 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
-      - 'https://chatgpt.com'
+
+#
+# The settings token_endpoint_auth_method=none and client_uri are incompatible with the Curity Identity Server
+# To fix MCP inspector and some other clients, use Kong's request transformer plugin to update incoming requests
+#
+- name: authorization-server-registration
+  url: http://idsvr:8443/oauth/v2/oauth-registration
+  routes:
+  - name: authorization-server-registration
+    hosts:
+    - $EXTERNAL_HOST_NAME
+    paths:
+    - /oauth/v2/oauth-registration
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - 'http://localhost:6274'
+  - name: request-transformer
+    enabled: yes
+    config:
+      remove:
+        body:
+        - token_endpoint_auth_method:none
+        - client_uri
+      add:
+        body:
+        - token_endpoint_auth_method:client_secret_basic
 
 #
 # All other authorization server endpoints
@@ -91,4 +115,3 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
-      - 'https://chatgpt.com'

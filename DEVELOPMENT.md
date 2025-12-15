@@ -1,4 +1,4 @@
-# Local MCP Server and API Development
+# Local Development
 
 These notes explain how to run API components locally, with other components in Docker.\
 First, run the [Deployment](DEPLOYMENT.md) to ensure that you meet prerequisites.
@@ -36,11 +36,10 @@ You can change the MCP server and API code with hot reloading and re-run the end
 ## Test the HAAPI Flow
 
 You can test the MCP server's HAAPI authentication flow without ChatGPT.\
-To do so, run the following commands in another terminal window.\
-Supply a test initial access token to supply to the access token authenticator:
+To do so, capture an access token with an interactive test client and then feed it in as follows.
 
 ```bash
 cd mcp-server
-export HAAPI_TEST_ACCESS_TOKEN=''
+export HAAPI_TEST_ACCESS_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI...'
 npm run haapi
 ```

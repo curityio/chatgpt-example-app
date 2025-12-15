@@ -18,17 +18,11 @@ import {Buffer} from 'buffer';
 import https from 'https';
 import * as DPoP from 'dpop'
 import Configuration from '../configuration.js';
+import {TokenResponse} from '../oauth/tokenResponse.js';
 
 interface DPoPKeyPair {
     publicKey: DPoP.CryptoKey;
     privateKey: DPoP.CryptoKey;
-}
-
-interface TokenResponse {
-    access_token: string;
-    token_type: string;
-    expires_in?: number;
-    refresh_token?: string;
 }
 
 export class DPoPOAuthClient {
@@ -45,16 +39,16 @@ export class DPoPOAuthClient {
     private expiresAt?: Date;
     private sessionId?: string;
 
-    constructor() {
-        const config = new Configuration();
-        this.clientId = config.haapiClientId;
-        this.clientPassword = config.haapiClientSecret;
+    constructor(configuration: Configuration) {
+        this.clientId = configuration.haapiClientId;
+        this.clientPassword = configuration.haapiClientSecret;
         this.keyPair = this.generateKeyPair();
         
-        // The `htu` claim in DPoP must always be created using the authorization server's external URL
-        this.authnBaseUrl = config.authorizationServerBaseUrl;
-        this.externalAuthnBaseUrl = config.authorizationServerBaseUrl;
-        this.tokenEndpoint = config.tokenEndpoint;
+        // The DPoPOAuthClient could send requests to internal token endpoints
+        // However, the `htu` claim in DPoP must always be created using the authorization server's external URL
+        this.authnBaseUrl = configuration.authorizationServerBaseUrl;
+        this.externalAuthnBaseUrl = configuration.authorizationServerBaseUrl;
+        this.tokenEndpoint = configuration.tokenEndpoint;
 
         // In some developer setups it is useful to create an HTTPS agent that ignores self-signed certificates
         this.httpsAgent = new https.Agent({
@@ -69,7 +63,8 @@ export class DPoPOAuthClient {
     }
 
     private getBasicAuthHeader(): string {
-      // Encode client credentials for Basic Authentication according to RFC 6749
+      
+        // Encode client credentials for Basic Authentication according to RFC 6749
       const credentials = `${encodeURIComponent(this.clientId)}:${encodeURIComponent(this.clientPassword)}`;
       const encoded = Buffer.from(credentials, 'utf-8').toString('base64')
           .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -252,40 +247,5 @@ export class DPoPOAuthClient {
             token: this.accessToken,
             expiresAt: this.expiresAt,
         };
-    }
-
-    async exchangeToken(token: string): Promise<TokenResponse> {
-        const body = new URLSearchParams({
-            client_id: 'mcp-server', // FIXME - this should come from a configu. And it's a pity we have to use a different client
-            client_secret: 'Password1', // FiXME (see above)
-            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-            subject_token: token,
-            subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-        });
-
-        const requestHeaders = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
-        };
-
-        const options = {
-            method: 'POST',
-            headers: requestHeaders,
-            body: body.toString(),
-        } as RequestInit;
-
-        console.log('>>> Token Exchange request to: ' + this.tokenEndpoint, body, requestHeaders, options);
-
-        const response = await fetch(this.tokenEndpoint, {
-            ...options,
-            // @ts-ignore - Node.js specific agent property
-            agent: this.tokenEndpoint.startsWith('https:') ? this.httpsAgent : undefined,
-        });
-
-        const tokenResponse = await response.json() as TokenResponse;
-
-        console.log('>>> Token successfully exchanged ', tokenResponse)
-
-        return tokenResponse;
     }
 }

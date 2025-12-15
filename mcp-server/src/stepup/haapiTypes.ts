@@ -79,7 +79,7 @@ export interface PollAction {
     }
 }
 
-export interface BankdIDAuthenticatorView extends HaapiView {
+export interface BankIDAuthenticatorView extends HaapiView {
     type: 'polling-step';
     links: Array<{
         rel: string;

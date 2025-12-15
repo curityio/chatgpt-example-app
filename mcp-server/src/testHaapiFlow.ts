@@ -14,15 +14,20 @@
  *  limitations under the License.
  */
 
-import {createAuthenticatedHaapiClient, runBankIDAuthenticationFlow} from './security/authz.js';
-import {authenticateWithBankID} from './security/bankid.js';
+import Configuration from './configuration.js';
+import {Authorizer} from './stepup/authorizer.js';
+import {authenticateWithBankID} from './stepup/bankid.js';
+
+// Load configuration and create an authorizer
+const configuration = new Configuration();
+const authorizer = new Authorizer(configuration);
 
 // Create the HAAPI client
-const client = await createAuthenticatedHaapiClient();
+const client = await authorizer.createAuthenticatedHaapiClient();
 
-// Get an initial access token for testing and run the HAAPI flow entry point
-const initialAccessToken = '';
-const bankIDView = await runBankIDAuthenticationFlow(initialAccessToken, client);
+// Feed in an access token saved from a previous debug session and re-run the HAAPI flow
+const initialAccessToken = process.env.HAAPI_TEST_ACCESS_TOKEN || '';
+await authorizer.runBankIDAuthenticationFlow(initialAccessToken, client);
 
-// Complete the authentication
-await authenticateWithBankID(client, '');
+// After the user approves, follow redirects to complete the flow 
+await authenticateWithBankID(configuration, client, '');

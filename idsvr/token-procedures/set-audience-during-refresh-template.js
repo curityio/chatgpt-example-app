@@ -4,13 +4,12 @@
 function result(context) {
     var accessTokenData = context.getDefaultAccessTokenData(context.delegation);
 
+    // Set the audience during access token refresh
     if (context.client.name === 'ChatGPT') {
-        // Set the audience during access token refresh
         accessTokenData.aud = ['$EXTERNAL_BASE_URL/'];
     }
 
     var issuedAccessToken = context.accessTokenIssuer.issue(accessTokenData, context.delegation);
-
     var refreshToken = context.presentedToken.value;
 
     if (refreshToken === null) {

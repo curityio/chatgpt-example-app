@@ -48,11 +48,10 @@ services:
       - ./idsvr/token-procedures/set-access-token-audience.js:/opt/idsvr/etc/init/token-procedures/oauth-token-authorization-code/set-access-token-audience.js
       - ./idsvr/token-procedures/mcp-token-exchange.js:/opt/idsvr/etc/init/token-procedures/oauth-token-oauth-token-exchange/mcp-token-exchange.js
       - ./idsvr/token-procedures/set-audience-during-refresh.js:/opt/idsvr/etc/init/token-procedures/oauth-token-refresh/set-audience-during-refresh.js
-      - ./idsvr/authentication-actions/set-subject.js:/opt/idsvr/etc/init/transformation-procedures/set-subject.js
     environment:
       ADMIN: 'true'
       LICENSE_KEY: "${LICENSE_KEY}"
-      LOGGING_LEVEL: 'DEBUG'
+      LOGGING_LEVEL: 'INFO'
 
   #
   # A database with pre-shipped user accounts, which stores dynamically registered clients

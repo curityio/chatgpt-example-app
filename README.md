@@ -51,7 +51,8 @@ Run the Admin UI for the Curity Identity Server to view the OAuth security setti
 
 See the following resources for further information and tutorials:
 
-- See the [Development](DEVELOPMENT.md) documentation to learn how to change the MCP server code locally.
+- See the [Deployment README](DEPLOYMENT.md) to learn how to run the example and test end-to-end.
+- See the [Development README](DEVELOPMENT.md) to learn how to run the MCP server code locally.
 - See the [Secure an OpenAI ChatGPT App](https://curity.io/resources/learn/chatgpt-widget-haapi) for a tutorial that explains this code's security flow in depth.
 - See the [Access Token Authenticator Plugin](https://github.com/curityio/access-token-authenticator) to learn how to use an access token as an authentication factor.
 - Please visit [curity.io](https://curity.io/) for more information about the Curity Identity Server.

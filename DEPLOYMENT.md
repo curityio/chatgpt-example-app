@@ -1,4 +1,4 @@
-# Deployment
+# Deployment and Testing
 
 These notes explain how to deploy and test the MCP server.
 

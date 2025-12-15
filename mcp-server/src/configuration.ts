@@ -18,9 +18,13 @@
  * Configuration settings for the OAuth-secured MCP server that runs in front of the Portfolio API
  */
 export default class Configuration {
+
     public port: string;
     public haapiClientId: string;
     public haapiClientSecret: string;
+    public tokenExchangeClientId: string;
+    public tokenExchangeClientSecret: string;
+    public tokenExchangeAudience: string;
     public externalBaseUrl: string;
     public apiUrl: string;
     public authorizationServerBaseUrl: string;
@@ -35,6 +39,9 @@ export default class Configuration {
     
     public constructor() {
         this.port = this.getValue('PORT');
+        this.tokenExchangeClientId = this.getValue('TOKEN_EXCHANGE_CLIENT_ID');
+        this.tokenExchangeClientSecret = this.getValue('TOKEN_EXCHANGE_CLIENT_PASSWORD');
+        this.tokenExchangeAudience = this.getValue('TOKEN_EXCHANGE_AUDIENCE');
         this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
         this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
         this.externalBaseUrl = this.getValue('EXTERNAL_BASE_URL');

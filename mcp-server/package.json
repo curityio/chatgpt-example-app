@@ -10,7 +10,7 @@
       "node": ">=20"
   },
   "scripts": {
-    "start": "node --env-file=.env --import=tsx --watch ./src/index.ts",
+    "start": "node --env-file=.env --import=tsx ./src/index.ts",
     "build": "rm -rf dist/mcp && mkdir -p dist/mcp && tsc",
     "haapi": "node --env-file=.env --import=tsx --watch ./src/testHaapiFlow.ts"
   },

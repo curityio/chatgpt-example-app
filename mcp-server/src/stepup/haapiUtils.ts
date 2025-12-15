@@ -16,16 +16,13 @@
 
 import type {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {HaapiView, HaapiRedirect} from './haapiTypes.js';
-import Configuration from '../configuration.js';
-
-const configuration = new Configuration();
 
 export const haapiHeaders = {
     'Accept': 'application/vnd.auth+json'
 };
 
 export async function haapiResponseView<View extends HaapiView>(
-    response: Response, client: DPoPOAuthClient): Promise<View> {
+    baseUrl: string, response: Response, client: DPoPOAuthClient): Promise<View> {
 
     if (response.status != 200) {
         throw new Error(`HAAPI request failed: ${response.status} ${await response.text()}`);
@@ -40,34 +37,37 @@ export async function haapiResponseView<View extends HaapiView>(
 
     // attempt to handle HAAPI redirects automatically
     if (view.type === 'redirection-step') {
+        
         const redirectView = view as HaapiRedirect;
         console.log('REDIRECT: ', JSON.stringify(redirectView, null, 2));
-        const url = ensureAbsoluteUrl(redirectView.actions[0].model.href);
+        const url = ensureAbsoluteUrl(baseUrl, redirectView.actions[0].model.href);
         console.log('Following HAAPI redirect to:', url);
         const action = redirectView.actions[0];
+        
         if (action.model.method === 'POST') {
             const formData: Record<string, string> = {};
                 for (const field of action.model.fields || []) {
                     formData[field.name] = field.value;
                 }
                 const redirectResponse = await client.postForm(url, formData, haapiHeaders);
-                return haapiResponseView<View>(redirectResponse, client);
+                return haapiResponseView<View>(baseUrl, redirectResponse, client);
         }
+
         if (action.model.method !== 'GET') {
             throw new Error(`Unsupported redirect method: ${action.model.method}`);
         }
         const redirectResponse = await client.get(url, haapiHeaders);
-        return haapiResponseView<View>(redirectResponse, client);
+        return haapiResponseView<View>(baseUrl, redirectResponse, client);
     }
     return view as View;
 }
 
-export function ensureAbsoluteUrl(url: string): string {
+export function ensureAbsoluteUrl(baseUrl: string, url: string): string {
 
     if (url.startsWith('http')) {
         return url;
     }
 
     // Turn the URL into an absolute one if it's relative
-    return new URL(url, configuration.authorizationServerBaseUrl).toString();
+    return new URL(url, baseUrl).toString();
 }
