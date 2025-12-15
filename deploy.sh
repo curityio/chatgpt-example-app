@@ -6,18 +6,34 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # Check prerequisites
 #
 if [ "$LICENSE_FILE_PATH" == '' ]; then
-  echo '*** Please provide a LICENSE_FILE_PATH environment variable with the path to a Curity Identity Server license file'
+  echo '>>> Please provide a LICENSE_FILE_PATH environment variable with the path to a Curity Identity Server license file'
   exit 1
 fi
 
 export LICENSE_KEY=$(cat "$LICENSE_FILE_PATH" | jq -r .License)
 if [ "$LICENSE_KEY" == '' ]; then
-  echo '*** An invalid license file was provided for the Curity Identity Server'
+  echo '>>> An invalid license file was provided for the Curity Identity Server'
+  exit 1
+fi
+
+base64url_decode() {
+  local len=$((${#1} % 4))
+  local result="$1"
+  if [ $len -eq 2 ]; then result="$1"'=='
+  elif [ $len -eq 3 ]; then result="$1"'=' 
+  fi
+  echo "$result" | tr '_-' '/+' | base64 --decode
+}
+
+LICENSE_PAYLOAD=$(base64url_decode $(echo $LICENSE_KEY | cut -d '.' -f 2))
+FEATURE=$(echo $LICENSE_PAYLOAD | jq -r '.Features[]  | select(.feature == "haapi")')
+if [ "$FEATURE" == '' ]; then
+  echo 'The license.json file does not include the HAAPI feature'
   exit 1
 fi
 
 if [ -z "$NGROK_TOKEN" ]; then
-  echo ">>> NGROK_TOKEN environment variable is not set. Please set it to your ngrok authentication token."
+  echo '>>> Please set it to your ngrok authentication token in the NGROK_TOKEN environment variable'
   exit 1
 fi
 
@@ -39,7 +55,7 @@ if [ -z "$NGROK_PID" ]; then
 fi
 export EXTERNAL_BASE_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto == "https") | .public_url')
 export EXTERNAL_HOST_NAME=$(echo "$EXTERNAL_BASE_URL" | sed 's/^https:\/\///')
-echo ">>> Use the following MCP Server URL to connect: $EXTERNAL_BASE_URL/mcp"
+echo ">>> Use the external MCP Server URL to connect: $EXTERNAL_BASE_URL/mcp"
 
 #
 # Set the MCP server's default internal URL, which can be overridden for development

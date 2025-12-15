@@ -4,8 +4,8 @@
   "description": "A simple portfolio API that uses access tokens with both low-privilege and high-privilege scopes",
   "author": "Curity AB",
   "main": "src/index.ts",
-  "type": "module",
   "license": "Apache-2.0",
+  "type": "module",
   "engines": {
       "node": ">=20"
   },

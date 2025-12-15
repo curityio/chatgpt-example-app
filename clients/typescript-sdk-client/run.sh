@@ -45,10 +45,6 @@ if [ ! -d typescript-sdk ]; then
   fi
   cd ..
 fi
-#
-#
-#
-id $EXTERNAL_BASE_URL
 
 #
 # Run the MCP inspector client

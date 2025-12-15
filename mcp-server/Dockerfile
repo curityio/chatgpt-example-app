@@ -10,4 +10,4 @@ RUN npm install --omit=dev
 
 USER 10001
   
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/mcp/index.js"]

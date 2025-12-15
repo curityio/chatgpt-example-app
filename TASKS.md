@@ -3,11 +3,17 @@
 ## Minor
 
 - Fix MCP Inspector
-- Understand Morgan logging and use it consistently
-- Do I need temp.html?
+- HAAPI license file check
 
-## Reduce MCP Server Code
+## MCP Server
 
-- Delete non-financial authenticators
-- Move HAAPI logic to a subfolder
-- Run it consistently
+- Tidy up environment variables
+- HAAPI utils internal v external URLs?
+- Get HAAPI test working
+- Error handling and logging to review
+
+## Reduce Curity Identity Server Configuration 
+
+- Remove password and email authenticators
+
+## GitHub Summary in Main PR

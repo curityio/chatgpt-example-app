@@ -1,8 +1,24 @@
-import type { DPoPOAuthClient } from './oauth_client';
-import type { HaapiView, HaapiRedirect } from './haapi_types';
-import Configuration from "./configuration";
+/*
+ *  Copyright 2025 Curity AB
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
-const config = new Configuration();
+import type {DPoPOAuthClient} from './dpopOAuthClient.js';
+import type {HaapiView, HaapiRedirect} from './haapiTypes.js';
+import Configuration from '../configuration.js';
+
+const configuration = new Configuration();
 
 export const haapiHeaders = {
     'Accept': 'application/vnd.auth+json'
@@ -10,6 +26,7 @@ export const haapiHeaders = {
 
 export async function haapiResponseView<View extends HaapiView>(
     response: Response, client: DPoPOAuthClient): Promise<View> {
+
     if (response.status != 200) {
         throw new Error(`HAAPI request failed: ${response.status} ${await response.text()}`);
     }
@@ -46,15 +63,16 @@ export async function haapiResponseView<View extends HaapiView>(
 }
 
 export function ensureAbsoluteUrl(url: string): string {
+
     if (url.startsWith('http')) {
         // Make sure to always use an internal URL for making requests
-        if (config.authnServerBaseUrl !== config.externalAuthnServerBaseUrl) {
-            return url.replace(config.externalAuthnServerBaseUrl, config.authnServerBaseUrl);
+        if (configuration.authnServerBaseUrl !== configuration.externalAuthnServerBaseUrl) {
+            return url.replace(configuration.externalAuthnServerBaseUrl, configuration.authnServerBaseUrl);
         }
 
         return url;
     }
 
     // turn the URL into an absolute one if it's relative
-    return new URL(url, config.authnServerBaseUrl).toString();
+    return new URL(url, configuration.authnServerBaseUrl).toString();
 }

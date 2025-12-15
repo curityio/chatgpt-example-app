@@ -1,6 +1,8 @@
-// File copied from: https://github.com/openai/openai-apps-sdk-examples
+/*
+ * Copied from: https://github.com/openai/openai-apps-sdk-examples
+ */
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 import {
     SET_GLOBALS_EVENT_TYPE,
     SetGlobalsEvent,
