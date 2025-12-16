@@ -74,8 +74,8 @@ envsubst < ./apigateway/kong-template.yml > ./apigateway/kong.yml
 envsubst < ./idsvr/curity-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-config.xml
 envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-template.js > ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js
 envsubst < ./idsvr/token-procedures/set-access-token-audience-template.js > ./idsvr/token-procedures/set-access-token-audience.js
-envsubst < ./idsvr/token-procedures/mcp-token-exchange-template.js > ./idsvr/token-procedures/mcp-token-exchange.js
 envsubst < ./idsvr/token-procedures/set-audience-during-refresh-template.js > ./idsvr/token-procedures/set-audience-during-refresh.js
+envsubst < ./idsvr/token-procedures/mcp-token-exchange-template.js > ./idsvr/token-procedures/mcp-token-exchange.js
 envsubst < ./mcp-server/.env-template > ./mcp-server/.env
 envsubst < ./portfolio-api/.env-template > ./portfolio-api/.env
 

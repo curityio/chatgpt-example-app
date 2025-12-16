@@ -1,3 +1,4 @@
+
 /**
  * @param {se.curity.identityserver.procedures.context.RefreshTokenProcedureContext} context
  */
@@ -10,6 +11,7 @@ function result(context) {
     }
 
     var issuedAccessToken = context.accessTokenIssuer.issue(accessTokenData, context.delegation);
+
     var refreshToken = context.presentedToken.value;
 
     if (refreshToken === null) {

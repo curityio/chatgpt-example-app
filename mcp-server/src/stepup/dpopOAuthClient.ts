@@ -107,7 +107,6 @@ export class DPoPOAuthClient {
         }
 
         const dpopProof = await this.createDPoPProof('POST', tokenEndpoint);
-
         console.log('>>> Using Dpop: ' + dpopProof);
         const body = new URLSearchParams({
             grant_type: 'client_credentials',
@@ -194,6 +193,7 @@ export class DPoPOAuthClient {
     }
 
     async postAuthorizationCode(url: string, code: string, redirectUri: string): Promise<TokenResponse> {
+    
         const response = await this.postForm(
             url,
             {

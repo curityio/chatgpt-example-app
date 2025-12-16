@@ -393,6 +393,7 @@
                 <redirect-uris>haapi:callback</redirect-uris>
                 <scope>portfolio</scope>
                 <scope>transactions</scope>
+                <audience>$EXTERNAL_BASE_URL/</audience>
                 <user-authentication>
                   <allowed-authenticators>access-token</allowed-authenticators>
                 </user-authentication>
