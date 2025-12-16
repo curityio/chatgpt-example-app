@@ -6,10 +6,9 @@ function result(context) {
   var issuedDelegation = context.delegationIssuer.issue(delegationData);
   var accessTokenData = context.getDefaultAccessTokenData();
 
-  // Set the audience from the resource parameter
+  // See if the MCP client requested a custom audience in the resource parameter
   var resource = context.getRequest().getFormParameter("resource");
   if (resource) {
-
     // Allow if the requested resource value is part of the client's configured audiences
     if (context.client.audiencesAsString && context.client.audiencesAsString.split(" ").indexOf(resource) != -1) {
       accessTokenData.aud = [resource];
@@ -18,7 +17,7 @@ function result(context) {
     else if (context.client.properties.audiences && context.client.properties.audiences.indexOf(resource) != -1) {
       accessTokenData.aud = [resource];
     }
-    // Reject the request if the client is unauthorized to the resource.
+    // Reject the request if the client is unauthorized to the resource
     else {
       throw exceptionFactory.badRequestException(
         "invalid_target",
@@ -27,15 +26,14 @@ function result(context) {
     }
   }
 
-  // ChatGPT apps seem to not send the resource parameter, or the parameter gets lost somewhere.
-  // For now set the audience manually.
-  if (context.client.name === 'ChatGPT') {
-      accessTokenData.aud = ['$EXTERNAL_BASE_URL/'];
+  // Some DCR clients, like ChatGPT, do not send a resource parameter in token requests
+  // In such cases, use the DCR client's configured audiences
+  if (!resource && context.client.properties.audiences) {
+    accessTokenData.aud = context.client.properties.audiences;
   }
 
+  // Issue JWTs to backend HAAPI clients
   var issuedAccessToken = null;
-
-  // Issue JWTs for internal requests
   if (context.client.id === 'mcp-server-haapi') {
     issuedAccessToken = context.getDefaultAccessTokenJwtIssuer().issue(
       accessTokenData,

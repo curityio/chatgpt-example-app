@@ -46,7 +46,6 @@ services:
       - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
       - ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js:/opt/idsvr/etc/init/pre-processing-procedures/mcp-client-registration-policy.js
       - ./idsvr/token-procedures/set-access-token-audience.js:/opt/idsvr/etc/init/token-procedures/oauth-token-authorization-code/set-access-token-audience.js
-      - ./idsvr/token-procedures/set-audience-during-refresh.js:/opt/idsvr/etc/init/token-procedures/oauth-token-refresh/set-audience-during-refresh.js
       - ./idsvr/token-procedures/mcp-token-exchange.js:/opt/idsvr/etc/init/token-procedures/oauth-token-oauth-token-exchange/mcp-token-exchange.js
     environment:
       ADMIN: 'true'
