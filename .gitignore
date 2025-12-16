@@ -9,5 +9,6 @@ typescript-sdk
 /apigateway/kong.yml
 /idsvr/curity-config.xml
 /idsvr/pre-processing-procedures/mcp-client-registration-policy.js
+/idsvr/token-procedures/set-access-token-audience.js
 /idsvr/token-procedures/set-audience-during-refresh.js
 /idsvr/token-procedures/mcp-token-exchange.js
