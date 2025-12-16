@@ -8,9 +8,9 @@ The Hypermedia Authentication API enables step-up authentication with a simple u
 
 ## Initial User Login Flow
 
-ChatGPT's MCP client first triggers user authentication with the system browser.\
-Enter the email `john.doe@demo.example` and use a one-time code from the test email inbox at `http://localhost:1080`.\
-The user then consents to ChatGPT's level of data access and ChatGPT receives a low privilege access token.
+ChatGPT's MCP client first triggers user authentication for the test user `john.doe@demo.example`.\
+Get a one-time code for the test user from the test email inbox at `http://localhost:1080`.\
+Next, consent to ChatGPT's level of data access and ChatGPT receives a low privilege access token.
 
 <img src="images/chatgpt-consent.jpg" alt="User Consent" style="width:50%" />
 
