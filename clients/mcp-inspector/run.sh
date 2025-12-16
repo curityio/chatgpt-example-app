@@ -23,6 +23,7 @@ if [ ! -d inspector ]; then
   # Install dependencies
   #
   cd inspector
+  git checkout 0.17.5
   npm install
   cd ..
 fi

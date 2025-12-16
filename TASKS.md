@@ -1,6 +1,5 @@
 # Tasks
 
-- MCP inspector broken
   Teardown should stop ngrok
 
 - ChatGPT does not send the scope or the resource parameters correctly
