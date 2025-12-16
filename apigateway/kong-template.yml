@@ -24,7 +24,6 @@ services:
       - 'http://localhost:6274'
       exposed_headers:
       - 'content-type'
-      - 'authorization'
       - 'mcp-session-id'
       - 'mcp-protocol-version'
       - 'www-authenticate'

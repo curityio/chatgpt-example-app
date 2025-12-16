@@ -64,6 +64,34 @@ Then, select the MCP server as an application
 
 ![ChatGPT App](images/chatgpt-app.jpg)
 
+You can use debugging techniques to [Capture ChatGPT OAuth MCP Messages](https://github.com/curityio/mcp-authorization-secured-api/blob/main/clients/OAUTH-MCP-MESSAGES.md).\
+ChatGPT sends a Dynamic Registration Request with parameters similar to these, without a scope:
+
+```json
+{
+  "client_name": "ChatGPT", 
+  "redirect_uris": ["https://chatgpt.com/connector_platform_oauth_redirect"], 
+  "grant_types": ["authorization_code", "refresh_token"], 
+  "response_types": ["code"], 
+  "token_endpoint_auth_method": "client_secret_post"
+}
+```
+
+ChatGPT then sends an Authorization Request with parameters similar to those below.\
+The scope is that from the MCP scope selection strategy:
+
+```text
+GET /oauth/v2/oauth-authorize
+?response_type=code
+&client_id=5b2a5d24-5a52-458f-84c4-749a5227ddcb
+&redirect_uri=https://chatgpt.com/connector_platform_oauth_redirect
+&state=oauth_s_694133884dc48191ae0de856aafb7fc8
+&scope=portfolio
+&code_challenge=iOapvT3M-6n2zURDuKvRqU3WSseHPj4eSMasY69_vbM
+&code_challenge_method=S256
+&resource=https%3A%2F%2Febc486da8823.ngrok-free.app
+```
+
 ## Use Test Clients
 
 You can also use the following test clients to gain better visibility into MCP requests:
