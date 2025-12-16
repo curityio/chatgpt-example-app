@@ -5,37 +5,35 @@ services:
 
 #
 # All MCP client API requests use this API gateway entry point
+# CORS allows access to the MCP Inspector
 # The MCP server connection is secured by opaque access tokens
 # The phantom token plugin returns a 401 that points the MCP client to resource metadata
 #
 - name: mcp-server
-  url: http://mcp-server:8081/
-#  To use a local instance of the MCP server uncomment the following line and comment out the one oabove
-#  url: http://host.docker.internal:8081/
+  url: ${MCP_SERVER_INTERNAL_URL}
   routes:
   - name: mcp-server-route
     hosts:
-    - $BASE_MCP_DOMAIN
+    - $EXTERNAL_HOST_NAME
     paths:
     - /mcp
   plugins:
-  - name: cors # This is required for the MCP inspector to work properly
+  - name: cors
     config:
       origins:
-        - 'http://localhost:6274'
-        - 'https://chatgpt.com'
+      - 'http://localhost:6274'
       exposed_headers:
-        - 'content-type'
-        - 'authorization'
-        - 'mcp-session-id'
-        - 'mcp-protocol-version'
+      - 'content-type'
+      - 'mcp-session-id'
+      - 'mcp-protocol-version'
+      - 'www-authenticate'
   - name: phantom-token
     config:
       introspection_endpoint: http://idsvr:8443/oauth/v2/oauth-introspect
       client_id: api-gateway-client
       client_secret: Password1
       token_cache_seconds: 900
-      resource_metadata_url: https://$BASE_MCP_DOMAIN/.well-known/oauth-protected-resource
+      resource_metadata_url: $EXTERNAL_BASE_URL/.well-known/oauth-protected-resource
       scope: portfolio
 
 #
@@ -43,13 +41,11 @@ services:
 # This endpoint is not secured so we use a different route for it
 #
 - name: mcp-server-resource-metadata
-  url: http://mcp-server:8081/.well-known/oauth-protected-resource
-  #  To use a local instance of the MCP server uncomment the following line and comment out the one oabove
-#  url: http://host.docker.internal:8081/.well-known/oauth-protected-resource
+  url: $MCP_SERVER_INTERNAL_URL/.well-known/oauth-protected-resource
   routes:
   - name: mcp-server-resource-metadata-route
     hosts:
-    - $BASE_MCP_DOMAIN
+    - $EXTERNAL_HOST_NAME
     paths:
     - /.well-known/oauth-protected-resource
   plugins:
@@ -57,37 +53,16 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
-      - 'https://chatgpt.com'
-
-#
-# The main Portfolio API route serves other types of API clients
-#
-- name: portfolio-api
-  url: http://portfolio-api:8080/
-  routes:
-  - name: portfolio-api-route
-    hosts:
-    - api.demo.example
-    paths:
-    - /
-  plugins:
-  - name: phantom-token
-    config:
-      introspection_endpoint: http://idsvr:8443/oauth/v2/oauth-introspect
-      client_id: api-gateway-client
-      client_secret: Password1
-      token_cache_seconds: 900
 
 #
 # MCP authorization requires a root level OAuth authorization server metadata endpoint
-# - https://github.com/modelcontextprotocol/typescript-sdk/issues/545
 #
 - name: authorization-server-metadata-reroute
   url: http://idsvr:8443/.well-known/oauth-authorization-server/oauth/v2/oauth-anonymous
   routes:
   - name: authorization-server-metadata-reroute
     hosts:
-    - $BASE_IDSVR_DOMAIN
+    - $EXTERNAL_HOST_NAME
     paths:
     - /.well-known/oauth-authorization-server
   plugins:
@@ -98,14 +73,14 @@ services:
 
 #
 # The settings token_endpoint_auth_method=none and client_uri are incompatible with the Curity Identity Server
-# Therefore, use Kong's request transformer plugin to update incoming requests
+# To fix MCP inspector and some other clients, use Kong's request transformer plugin to update incoming requests
 #
 - name: authorization-server-registration
   url: http://idsvr:8443/oauth/v2/oauth-registration
   routes:
   - name: authorization-server-registration
     hosts:
-    - $BASE_IDSVR_DOMAIN
+    - $EXTERNAL_HOST_NAME
     paths:
     - /oauth/v2/oauth-registration
   plugins:
@@ -132,7 +107,7 @@ services:
   routes:
   - name: oauth-route
     hosts:
-    - $BASE_IDSVR_DOMAIN
+    - $EXTERNAL_HOST_NAME
     paths:
     - /
   plugins:

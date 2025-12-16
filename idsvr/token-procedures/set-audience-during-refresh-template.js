@@ -1,12 +1,13 @@
+
 /**
  * @param {se.curity.identityserver.procedures.context.RefreshTokenProcedureContext} context
  */
 function result(context) {
     var accessTokenData = context.getDefaultAccessTokenData(context.delegation);
 
+    // Set the audience during access token refresh
     if (context.client.name === 'ChatGPT') {
-        // Set the audience during access token refresh
-        accessTokenData.aud = ['https://$BASE_IDSVR_DOMAIN/'];
+        accessTokenData.aud = ['$EXTERNAL_BASE_URL/'];
     }
 
     var issuedAccessToken = context.accessTokenIssuer.issue(accessTokenData, context.delegation);

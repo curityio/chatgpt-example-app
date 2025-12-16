@@ -1,0 +1,48 @@
+/*
+ *  Copyright 2025 Curity AB
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import {JWTPayload} from 'jose';
+import {Configuration} from '../configuration.js';
+import {ApiError} from '../errors/apiError.js';
+
+/*
+ * A convenience wrapper to expose claims to the API
+ */
+export class ClaimsPrincipal {
+
+    private readonly configuration: Configuration;
+    private readonly scope: string;
+
+    public constructor(configuration: Configuration, claims: JWTPayload) {
+
+        this.configuration = configuration;
+        this.scope = this.getClaim(claims, 'scope');
+    }
+
+    public hasRequiredScope(expectedScope: string): boolean {
+        return this.scope.split(' ').indexOf(expectedScope) !== -1;
+    }
+
+    private getClaim(claims: JWTPayload, name: string, required = true): any {
+
+        const value = claims[name];
+        if (!value && required) {
+            throw new ApiError(403, 'insufficient_data', `The access token does not contain the required claim: ${name}`);
+        }
+
+        return value;
+    }
+}
