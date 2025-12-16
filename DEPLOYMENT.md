@@ -58,7 +58,7 @@ Log in to ChatGPT's web interface with a paid account that has access to **Devel
 In ChatGPT's web interface, go to **Settings** -> **Apps and Connectors** -> **Advanced** and enable **Developer Mode**.\
 Use the MCP server URL to create a new App from the **Apps and Connectors** panel:
 
-![ChatGPT Register](images/chatgpt-register.jpg)
+<img src="images/chatgpt-register.jpg" alt="ChatGPT Register" style="width:50%" />
 
 Then, select the MCP server as an application
 

@@ -12,7 +12,7 @@ ChatGPT's MCP client first triggers user authentication with the system browser.
 Enter the email `john.doe@demo.example` and use a one-time code from the test email inbox at `http://localhost:1080`.\
 The user then consents to ChatGPT's level of data access and ChatGPT receives a low privilege access token.
 
-![ChatGPT Consent](images/chatgpt-consent.jpg)
+<img src="images/chatgpt-consent.jpg" alt="User Consent" style="width:50%" />
 
 ChatGPT then downloads the widget app as an MCP resource and runs it in an iframe.\
 The widget's JavaScript calls an MCP tool to get portfolio data and render it.

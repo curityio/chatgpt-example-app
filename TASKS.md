@@ -1,12 +1,6 @@
 # Tasks
 
-- Fix BankID
-  Also do it in development mode
-  Also do it in the HAAPI flow
-  Then merge and add notes to the main PR
-
-- Refresh token procedure - set the audience against the client?
-  Think abour procedure naming and do some testing
+- Looks more at procedures and whether I can simplify or remove them?
 
 - Add OAuth security to MCP server
 - Include logging and error handling
