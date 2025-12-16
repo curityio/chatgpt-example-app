@@ -89,7 +89,7 @@ GET /oauth/v2/oauth-authorize
 &scope=portfolio
 &code_challenge=iOapvT3M-6n2zURDuKvRqU3WSseHPj4eSMasY69_vbM
 &code_challenge_method=S256
-&resource=https://ebc486da8823.ngrok-free.app
+&resource=https://ebc486da8823.ngrok-free.app/
 ```
 
 ## Use Test Clients
