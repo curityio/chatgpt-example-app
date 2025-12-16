@@ -14,12 +14,13 @@
  *  limitations under the License.
  */
 
-import express, { Request, Response } from 'express';
+import express, {Request, Response} from 'express';
 import morgan from 'morgan';
-import { OAuthFilter } from './security/oauthFilter.js';
-import { Configuration } from './configuration.js';
-import { ErrorHandler } from './errors/errorHandler.js';
-import { ApiError } from './errors/apiError.js';
+import {OAuthFilter} from './security/oauthFilter.js';
+import {Configuration} from './configuration.js';
+import {ErrorHandler} from './errors/errorHandler.js';
+import {ApiError} from './errors/apiError.js';
+import {ClaimsPrincipal} from './security/claimsPrincipal.js';
 
 /*
  * This API uses hard coded initial stocks for any test user
@@ -65,7 +66,16 @@ app.use(oauthFilter.validateAccessToken);
  */
 app.get('/api/portfolio', (request: Request, response: Response) => {
     
-    (response.locals as any).claimsPrincipal.enforceScope(configuration.lowPrivilegeScope);
+    const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
+    if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope) &&
+        !claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
+
+            throw new ApiError(
+                403,
+                'insufficient_scope',
+                `The access token does not contain the required scope ${configuration.lowPrivilegeScope}`);
+    }
+    
     response.json(portfolio);
 });
 
@@ -74,11 +84,19 @@ app.get('/api/portfolio', (request: Request, response: Response) => {
  */
 app.put('/api/portfolio/:id', (request: Request, response: Response) => {
 
-    (response.locals as any).claimsPrincipal.enforceScope(configuration.highPrivilegeScope);
+    const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
+    if (!claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
 
-    const stockIndex = portfolio.findIndex(t => t.id === request.params.id);
-    if (!stockIndex) {
-        throw new ApiError(404, 'stock_not_found', 'Unable to update data for the requested stock');
+            throw new ApiError(
+                403,
+                'insufficient_scope',
+                `The access token does not contain the required scope ${configuration.highPrivilegeScope}`);
+    }
+
+    const id = request.params.id;
+    const stockIndex = portfolio.findIndex(t => t.id === id);
+    if (stockIndex === -1) {
+        throw new ApiError(404, 'stock_not_found', `Unable to update data for the requested stock ${id}`);
     }
 
     const delta = request.body.delta;

@@ -32,11 +32,8 @@ export class ClaimsPrincipal {
         this.scope = this.getClaim(claims, 'scope');
     }
 
-    public enforceScope(expectedScope: string) {
-        
-        if (this.scope != expectedScope) {
-            throw new ApiError(403, 'insufficient_scope', `The access token does not contain the required scope: ${expectedScope}`);
-        }
+    public hasRequiredScope(expectedScope: string): boolean {
+        return this.scope.split(' ').indexOf(expectedScope) !== -1;
     }
 
     private getClaim(claims: JWTPayload, name: string, required = true): any {

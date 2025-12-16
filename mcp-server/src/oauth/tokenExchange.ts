@@ -23,16 +23,15 @@ import {TokenResponse} from './tokenResponse.js';
  */
 export async function exchangeAccessToken(configuration: Configuration, session: Session, receivedAccessToken: string) {
 
-    const token = session?.token;
-    if (token) {
-        return token;
-    }
+    // Initially, the MCP server has a low privilege access token from the email login
+    // After the step-up flow, ChatGPT re-calls the original API operation and the session has a high privilege token
+    const tokenToExchange = session?.token || receivedAccessToken;
 
     const body = new URLSearchParams({
         client_id: configuration.tokenExchangeClientId,
         client_secret: configuration.tokenExchangeClientSecret,
         grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        subject_token: receivedAccessToken,
+        subject_token: tokenToExchange,
         subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
         audience: configuration.tokenExchangeAudience
     } as any);
@@ -51,8 +50,5 @@ export async function exchangeAccessToken(configuration: Configuration, session:
     console.log('>>> Token exchange request to: ' + configuration.tokenEndpoint, body, requestHeaders, options);
     const response = await fetch(configuration.tokenEndpoint, options);
     const tokenResponse = await response.json() as TokenResponse;
-    
-    console.log('>>> Setting new access token in session: ' + tokenResponse.access_token);
-    session.token = tokenResponse.access_token;
     return tokenResponse.access_token;
 }

@@ -46,7 +46,6 @@ export class Authorizer {
 
     /*
     * Start HAAPI OAuth authorization with a high privilege scope
-    * Use prompt=login so that every step-up prompts the user
     */
     public async sendAuthorizationRequest(client: DPoPOAuthClient): Promise<Response> {
         
@@ -57,7 +56,6 @@ export class Authorizer {
         url.searchParams.append('scope', this.configuration.highPrivilegeScope);
         url.searchParams.append('state', 'random-state-value');
         url.searchParams.append('acr', this.configuration.acr);
-        url.searchParams.append('prompt', 'login');
         return client.get(url.toString(), haapiHeaders)
     }
 
