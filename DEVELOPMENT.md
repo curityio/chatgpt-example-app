@@ -31,14 +31,3 @@ npm start
 ```
 
 You can change the MCP server and API code with hot reloading and re-run the end-to-end flow.
-
-## Test the HAAPI Flow
-
-You can test the MCP server's HAAPI authentication flow without ChatGPT.\
-To do so, capture an access token with an interactive test client and then feed it in as follows.
-
-```bash
-cd mcp-server
-export HAAPI_TEST_ACCESS_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI...'
-npm run haapi
-```
