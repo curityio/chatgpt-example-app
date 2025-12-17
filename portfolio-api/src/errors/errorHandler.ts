@@ -48,7 +48,13 @@ export class ErrorHandler {
     private writeErrorResponse(error: ApiError, response: Response): void {
 
         this.logError(error);
-        if (error.status === 401 || error.status === 403) {
+
+        if (error.status === 403 && error.scope) {
+            response.setHeader(
+                'WWW-Authenticate',
+                `Bearer error="${error.code}", error_description="${error.message}, scope=${error.scope}"`);
+        }
+        else if (error.status === 401 || error.status === 403) {
             response.setHeader(
                 'WWW-Authenticate',
                 `Bearer error="${error.code}", error_description="${error.message}"`);

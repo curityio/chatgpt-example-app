@@ -11,8 +11,8 @@
   },
   "scripts": {
     "start": "node --env-file=.env --import=tsx --watch ./src/index.ts",
-    "build": "rm -rf dist/mcp && mkdir -p dist/mcp && tsc",
-    "haapi": "node --env-file=.env --import=tsx --watch ./src/testHaapiFlow.ts"
+    "haapi": "node --env-file=.env --import=tsx --watch ./src/testHaapiFlow.ts",
+    "build": "rm -rf dist/mcp && mkdir -p dist/mcp && tsc"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",

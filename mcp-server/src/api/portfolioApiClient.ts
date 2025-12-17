@@ -16,67 +16,90 @@
 
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import Configuration from '../configuration.js';
+import {ApiError} from '../errors/apiError.js';
 
 /*
  * Call the portfolio API with the low privilege access token
  */
 export async function getPortfolio(configuration: Configuration, token: string): Promise<CallToolResult> {
 
-    console.log('Fetching portfolio from', configuration.apiUrl);
-    const response = await fetch(configuration.apiUrl, {
+    const options = {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-    });
-
-    const authError = resultIfAuthorizationError(response);
-    if (authError) {
-        return authError;
-    }
-
-    if (response.status !== 200) {
-        throw new Error('Failed to fetch portfolio');
-    }
+    };
+    
+    console.log('Fetching portfolio from', configuration.apiUrl);
+    const response = await callApi(configuration.apiUrl, options, 'getPortfolio');
     const portfolio = await response.json();
     const output = { result: portfolio };
     return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
 }
 
 /*
- * Call the portfolio API with the high privilege access token
+ * Call the portfolio API with the current access token
+ * The initial request uses a low privilege access token
+ * The step-up uses a high privilege access token after the user approves the transaction
  */
 export async function buyOrSellStock(configuration: Configuration, id: string, delta: number, token: string): Promise<CallToolResult> {
 
-    const response = await fetch(`${configuration.apiUrl}/${id}`, {
+    const options = {
         method: 'PUT',
         body: JSON.stringify({ delta }),
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-    });
-
-    const authError = resultIfAuthorizationError(response);
-    if (authError) {
-        return authError;
-    }
-
-    if (response.status !== 200) {
-        throw new Error('Failed to buy or sell stocks');
-    }
+    };
+    
+    const response = await callApi(`${configuration.apiUrl}/${id}`, options, 'buyOrSellStock');
     const result = await response.json();
     return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { result } };
 }
 
 /*
- * Handle errors calling ghe Portfolio API
+ * Call the API and return the response
+ * Also handle error processing and logging
  */
-function resultIfAuthorizationError(response: Response): CallToolResult | null {
-  
-  if (response.status >= 400 && response.status < 500) {
-      const errorMessage = 'User must obtain authorization to call this tool';
-      return {
-          content: [{ type: 'text', text: errorMessage }],
-          isError: true,
-          structuredContent: { result: [] }
-      };
-  }
+async function callApi(url: string, options: RequestInit, operation: string): Promise<Response> {
 
-  return null;
+    try {
+        const response = await fetch(url, options);
+        if (response.status >= 200 && response.status <= 299) {
+            return response;
+        }
+
+        const error = await getResponseError(response, operation);
+        console.log(error.toLogObject());
+        throw error;
+
+
+    } catch (e: any) {
+
+        if (e instanceof ApiError) {
+            throw e;
+        }
+
+        throw new ApiError(
+            500,
+            'portfolio_api_connection_error',
+            'Unable to connect to the portfolio API',
+            e);
+    }
 }
 
+/*
+ * Return error details from the portfolio API
+ */
+async function getResponseError(response: Response, operation: string): Promise<ApiError> {
+
+    let code = 'portfolio_api_error';
+    let message = `${operation} error`;
+
+    try {
+        const data = await response.json() as any
+        if (data.code && data.message) {
+            code = data.code;
+            message = data.message;
+        }
+
+    } catch (e: any) {
+    }
+
+    return new ApiError(response.status, code, message);
+}

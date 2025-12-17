@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "main": "src/portfolio.tsx",
   "scripts": {
-    "build": "esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"
+    "build": "esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify",
+    "deploy": "cp app.css dist/bundle.js ../mcp-server/dist/web"
   },
   "dependencies": {
     "react": "^19.2.3",

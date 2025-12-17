@@ -70,10 +70,12 @@ app.get('/api/portfolio', (request: Request, response: Response) => {
     if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope) &&
         !claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
 
-            throw new ApiError(
+            const error = new ApiError(
                 403,
                 'insufficient_scope',
-                `The access token does not contain the required scope ${configuration.lowPrivilegeScope}`);
+                'The access token does not contain the required scope');
+            error.scope = configuration.lowPrivilegeScope;
+            throw error;
     }
     
     response.json(portfolio);
@@ -86,11 +88,13 @@ app.put('/api/portfolio/:id', (request: Request, response: Response) => {
 
     const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
     if (!claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
-
-            throw new ApiError(
+            
+            const error = new ApiError(
                 403,
                 'insufficient_scope',
-                `The access token does not contain the required scope ${configuration.highPrivilegeScope}`);
+                'The access token does not contain the required scope');
+            error.scope = configuration.highPrivilegeScope;
+            throw error;
     }
 
     const id = request.params.id;
@@ -114,5 +118,5 @@ app.use(errorHander.onUnhandledException)
  * Start the API
  */
 app.listen(configuration.port, () => {
-    console.log(`🚀 API Server listening on http://localhost:${configuration.port} ...`);
+    console.log(`🚀 Portfolio API listening on http://localhost:${configuration.port} ...`);
 });

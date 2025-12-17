@@ -23,8 +23,9 @@ import {readFileSync} from 'node:fs';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {z} from 'zod';
-import Configuration from './configuration.js';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
+import Configuration from './configuration.js';
+import {ApiError} from './errors/apiError.js';
 import {exchangeAccessToken} from './oauth/tokenExchange.js';
 import {Authorizer} from './stepup/authorizer.js';
 import {SessionManager} from './stepup/sessionManager.js';
@@ -97,8 +98,17 @@ server.registerTool(
         
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
-        return getPortfolio(configuration, token);
+        
+        try {
+
+            const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
+            return await getPortfolio(configuration, token);
+
+        } catch (e: any) {
+
+            const error = e as ApiError;
+            return error.toMcpError();
+        }
     },
 );
 
@@ -136,18 +146,29 @@ server.registerTool(
         ]
     },
     async (input, context) => {
+        
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
 
-        console.log(`Buying ${input.quantity} stocks ${input.id} for session ${session.id}`);
-        const completionResponse = await buyOrSellStock(configuration, input.id, input.quantity, token);
+        try {
+            
+            // The initial request to the portfolio API is with a low privilege access token and triggers a step up
+            // Once stepup completes, the portfolio API request re-runs with the session's high privilege access token
+            const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
+            console.log(`Buying ${input.quantity} of stock ${input.id} for session ${session.id}`);
+            return await buyOrSellStock(configuration, input.id, input.quantity, token);
 
-        if (completionResponse.isError) {
-            return await requestAuthorization(authorizer, receivedAccessToken, session);
+        } catch (e: any) {
+
+            // Handle the step-up challenge from the portfolio API by running ta HAAPI flow
+            // The server side HAAPI flow gets a high privilege access token and adds it to the session data
+            const error = e as ApiError;
+            if (error.status === 403) {
+                return await requestAuthorization(authorizer, receivedAccessToken, session);
+            }
+
+            return error.toMcpError();
         }
-
-        return completionResponse;
     },
 );
 
@@ -185,18 +206,29 @@ server.registerTool(
         ]
     },
     async (input, context) => {
+        
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
-        const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
 
-        console.log(`Selling ${input.quantity} of stock ${input.id} for session ${session.id}`);
-        const completionResponse = await buyOrSellStock(configuration, input.id, -input.quantity, token);
+        try {
+            
+            // The initial request to the portfolio API is with a low privilege access token and triggers a step up
+            // Once stepup completes, the portfolio API request re-runs with the session's high privilege access token
+            const token = await exchangeAccessToken(configuration, session, receivedAccessToken);
+            console.log(`Selling ${input.quantity} of stock ${input.id} for session ${session.id}`);
+            return await buyOrSellStock(configuration, input.id, -input.quantity, token);
 
-        if (completionResponse.isError) {
-            return await requestAuthorization(authorizer, receivedAccessToken, session);
+        } catch (e: any) {
+
+            // Handle the step-up challenge from the portfolio API by running ta HAAPI flow
+            // The server side HAAPI flow gets a high privilege access token and adds it to the session data
+            const error = e as ApiError;
+            if (error.status === 403) {
+                return await requestAuthorization(authorizer, receivedAccessToken, session);
+            }
+
+            return error.toMcpError();
         }
-
-        return completionResponse;
     },
 );
 

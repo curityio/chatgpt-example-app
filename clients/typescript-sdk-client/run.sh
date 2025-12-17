@@ -10,14 +10,6 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 #
-# Set this to a value like https://f3c17d625e3e.ngrok-free.app/mcp
-#
-if [ "$MCP_SERVER_URL" == '' ]; then
-  echo 'Please set an MCP_SERVER_URL environment variable before running the TypeScript SDK client'
-  exit 1
-fi
-
-#
 # Do some one time setup
 #
 if [ ! -d typescript-sdk ]; then
@@ -49,5 +41,6 @@ fi
 #
 # Run the MCP inspector client
 #
+export EXTERNAL_BASE_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto == "https") | .public_url')
 cd typescript-sdk
-npx tsx src/examples/client/simpleOAuthClient.ts "$MCP_SERVER_URL"
+npx tsx src/examples/client/simpleOAuthClient.ts "$EXTERNAL_BASE_URL/mcp"

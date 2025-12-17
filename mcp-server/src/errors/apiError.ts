@@ -40,7 +40,10 @@ export class ApiError extends Error {
         return this.scope;
     }
 
-    public toClientObject(): any {
+    /*
+     * Errors before there is an MCP session
+     */
+    public toHttpError(): any {
 
         return {
             code: this.code,
@@ -48,6 +51,27 @@ export class ApiError extends Error {
         }
     }
 
+    /*
+     * Errors after there is an MCP session
+     */
+    public toMcpError(): any {
+
+        const data: any = {
+            status: this.status,
+            code: this.code,
+            message: this.message,
+        };
+        
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data) }],
+            isError: true,
+            structuredContent: { result: [] }
+        };
+    }
+
+    /*
+     * Logs all errors in a readable format
+     */
     public toLogObject(): any {
 
         const data: any = {
