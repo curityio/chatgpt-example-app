@@ -14,7 +14,7 @@ function result(context) {
     // Set a property to store the allowed access token audiences for the DCR client
     attributes.audiences = ["$EXTERNAL_BASE_URL/"];
 
-    // Use a 30 minute access token and no refresh token
+    // The example uses a 30 minute access token, to provide sufficient development time to debug HAAPI flows
     attributes.require_proof_key = true;
     attributes.access_token_ttl = 1800;
   }
