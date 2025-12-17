@@ -12,25 +12,24 @@ export MCP_SERVER_INTERNAL_URL=http://host.docker.internal:8081
 export PORTFOLIO_API_INTERNAL_URL=http://localhost:8080
 ```
 
-## Run the MCP Server and APIs
+Then re-run the `./deploy.sh` script to deploy the system with a local development routing.
+
+## Run a Local MCP Server and API
 
 Use the following commands to run the local MCP server on port 8081:
 
 ```shell
 cd mcp-server
-npm install
 npm start
 ```
 
-Use the following commands to run the local Portfolio API on port 8080:
+Use the following commands in another terminal window to run the local Portfolio API on port 8080:
 
 ```bash
 cd portfolio-api
-npm install
 npm start
 ```
 
-Then re-run the `./deploy.sh` script to deploy the system with a local development routing.\
 You can change the MCP server and API code with hot reloading and re-run the end-to-end flow.
 
 ## Test the HAAPI Flow

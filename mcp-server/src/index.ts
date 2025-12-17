@@ -94,6 +94,7 @@ server.registerTool(
         ]
     },
     async (context) => {
+        
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
         const token = await exchangeAccessToken(configuration, session, receivedAccessToken);

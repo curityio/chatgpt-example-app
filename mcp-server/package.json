@@ -15,7 +15,7 @@
     "haapi": "node --env-file=.env --import=tsx --watch ./src/testHaapiFlow.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "dpop": "^2.1.1",
     "express": "^5.2.1",
     "jose": "^6.1.3",
