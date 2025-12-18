@@ -17,7 +17,7 @@
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
-import express, { Request, Response } from 'express';
+import express, {Request, Response} from 'express';
 import morgan from 'morgan';
 import {readFileSync} from 'node:fs';
 import path from 'path';
@@ -98,7 +98,7 @@ server.registerTool(
         ]
     },
     async (context) => {
-        
+
         try {
 
             const receivedAccessToken = context.authInfo?.token || '';
@@ -147,7 +147,7 @@ server.registerTool(
     async (input, context) => {
         
         const receivedAccessToken = context.authInfo?.token || '';
-        const session = sessionManager.getOrCreateSession(context.sessionId);
+        const session = sessionManager.getOrCreateSession(context.sessionId, (context.authInfo?.extra as any)?.claims);
         const isRetry = !!session?.highPrivilegeAccessToken;
 
         try {
@@ -177,7 +177,7 @@ server.registerTool(
 
             // Only run the retry once to prevent loops
             if (isRetry) {
-                sessionManager.clearTokenState(session);
+                sessionManager.clearStepupAuthenticationState(session);
             }
         }
     },
@@ -219,7 +219,7 @@ server.registerTool(
     async (input, context) => {
         
         const receivedAccessToken = context.authInfo?.token || '';
-        const session = sessionManager.getOrCreateSession(context.sessionId);
+        const session = sessionManager.getOrCreateSession(context.sessionId, (context.authInfo?.extra as any)?.claims);
         const isRetry = !!session.highPrivilegeAccessToken;
 
         try {
@@ -249,7 +249,7 @@ server.registerTool(
 
             // Only run the retry once to prevent loops
             if (isRetry) {
-                sessionManager.clearTokenState(session);
+                sessionManager.clearStepupAuthenticationState(session);
             }
         }
     },
@@ -282,7 +282,7 @@ server.registerTool(
         try {
 
             // Validate preconditions
-            const session = sessionManager.getSession(context.sessionId || '');
+            const session = sessionManager.getSession(context.sessionId || '', (context.authInfo?.extra as any)?.claims);
             if (!session?.stepupScope) {
                 const message = 'The continue_authorization operation was called incorrectly';
                 throw new McpServerError(400, 'invalid_request', message);
@@ -389,9 +389,9 @@ app.use('/', oauthFilter.execute);
  * Do the MCP boiler plate setup
  */
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
-app.post('/', async (req, res) => {
+app.post('/', async (request: Request, response: Response) => {
 
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = request.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
     if (sessionId && transports[sessionId]) {
       
@@ -400,7 +400,7 @@ app.post('/', async (req, res) => {
     } else {
       
         transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => sessionManager.createSession().id,
+            sessionIdGenerator: () => sessionManager.createSession(response.locals.claims).id,
             onsessioninitialized: (sessionId) => {
                 console.log(`>>> Session initialized: ${sessionId}`);
                 transports[sessionId] = transport;
@@ -419,19 +419,19 @@ app.post('/', async (req, res) => {
         await server.connect(transport);
     }
 
-    await transport.handleRequest(req, res, req.body);
+    await transport.handleRequest(request, response, request.body);
 });
 
-const handleSessionRequest = async (req: express.Request, res: express.Response) => {
+const handleSessionRequest = async (request: Request, response: Response) => {
 
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = request.headers['mcp-session-id'] as string | undefined;
     if (!sessionId || !transports[sessionId]) {
-        res.status(400).send('Invalid or missing session ID');
+        response.status(400).send('Invalid or missing session ID');
         return;
     }
 
     const transport = transports[sessionId];
-    await transport.handleRequest(req, res);
+    await transport.handleRequest(request, response);
 };
 
 app.get('/', handleSessionRequest);

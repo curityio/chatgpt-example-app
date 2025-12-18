@@ -16,16 +16,14 @@
 
 import {randomUUID} from 'crypto';
 import {Session} from './session.js';
+import {ClaimsPrincipal} from '../oauth/claimsPrincipal.js';
 
 /**
  * Configuration options for session management
  */
 export interface SessionConfig {
-    /** Session timeout in milliseconds (default: 30 minutes) */
     sessionTimeoutMs?: number;
-    /** Maximum number of concurrent sessions (default: 100) */
     maxSessions?: number;
-    /** How often to run cleanup in milliseconds (default: 5 minutes) */
     cleanupIntervalMs?: number;
 }
 
@@ -46,44 +44,28 @@ export class SessionManager {
     }
 
     /*
-     * Called by MCP's session generator
+     * Called by MCP session handling to create a new session when no existing one is found
      */
-    public getOrCreateSession(id: string | undefined): Session {
-      if (id) {
-          const session = this.getSession(id);
-        if (session) {
-          return session;
-        }
-      }
-      const session = this.createSession();
-      return session;
-    }
-
-    /*
-     * Creates a new session and initializes data
-     */
-    public createSession(): Session {
+    public createSession(claims?: ClaimsPrincipal): Session {
 
         if (this.sessions.size >= this.config.maxSessions) {
             this.cleanupExpiredSessions();
         }
 
-        let id = this.generateSessionId();
+        // At the time of writing, ChatGPT developer mode creates a new session on each tool request
+        // The MCP client's OAuth session is represented by the access token's delegation ID
+        // Therefore, use the delegation ID as a stable session identifier
+        if (claims?.delegationId) {
 
-        if (process.env.DEVELOPER_MODE) {
-            // ChatGPT seems to have some issue with keeping the MCP session.
-            // This causes the frontend to initiate a new MCP session on every tool call.
-            // Which, obviously, means that we're losing the session data between tool calls...
-            // As a temporary fix, we're using just one session for the demo purposes.
-            id = 'static_development_session';
-
-            const existingSession = this.sessions.get(id);
-
-            if (existingSession) {
-                return existingSession;
-            }
+            this.sessions.forEach((s) => {
+                if (s.delegationId === claims.delegationId) {
+                    return s;
+                }
+            });
         }
 
+        // Create the session data with initial state
+        const id = randomUUID();
         const session: Session = {
             id,
             createdAt: new Date(),
@@ -91,6 +73,7 @@ export class SessionManager {
             client: null,
             stepupScope: undefined,
             highPrivilegeAccessToken: undefined,
+            delegationId: claims?.delegationId,
             pollingUrl: '',
             pollingCount: 0,
             
@@ -101,33 +84,37 @@ export class SessionManager {
     }
 
     /*
-     * Generates a new session ID
+     * Called by tools
      */
-    private generateSessionId(): string {
-        return randomUUID();
+    public getOrCreateSession(id: string | undefined, claims?: ClaimsPrincipal): Session {
+      
+        if (id) {
+            const session = this.getSession(id);
+            if (session) {
+                return session;
+            }
+        }
+
+        return this.createSession(claims);
     }
 
     /*
      * Retrieves a session by ID and handles session expiry
      */
-    public getSession(sessionId: string): Session | undefined {
-        const session = this.sessions.get(sessionId);
+    public getSession(sessionId: string, claims?: ClaimsPrincipal): Session | undefined {
+
+        let session = this.sessions.get(sessionId);
         if (session) {
-            
             session.lastAccessedAt = new Date();
-            if (session.authorizationExpiry && session.authorizationExpiry < new Date()) {
-                session.stepupScope = undefined;
-                session.highPrivilegeAccessToken = undefined;
-                session.authorizationExpiry = undefined;
-            }
         }
+
         return session;
     }
 
     /*
      * Maintains the MCP session but clears state used for step up authentication
      */
-    public clearTokenState(session: Session) {
+    public clearStepupAuthenticationState(session: Session) {
         session.client = null;
         session.stepupScope = undefined;
         session.highPrivilegeAccessToken = undefined;
@@ -145,7 +132,7 @@ export class SessionManager {
     /*
      * Manually trigger cleanup of expired sessions
      */
-    public cleanupExpiredSessions(): number {
+    private cleanupExpiredSessions(): number {
         const now = new Date();
         const expiredSessionIds: string[] = [];
 
@@ -156,22 +143,10 @@ export class SessionManager {
             }
         }
 
-        // Remove expired sessions
         for (const sessionId of expiredSessionIds) {
             this.sessions.delete(sessionId);
         }
 
         return expiredSessionIds.length;
-    }
-
-    /*
-     * Gracefully shuts down the session manager
-     */
-    public shutdown(): void {
-        if (this.cleanupTimer) {
-            clearInterval(this.cleanupTimer);
-            this.cleanupTimer = undefined;
-        }
-        this.sessions.clear();
     }
 }

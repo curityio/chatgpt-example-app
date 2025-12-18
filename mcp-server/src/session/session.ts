@@ -27,12 +27,12 @@ export interface Session {
     // Time details
     createdAt: Date;
     lastAccessedAt: Date;
-    authorizationExpiry?: Date;
     
     // OAuth details
     client: DPoPOAuthClient | null;
     stepupScope: string | undefined;
     highPrivilegeAccessToken: string | undefined;
+    delegationId: string | undefined;
 
     // Polling for BankID completion 
     pollingUrl: string;

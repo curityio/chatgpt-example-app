@@ -26,12 +26,14 @@ export class ClaimsPrincipal {
     private readonly configuration: Configuration;
     private readonly scope: string;
     public readonly sub: string;
+    public readonly delegationId: string;
 
     public constructor(configuration: Configuration, claims: JWTPayload) {
 
         this.configuration = configuration;
         this.scope = this.getClaim(claims, 'scope');
         this.sub = this.getClaim(claims, 'sub');
+        this.delegationId = this.getClaim(claims, 'delegationId');
     }
 
     public enforceRequiredScope() {

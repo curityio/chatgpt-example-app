@@ -45,7 +45,7 @@ export class OAuthFilter {
 
         try {
             
-            (request as any).auth = await this.validateAccessToken(request);
+            (request as any).auth = await this.validateAccessToken(request, response);
             next();
 
         } catch (e: any) {
@@ -68,7 +68,7 @@ export class OAuthFilter {
     /*
      * Do the work and throw on error
      */
-    public async validateAccessToken(request: Request): Promise<AuthInfo> {
+    public async validateAccessToken(request: Request, response: Response): Promise<AuthInfo> {
 
         const accessToken = this.readAccessToken(request);
         if (!accessToken) {
@@ -109,13 +109,14 @@ export class OAuthFilter {
         const claimsPrincipal = new ClaimsPrincipal(this.configuration, result.payload);
         claimsPrincipal.enforceRequiredScope();
 
-        // If the JWT is OK, pass the access token and claims to MCP tool handling
+        // If the JWT is OK, make claims available to both MCP session creation and MCP tools
+        response.locals.claims = claimsPrincipal;
         return {
             token: accessToken,
             clientId: '',
             scopes: [],
             extra: {
-                claimsPrincipal,
+                claims: claimsPrincipal,
             },
         };
     }
