@@ -10,7 +10,7 @@ local jwt = require 'resty.jwt'
 -- Get values into an array that can be iterated multiple times
 --
 local function iterator_to_array(iterator)
-
+    
     local i = 1;
     local array = {};
 
@@ -60,52 +60,23 @@ local function initialize_configuration(config)
 end
 
 --
--- Return errors due to invalid tokens or introspection technical problems
+-- Return server errors
 --
 local function error_response(status, code, message)
 
     local method = ngx.req.get_method():upper()
     if method ~= 'HEAD' then
-
+    
         ngx.status = status
         ngx.header['content-type'] = 'application/json'
-
+        
         local jsonData = '{"code":"' .. code .. '","message":"' .. message .. '"}'
         ngx.say(jsonData)
     end
-
+    
     ngx.exit(status)
 end
 
---
--- Return a generic invalid token message and optionally return resource server metadata
---
-local function unauthorized_error_response(config)
-
-    local method = ngx.req.get_method():upper()
-    if method ~= 'HEAD' then
-
-        ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.header['content-type'] = 'application/json'
-
-        local code = 'invalid_token'
-        local message = 'Missing, invalid or expired access token'
-
-        local wwwAuthenticate = 'Bearer error="' .. code .. '", error_description="' .. message .. '"'
-        if config.resource_metadata_url ~= nil then
-            wwwAuthenticate = wwwAuthenticate .. ', resource_metadata="' .. config.resource_metadata_url .. '"'
-        end
-        if config.scope ~= nil then
-            wwwAuthenticate = wwwAuthenticate .. ', scope="' .. config.scope .. '"'
-        end
-        ngx.header['WWW-Authenticate'] = wwwAuthenticate
-
-        local jsonData = '{"error":"' .. code .. '","code":"' .. code .. '","message":"' .. message .. '"}'
-        ngx.say(jsonData)
-    end
-
-    ngx.exit(ngx.HTTP_UNAUTHORIZED)
-end
 
 local function server_error_response(config)
     error_response(ngx.HTTP_INTERNAL_SERVER_ERROR, 'server_error', 'Problem encountered processing the request')
@@ -122,14 +93,14 @@ local function introspect_access_token(access_token, config)
     local result, error = httpc:request_uri(config.introspection_endpoint, {
         method = 'POST',
         body = 'token=' .. access_token,
-        headers = {
+        headers = { 
             ['authorization'] = authorizationHeader,
             ['content-type'] = 'application/x-www-form-urlencoded',
             ['accept'] = 'application/jwt'
         },
         ssl_verify = config.verify_ssl
     })
-
+    
     if error then
         local connectionMessage = 'A technical problem occurred during access token introspection: '
         ngx.log(ngx.WARN, connectionMessage .. error)
@@ -173,7 +144,7 @@ local function verify_access_token(access_token, config)
 
         -- Return cached introspection results for the same token
         result = { status = 200, jwt = existing_jwt }
-
+    
     else
 
         -- Otherwise introspect the opaque access token
@@ -202,8 +173,7 @@ end
 --
 function _M.run(config)
 
-    -- Start by validating configuration
-    if initialize_configuration(config) == false then
+    if initialize_configuration(config) == false then 
         server_error_response(config)
         return
     end
@@ -218,21 +188,29 @@ function _M.run(config)
         local access_token_untrimmed = string.sub(auth_header, 8)
         local access_token = string.gsub(access_token_untrimmed, "%s+", "")
         local result = verify_access_token(access_token, config)
-
+    
+        -- Return technical error responses
         if result.status == 500 then
             error_response(ngx.HTTP_INTERNAL_SERVER_ERROR, 'server_error', 'Problem encountered authorizing the HTTP request')
         end
 
-        if result.status ~= 200 then
-            ngx.log(ngx.WARN, 'Received a ' .. result.status .. ' introspection response due to the access token being invalid or expired')
-            unauthorized_error_response(config)
+        -- Success responses forward a JWT to the target API
+        if result.status == 200 then
+            ngx.req.set_header('Authorization', 'Bearer ' .. result.jwt)
         end
 
-        ngx.req.set_header('Authorization', 'Bearer ' .. result.jwt)
-    else
-
-        ngx.log(ngx.WARN, 'No valid access token was found in the HTTP Authorization header')
-        unauthorized_error_response(config)
+        -- For invalid token errors, there are multiple ways to return the MCP authorization www-authenticate response
+        -- The plugin could return resource_metadata and scope fields in an unauthorized_error_response:
+        -- https://github.com/curityio/nginx-lua-phantom-token-plugin/blob/main/plugin/access.lua#L89
+        
+        --
+        -- However, the MCP server also needs to handle race conditions where tokens expire
+        -- This example passes requests through to the target API so that the API implements the www-authenticate logic
+        -- The clear header logic prevents a stolen JWT being passed through to APIs
+        if result.status ~= 200 then
+            ngx.req.clear_header('Authorization')
+        end
+        
     end
 end
 

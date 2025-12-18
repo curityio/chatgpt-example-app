@@ -165,13 +165,14 @@ server.registerTool(
             // Handle the step-up challenge from the portfolio API, once only, by running a HAAPI flow
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
-            if (error.status === 403 && error.scope && !session.stepupScope) {
+            if (error.status === 403 && error.scope) {
                 session.stepupScope = error.scope;
                 console.log(`>>> Setting step-up scope for buy operation to ${session.stepupScope}`);
                 return await requestAuthorization(receivedAccessToken, session);
             }
 
             return error.toMcpToolErrorResponse();
+
         } finally {
 
             // Only run the retry once to prevent loops
@@ -236,7 +237,7 @@ server.registerTool(
             // Handle the step-up challenge from the portfolio API, once only, by running ta HAAPI flow
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
-            if (error.status === 403 && error.scope && !session.stepupScope) {
+            if (error.status === 403 && error.scope) {
                 session.stepupScope = error.scope;
                 console.log(`>>> Setting step-up scope for sell operation to ${session.stepupScope}`);
                 return await requestAuthorization(receivedAccessToken, session);
@@ -282,8 +283,8 @@ server.registerTool(
 
             // Validate preconditions
             const session = sessionManager.getSession(context.sessionId || '');
-            if (!session) {
-                const message = 'You must have an existing session to call continue_authorization';
+            if (!session?.stepupScope) {
+                const message = 'The continue_authorization operation was called incorrectly';
                 throw new McpServerError(400, 'invalid_request', message);
             }
             console.log(`>>> Continue operation has step-up scope: ${session.stepupScope}`);
