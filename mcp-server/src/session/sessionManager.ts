@@ -15,21 +15,7 @@
  */
 
 import {randomUUID} from 'crypto';
-import {DPoPOAuthClient} from './dpopOAuthClient.js';
-
-/**
- * Represents session-specific state and data
- */
-export interface Session {
-    id: string;
-    createdAt: Date;
-    lastAccessedAt: Date;
-    token: string | undefined;
-    authorizationExpiry?: Date;
-    pollingUrl: string;
-    pollingCount: number;
-    client: DPoPOAuthClient | null;
-}
+import {Session} from './session.js';
 
 /**
  * Configuration options for session management
@@ -95,10 +81,12 @@ export class SessionManager {
             id,
             createdAt: new Date(),
             lastAccessedAt: new Date(),
-            token: undefined,
+            client: null,
+            stepupScope: undefined,
+            highPrivilegeAccessToken: undefined,
             pollingUrl: '',
             pollingCount: 0,
-            client: null
+            
         };
 
         this.sessions.set(id, session);
@@ -127,7 +115,8 @@ export class SessionManager {
 
             // Check if authorization has expired
             if (session.authorizationExpiry && session.authorizationExpiry < new Date()) {
-                session.token = undefined;
+                session.stepupScope = undefined;
+                session.highPrivilegeAccessToken = undefined;
                 session.authorizationExpiry = undefined;
             }
         }

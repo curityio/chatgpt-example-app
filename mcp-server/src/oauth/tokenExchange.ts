@@ -15,24 +15,19 @@
  */
 
 import Configuration from '../configuration.js';
-import {Session} from '../stepup/sessionManager.js';
 import {TokenResponse} from './tokenResponse.js';
 import {makeFetchRequest} from '../errors/fetchClient.js';
 
 /*
- * Get an access token with the audience of the portfolio API
+ * Exchange an access token with the MCP server's audience with an access token for the Portfolio API's audience
  */
-export async function exchangeAccessToken(configuration: Configuration, session: Session, receivedAccessToken: string) {
-
-    // Initially, the MCP server has a low privilege access token from the email login
-    // After the step-up flow, ChatGPT re-calls the original API operation and the session has a high privilege token
-    const tokenToExchange = session?.token || receivedAccessToken;
+export async function exchangeAccessToken(configuration: Configuration, accessToken: string) {
 
     const body = new URLSearchParams({
         client_id: configuration.tokenExchangeClientId,
         client_secret: configuration.tokenExchangeClientSecret,
         grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        subject_token: tokenToExchange,
+        subject_token: accessToken,
         subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
         audience: configuration.tokenExchangeAudience
     } as any);

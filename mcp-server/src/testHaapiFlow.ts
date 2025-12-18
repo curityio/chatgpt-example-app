@@ -14,20 +14,27 @@
  *  limitations under the License.
  */
 
-import Configuration from './configuration.js';
-import {Authorizer} from './stepup/authorizer.js';
-import {authenticateWithBankID} from './stepup/bankid.js';
 
-// Load configuration and create an authorizer
+import Configuration from './configuration.js';
+import {SessionManager} from './session/sessionManager.js';
+import {Authorizer} from './haapi/authorizer.js';
+
+// Use the same objects as the MCP server
 const configuration = new Configuration();
 const authorizer = new Authorizer(configuration);
 
-// Create the HAAPI client
-const client = await authorizer.createAuthenticatedHaapiClient();
+// Configure the session for step up
+const sessionManager = new SessionManager();
+const session = sessionManager.createSession();
+session.stepupScope = 'transactions';
+session.pollingUrl = '';
 
-// Feed in an access token saved from a previous debug session and re-run the HAAPI flow
-const initialAccessToken = process.env.HAAPI_TEST_ACCESS_TOKEN || '';
-await authorizer.runBankIDAuthenticationFlow(initialAccessToken, client);
+// Debug the start of the flow to get the initial JWT access token, e.g. from MCP server debug logs
+const initialAccessToken = process.env.TEST_ACCESS_TOKEN || '';
+await authorizer.startHaapiTest(initialAccessToken, session);
 
-// After the user approves, follow redirects to complete the flow 
-await authenticateWithBankID(configuration, client, '');
+// Render the QR code and approve in BankID
+
+// Complete the flow to get a high privilege access token
+const result = await authorizer.endHaapiTest(session);
+console.log(result.accessToken);

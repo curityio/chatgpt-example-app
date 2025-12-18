@@ -16,7 +16,9 @@ Then re-run the `./deploy.sh` script to deploy the system with a local developme
 
 ## Run a Local MCP Server and API
 
-Use the following commands to run the local MCP server on port 8081:
+Use the following commands to run the local MCP server on port 8081.\
+The MCP server renders detailed debug logs to enable developers to view HAAPI messages.\
+Remove the debug logging after stablilization.
 
 ```shell
 cd mcp-server
@@ -29,5 +31,3 @@ Use the following commands in another terminal window to run the local Portfolio
 cd portfolio-api
 npm start
 ```
-
-You can change the MCP server and API code with hot reloading and re-run the end-to-end flow.

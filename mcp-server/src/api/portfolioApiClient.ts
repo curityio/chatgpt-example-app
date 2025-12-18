@@ -27,8 +27,8 @@ export async function getPortfolio(configuration: Configuration, token: string):
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     };
     
-    console.log('Fetching portfolio from', configuration.apiUrl);
-    const response = await makeFetchRequest(configuration.apiUrl, options);
+    console.log('>>> Fetching portfolio from', configuration.portfolioApiUrl);
+    const response = await makeFetchRequest(configuration.portfolioApiUrl, options);
     const portfolio = await response.json();
     const output = { result: portfolio };
     return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
@@ -47,7 +47,7 @@ export async function buyOrSellStock(configuration: Configuration, id: string, d
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     };
     
-    const response = await makeFetchRequest(`${configuration.apiUrl}/${id}`, options);
+    const response = await makeFetchRequest(`${configuration.portfolioApiUrl}/${id}`, options);
     const result = await response.json();
     return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { result } };
 }

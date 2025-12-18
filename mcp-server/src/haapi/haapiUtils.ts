@@ -39,9 +39,9 @@ export async function haapiResponseView<View extends HaapiView>(
     if (view.type === 'redirection-step') {
         
         const redirectView = view as HaapiRedirect;
-        console.log('REDIRECT: ', JSON.stringify(redirectView, null, 2));
+        console.log('>>> Redirect: ', JSON.stringify(redirectView, null, 2));
         const url = ensureAbsoluteUrl(baseUrl, redirectView.actions[0].model.href);
-        console.log('Following HAAPI redirect to:', url);
+        console.log('>>> Following HAAPI redirect to:', url);
         const action = redirectView.actions[0];
         
         if (action.model.method === 'POST') {

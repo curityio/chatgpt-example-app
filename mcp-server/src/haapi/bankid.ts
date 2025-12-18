@@ -82,12 +82,12 @@ export async function authenticateWithBankID(
     const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(
         configuration.authorizationServerBaseUrl, redirectResponse as Response, client);
 
-    console.log('Final authenticator response:', JSON.stringify(finalView, null, 2));
+    console.log('>>> Final authenticator response:', JSON.stringify(finalView, null, 2));
 
     if (finalView.metadata.viewName !== 'templates/oauth/success-authorization-response') {
         throw new Error('Expected final authorization-response view now!');
     }
-    console.log('Authentication successful! Exchanging authorization code for access token...');
+    console.log('>>> Authentication successful! Exchanging authorization code for access token...');
 
     const oauthCallbackUrl = finalView.links.find(link => link.rel === 'authorization-response')?.href;
     if (!oauthCallbackUrl) {
@@ -97,7 +97,7 @@ export async function authenticateWithBankID(
     const tokenResponse = await client.postAuthorizationCode(configuration.tokenEndpoint,
         finalView.properties.code, oauthCallbackUrl.substring(0, oauthCallbackUrl.indexOf('?')));
 
-    console.log('OAuth token response:', tokenResponse);
+    console.log('>>> HAAPI token response:', tokenResponse);
 
     return {
         status: 'done',

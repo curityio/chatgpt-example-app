@@ -67,8 +67,7 @@ app.use(oauthFilter.validateAccessToken);
 app.get('/api/portfolio', (request: Request, response: Response) => {
     
     const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
-    if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope) &&
-        !claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
+    if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope)) {
 
             const error = new ApiError(
                 403,

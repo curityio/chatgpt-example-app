@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+import {extractWWWAuthenticateParams} from '@modelcontextprotocol/sdk/client/auth.js';
 import {McpServerError} from '../errors/mcpServerError.js';
 
 /*
@@ -33,8 +34,18 @@ export async function makeFetchRequest(url: string, options: RequestInit): Promi
             return response;
         }
 
-        // Throw a typed error
-        throw await getResponseError(response);
+        // Get error details
+        const error = await getResponseError(response);
+
+        // When applicable, read the scope from the www-authenticate response header
+        if (response.status === 403) {
+            const wwwData = extractWWWAuthenticateParams(response);
+            if (wwwData.scope) {
+                error.scope = wwwData.scope;
+            }
+        }
+
+        throw error;
 
     } catch (e: any) {
 

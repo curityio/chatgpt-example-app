@@ -33,7 +33,7 @@ export class DPoPOAuthClient {
 
     private readonly clientId: string;
     private readonly clientPassword: string;
-    private readonly keyPair: Promise<DPoPKeyPair>;
+    private readonly keyPair: DPoPKeyPair;
     private readonly httpsAgent: https.Agent;
     private readonly authnBaseUrl: string;
     private readonly externalAuthnBaseUrl: string;
@@ -43,10 +43,18 @@ export class DPoPOAuthClient {
     private expiresAt?: Date;
     private sessionId?: string;
 
-    constructor(configuration: Configuration) {
+    static async generateKeyPair(): Promise<DPoPKeyPair> {
+        return await DPoP.generateKeyPair('ES256', { extractable: false });
+    }
+    
+    constructor(configuration: Configuration, keypair: DPoPKeyPair) {
+        
         this.clientId = configuration.haapiClientId;
         this.clientPassword = configuration.haapiClientSecret;
-        this.keyPair = this.generateKeyPair();
+        this.keyPair = keypair;
+        this.clientId = configuration.haapiClientId;
+        this.clientPassword = configuration.haapiClientSecret;
+        
         
         // The DPoPOAuthClient could send requests to internal token endpoints
         // However, the `htu` claim in DPoP must always be created using the authorization server's external URL
@@ -62,10 +70,6 @@ export class DPoPOAuthClient {
         });
     }
 
-    private generateKeyPair(): Promise<DPoPKeyPair> {
-        return DPoP.generateKeyPair('ES256', { extractable: false });
-    }
-
     private getBasicAuthHeader(): string {
       
         // Encode client credentials for Basic Authentication according to RFC 6749
@@ -77,9 +81,8 @@ export class DPoPOAuthClient {
 
     private async createDPoPProof(method: string, url: string, accessToken?: string): Promise<string> {
         let nonce!: string | undefined;
-        const keyPair = await this.keyPair;
         const dpopProof = await DPoP.generateProof(
-          keyPair,
+          this.keyPair,
           this.ensureExternalDomain(url.split('?')[0]),
           method,
           nonce,
@@ -140,7 +143,7 @@ export class DPoPOAuthClient {
         if (tokenData.expires_in) {
             this.expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
         }
-        console.log('Obtained client Access Token, expires at:', this.expiresAt);
+        console.log('>>> Obtained client access token, expires at:', this.expiresAt);
     }
 
     async request(url: string, options: RequestInit = {}): Promise<Response> {
