@@ -26,7 +26,7 @@ export function getDefaultServerError(): McpServerError {
 /*
  * Return the response error
  */
-export function getAndLogTypedError(e: any): McpServerError {
+export function getAndLogResponseError(e: any): McpServerError {
 
     if (e instanceof McpServerError) {
         logError(e);

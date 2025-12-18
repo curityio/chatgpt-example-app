@@ -30,7 +30,7 @@ import {exchangeAccessToken} from './oauth/tokenExchange.js';
 import {Authorizer} from './stepup/authorizer.js';
 import {SessionManager} from './stepup/sessionManager.js';
 import {requestAuthorization} from './stepup/start.js';
-import {getAndLogTypedError} from './errors/errorHandler.js';
+import {getAndLogResponseError} from './errors/errorHandler.js';
 
 /*
  * Create main objects
@@ -106,7 +106,7 @@ server.registerTool(
             return await getPortfolio(configuration, token);
 
         } catch (e: any) {
-            return getAndLogTypedError(e).toMcpToolErrorResponse();
+            return getAndLogResponseError(e).toMcpToolErrorResponse();
         }
     },
 );
@@ -161,7 +161,7 @@ server.registerTool(
 
             // Handle the step-up challenge from the portfolio API by running ta HAAPI flow
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
-            const error = getAndLogTypedError(e);
+            const error = getAndLogResponseError(e);
             if (error.status === 403) {
                 return await requestAuthorization(authorizer, receivedAccessToken, session);
             }
@@ -221,7 +221,7 @@ server.registerTool(
 
             // Handle the step-up challenge from the portfolio API by running ta HAAPI flow
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
-            const error = getAndLogTypedError(e);
+            const error = getAndLogResponseError(e);
             if (error.status === 403) {
                 return await requestAuthorization(authorizer, receivedAccessToken, session);
             }
@@ -280,7 +280,7 @@ server.registerTool(
                 }
             }
         } catch (e: any) {
-            return getAndLogTypedError(e).toMcpToolErrorResponse();
+            return getAndLogResponseError(e).toMcpToolErrorResponse();
         }
     }
 );

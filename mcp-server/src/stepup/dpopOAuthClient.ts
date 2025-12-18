@@ -19,7 +19,7 @@ import https from 'https';
 import * as DPoP from 'dpop'
 import Configuration from '../configuration.js';
 import {TokenResponse} from '../oauth/tokenResponse.js';
-import {McpServerError} from '../errors/mcpServerError.js';
+import {makeFetchRequest} from '../errors/fetchClient.js';
 
 interface DPoPKeyPair {
     publicKey: DPoP.CryptoKey;
@@ -27,7 +27,7 @@ interface DPoPKeyPair {
 }
 
 /*
- * Implements generic HAAPI requests and sends DPoP proofs
+ * Sends DPoP proofs and follows HAAPI requests
  */
 export class DPoPOAuthClient {
 
@@ -119,7 +119,7 @@ export class DPoPOAuthClient {
 
         console.log('>>> Request with body ' + body.toString());
 
-        const response = await fetch(tokenEndpoint, {
+        const response = await makeFetchRequest(tokenEndpoint, {
             method: 'POST',
             headers: {
                 'Authorization': this.getBasicAuthHeader(),
@@ -131,11 +131,6 @@ export class DPoPOAuthClient {
             // @ts-ignore - Node.js specific agent property
             agent: tokenEndpoint.startsWith('https:') ? this.httpsAgent : undefined,
         });
-        console.log(`>>> HAAPI authenticate client returned status: ${response.status}`);
-        if (!response.ok) {
-            console.log('>>> Response from Curity: ' + await response.text())
-            throw new McpServerError(response.status, 'haapi_client_authentication', 'HAAPI client authentication failed');
-         }
 
         const tokenData = await response.json() as TokenResponse;
 
@@ -151,7 +146,7 @@ export class DPoPOAuthClient {
     async request(url: string, options: RequestInit = {}): Promise<Response> {
       
         if (!this.accessToken) {
-            throw new McpServerError(500, 'server_error', 'Missing HAAPI access token');
+            throw new Error('HAAPI access token not found');
         }
 
         const method = options.method || 'GET';
