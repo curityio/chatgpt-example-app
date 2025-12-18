@@ -1,0 +1,22 @@
+{
+  "name": "portfolio-widget",
+  "version": "1.0.0",
+  "description": "A ChatGPT app that uses step-up authentication",
+  "author": "Curity AB",
+  "license": "Apache-2.0",
+  "main": "src/portfolio.tsx",
+  "scripts": {
+    "build": "esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify",
+    "deploy": "cp app.css dist/bundle.js ../mcp-server/dist/web"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/react-dom": "^19.2.3",
+    "@types/react": "^19.2.7",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.9.3"
+  }
+}

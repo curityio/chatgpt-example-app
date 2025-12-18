@@ -1,91 +1,58 @@
-# Example ChatGPT App (Todo app)
+# ChatGPT App with MCP Step-Up Authentication
 
 [![Quality](https://img.shields.io/badge/quality-demo-red)](https://curity.io/resources/code-examples/status/)
 [![Availability](https://img.shields.io/badge/availability-source-blue)](https://curity.io/resources/code-examples/status/)
 
-An example that shows how an AI application can securely call APIs with elevated permissions and human-in-the-loop.
+An example that shows how a ChatGPT widget can securely call APIs with human-in-the-loop approval.\
+The Hypermedia Authentication API enables step-up authentication with a simple user experience.
 
-## Prerequisites
+## Initial User Login Flow
 
-You need the following tools on your computer in order to run the example:
+ChatGPT's MCP client first triggers user authentication for the test user `john.doe@demo.example`.\
+Get a one-time code for the test user from the test email inbox at `http://localhost:1080`.\
+Next, consent to ChatGPT's level of data access and ChatGPT receives a low privilege access token.
 
-- maven
-- docker
-- node and npm (node, at least v22)
+<img src="images/chatgpt-consent.jpg" alt="User Consent" style="width:50%" />
 
-You also need a valid license to run the Curity Identity Server. Make sure you have the license file locally and point the `LICENSE_FILE_PATH` environment variable to it. For example:
+ChatGPT then downloads the widget app as an MCP resource and runs it in an iframe.\
+The widget's JavaScript calls an MCP tool to get portfolio data and render it.
 
-```shell
-export LICENSE_FILE_PATH=/license/license.json
-```
+![ChatGPT View](images/chatgpt-view.jpg)
 
-## Overview
+## Step-Up Authentication Flow
 
-The example consists of the following components:
+The user can interact with the widget to invoke a tool to buy or sell stocks.\
+When the user initiates a high privilege buy or sell operation it triggers a step up flow:
 
-- **MCP Server** — an OAuth-protected MCP server, that is capable of exchanging access tokens using HAAPI, and implements tools for calling the Todo API.
-- **The Curity Identity Server** — serves as the authorization server which protects both access to the MCP Server and to the APIs. It is also responsible for authenticating users.
-- **Todo API** — a simple API to manage a list of to-dos. It exposes endpoints for listing the tasks and marking them either as done or undone. The API is protected with OAuth access tokens.
-- **API Gateway** — the Kong API gateway is used for the phantom token flow — it exchanges opaque access tokens handled by the MCP client into JWTs required by the MCP server.
+![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.jpg)
 
-The following diagram shows an overview of an end-to-end flow implemented in this example:
+The tool triggers a server side API-driven authentication flow using the Hypermedia Authentication API.\
+The tool returns BankID's animated QR code to the widget, which polls the MCP server for completion.\
+The user authenticates with BankID to approve the transaction and the widget renders an updated balance.
 
-![Overview of an end-to-end flow implemented by this example](docs/end-to-end-overview.png)
+![ChatGPT BankID Approval](images/chatgpt-bankid.jpg)
 
-## Running the Example
+The MCP server's HAAPI flow gets a high privilege access token that never leaves the backend environment.\
+First, an [Access Token Authenticator](https://github.com/curityio/access-token-authenticator) sets the authenticated subject from the low privilege access token.\
+Next, BankID captures human approval before the Curity Identity Server issues the high privilege access token.\
+The MCP server then calls the Portfolio API with the high privilege access token to complete the transaction.
 
-Follow these steps to run the example:
+![Backend Token Flow](images/token-flow.png)
 
-1. Add the following line into your local `/etc/hosts` file (or equivalent for your operating system):
+## View Security Configuration
 
-```
-127.0.0.1 api.demo.example mcp.demo.example admin.demo.example login.demo.example mail.demo.example
-```
+Run the Admin UI for the Curity Identity Server to view the OAuth security settings:
 
-2. Make sure the `LICENSE_FILE_PATH` environment variable points to a license for the Curity Identity Server. For example:
+- URL: `http://localhost:6749/admin`
+- Username: `admin`
+- Password: `Password1`
 
-```shell
-export LICENSE_FILE_PATH=/license/license.json
-```
+## Further Information
 
-3. Build the project files by running the following command from the project's root directory:
+See the following resources for further information and tutorials:
 
-```shell
-./build.sh
-```
-4. Start all the Docker containers by running the following command from the project's root directory:
-
-```shell
-./deploy.sh
-```
-
-Once you're finished working with the project, use the following command from the project's root directory to free up resources:
-
-```shell
-./teardown.sh
-```
-
-## Testing the End to End Flow
-
-To test the complete flow, you need to use a compatible MCP client. See the options below for instructions on how to use some popular clients.
-
-The initial setup comes with a pre-registered user account. Use `john.doe@demo.example` whenever prompted for an email. The email authenticator will send a one-time-password to the user's email. This example uses a local maildev server to catch all outgoing emails. Navigate to `https://mail.demo.example` to access the dev inbox. You will see all the OTP emails there.
-
-You can register other users and log in as them. The Todo API checks authorization and requires the user `john.doe@demo.example`, so you will see authorization errors when calling the tools with other users' tokens.
-
-
-### Test with MCP Inspector
-
-The simplest way is to test the solution with the MCP inspector tool. See the [MCP Inspector readme](clients/mcp-inspector/README.md) for details of installing and running the tool.
-
-### Test with Claude Desktop
-
-// TODO
-
-## Development
-
-See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for details on how to work with the code locally.
-
-## Work In Progress
-
-See the [Work In Progress](docs/WIP.md) document to read about components that are in progress.
+- See the [Deployment README](DEPLOYMENT.md) to learn how to run the example and test end-to-end.
+- See the [Development README](DEVELOPMENT.md) to learn how to run the MCP server code locally.
+- See the [Secure an OpenAI ChatGPT App](https://curity.io/resources/learn/chatgpt-widget-haapi) for a tutorial that explains this code's security flow in depth.
+- See the [Access Token Authenticator Plugin](https://github.com/curityio/access-token-authenticator) to learn how to use an access token as an authentication factor.
+- Please visit [curity.io](https://curity.io/) for more information about the Curity Identity Server.

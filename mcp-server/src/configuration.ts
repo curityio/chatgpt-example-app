@@ -15,44 +15,52 @@
  */
 
 /*
- * Configuration settings for the OAuth-secured MCP server that acts as an API gateway
+ * Configuration settings for the OAuth-secured MCP server that runs in front of the Portfolio API
  */
-export default class Configuration {
+export class Configuration {
+
     public port: string;
+    public jwksUri: string;
+    public requiredJwtAlgorithm: string;
+    public requiredIssuer: string;
+    public requiredAudience: string;
+    public requiredScope: string;
+    public haapiClientId: string;
+    public haapiClientSecret: string;
+    public tokenExchangeClientId: string;
+    public tokenExchangeClientSecret: string;
+    public tokenExchangeAudience: string;
     public externalBaseUrl: string;
-    public apiUrl: string;
+    public portfolioApiUrl: string;
     public authorizationServerBaseUrl: string;
     public tokenEndpoint: string;
     public authorizationEndpoint: string;
-    public scope: string;
     public redirectUri: string;
-    public authnServerBaseUrl: string;
-    // The MCP server can connect to the authorization server using internal network (e.g. through http://idsvr:8443 when running on Docker), but `htu` claim in DPoP needs to be created using the authorization server's public address.
-    public externalAuthnServerBaseUrl: string;
     public acr: string;
-    public backendAccessToken: string;
-    public username: string;
-    public password: string;
-    public haapiClientId: string;
-    public haapiClientSecret: string;
-
+    public developerMode: boolean;
+    public haapiTestAccessToken: string;
+    
     public constructor() {
         this.port = this.getValue('PORT');
+        this.jwksUri = this.getValue('JWKS_URI');
+        this.requiredJwtAlgorithm = this.getValue('REQUIRED_JWT_ALGORITHM');
+        this.requiredIssuer = this.getValue('REQUIRED_JWT_ISSUER');
+        this.requiredAudience = this.getValue('REQUIRED_JWT_AUDIENCE');
+        this.requiredScope = this.getValue('REQUIRED_SCOPE');
+        this.tokenExchangeClientId = this.getValue('TOKEN_EXCHANGE_CLIENT_ID');
+        this.tokenExchangeClientSecret = this.getValue('TOKEN_EXCHANGE_CLIENT_PASSWORD');
+        this.tokenExchangeAudience = this.getValue('TOKEN_EXCHANGE_AUDIENCE');
+        this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
+        this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
         this.externalBaseUrl = this.getValue('EXTERNAL_BASE_URL');
-        this.apiUrl = this.getValue('API_URL');
+        this.portfolioApiUrl = this.getValue('PORTFOLIO_API_URL');
         this.authorizationServerBaseUrl = this.getValue('AUTHORIZATION_SERVER_BASE_URL');
         this.tokenEndpoint = this.getValue('TOKEN_ENDPOINT');
         this.authorizationEndpoint = this.getValue('AUTHORIZATION_ENDPOINT');
-        this.scope = this.getValue('SCOPE');
         this.redirectUri = this.getValue('REDIRECT_URI');
-        this.authnServerBaseUrl = this.getValue('AUTHN_SERVER_BASE_URL');
-        this.externalAuthnServerBaseUrl = this.getValue('EXTERNAL_AUTHN_SERVER_BASE_URL');
         this.acr = this.getValue('ACR');
-        this.backendAccessToken = this.getValue('BACKEND_ACCESS_TOKEN', '');
-        this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
-        this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
-        this.username = this.getValue('USERNAME', 'testuser');
-        this.password = this.getValue('PASSWORD', 'password');
+        this.developerMode = this.getValue('DEVELOPER_MODE') === '1';
+        this.haapiTestAccessToken = this.getValue('HAAPI_TEST_ACCESS_TOKEN', '');
     }
 
     private getValue(name: string, defaultValue?: string): string {

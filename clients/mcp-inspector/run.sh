@@ -23,14 +23,10 @@ if [ ! -d inspector ]; then
   # Install dependencies
   #
   cd inspector
+  git checkout 0.17.5
   npm install
   cd ..
 fi
-
-#
-# Trust the development root certificate
-#
-export NODE_EXTRA_CA_CERTS=$(readlink -f '../../apigateway/certs/example.ca.crt')
 
 #
 # Run the MCP inspector client, which sets its initial scope from the scopes_supported metadata response value

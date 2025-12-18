@@ -4,22 +4,20 @@
 function result(context) {
   var delegationData = context.getDefaultDelegationData();
   var issuedDelegation = context.delegationIssuer.issue(delegationData);
-
   var accessTokenData = context.getDefaultAccessTokenData();
 
-  // Support for resource identifier and audience restricted access tokens
+  // See if the MCP client requested a custom audience in the resource parameter
   var resource = context.getRequest().getFormParameter("resource");
-
   if (resource) {
     // Allow if the requested resource value is part of the client's configured audiences
-    if (context.client.audiencesAsString.split(" ").indexOf(resource) != -1) {
+    if (context.client.audiencesAsString && context.client.audiencesAsString.split(" ").indexOf(resource) != -1) {
       accessTokenData.aud = [resource];
     }
     // Allow if the requested resource value is configured in client properties (DCR clients)
-    else if (context.client.properties.audiences.indexOf(resource) != -1) {
+    else if (context.client.properties.audiences && context.client.properties.audiences.indexOf(resource) != -1) {
       accessTokenData.aud = [resource];
     }
-    // Reject the request if the client is unauthorized to the resource.
+    // Reject the request if the client is unauthorized to the resource
     else {
       throw exceptionFactory.badRequestException(
         "invalid_target",
@@ -28,10 +26,25 @@ function result(context) {
     }
   }
 
-  var issuedAccessToken = context.accessTokenIssuer.issue(
-    accessTokenData,
-    issuedDelegation
-  );
+  // Some DCR clients, like ChatGPT, do not send a resource parameter in token requests
+  // In such cases, use the DCR client's configured audiences
+  if (!resource && context.client.properties.audiences) {
+    accessTokenData.aud = context.client.properties.audiences;
+  }
+
+  // Issue JWTs to backend HAAPI clients
+  var issuedAccessToken = null;
+  if (context.client.id === 'mcp-server-haapi') {
+    issuedAccessToken = context.getDefaultAccessTokenJwtIssuer().issue(
+      accessTokenData,
+      issuedDelegation
+    );
+  } else {
+    issuedAccessToken = context.accessTokenIssuer.issue(
+      accessTokenData,
+      issuedDelegation
+    );
+  }
 
   var refreshTokenData = context.getDefaultRefreshTokenData();
   var issuedRefreshToken = context.refreshTokenIssuer.issue(
@@ -51,7 +64,6 @@ function result(context) {
   if (idTokenData) {
     var idTokenIssuer = context.idTokenIssuer;
     idTokenData.at_hash = idTokenIssuer.atHash(issuedAccessToken);
-
     responseData.id_token = idTokenIssuer.issue(idTokenData, issuedDelegation);
   }
 

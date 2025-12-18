@@ -1,0 +1,110 @@
+_format_version: '2.1'
+_transform: true
+
+services:
+
+#
+# All MCP client API requests use this API gateway entry point
+# CORS allows access to the MCP Inspector
+# The MCP server connection is secured by opaque access tokens
+# The phantom token plugin introspects opaque access tokens and forwards JWT access tokens to the MCP server
+#
+- name: mcp-server
+  url: ${MCP_SERVER_INTERNAL_URL}
+  routes:
+  - name: mcp-server-route
+    hosts:
+    - $EXTERNAL_HOST_NAME
+    paths:
+    - /mcp
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - 'http://localhost:6274'
+  - name: phantom-token
+    config:
+      introspection_endpoint: http://idsvr:8443/oauth/v2/oauth-introspect
+      client_id: api-gateway-client
+      client_secret: Password1
+      token_cache_seconds: 900
+
+#
+# The MCP server exposes OAuth protected resource metadata that points MCP clients to the authorization server
+# This endpoint is not secured so we use a different route for it
+#
+- name: mcp-server-resource-metadata
+  url: $MCP_SERVER_INTERNAL_URL/.well-known/oauth-protected-resource
+  routes:
+  - name: mcp-server-resource-metadata-route
+    hosts:
+    - $EXTERNAL_HOST_NAME
+    paths:
+    - /.well-known/oauth-protected-resource
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - 'http://localhost:6274'
+
+#
+# MCP authorization requires a root level OAuth authorization server metadata endpoint
+#
+- name: authorization-server-metadata-reroute
+  url: http://idsvr:8443/.well-known/oauth-authorization-server/oauth/v2/oauth-anonymous
+  routes:
+  - name: authorization-server-metadata-reroute
+    hosts:
+    - $EXTERNAL_HOST_NAME
+    paths:
+    - /.well-known/oauth-authorization-server
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - 'http://localhost:6274'
+
+#
+# The settings token_endpoint_auth_method=none and client_uri are incompatible with the Curity Identity Server
+# To fix MCP inspector and some other clients, use Kong's request transformer plugin to update incoming requests
+#
+- name: authorization-server-registration
+  url: http://idsvr:8443/oauth/v2/oauth-registration
+  routes:
+  - name: authorization-server-registration
+    hosts:
+    - $EXTERNAL_HOST_NAME
+    paths:
+    - /oauth/v2/oauth-registration
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - 'http://localhost:6274'
+  - name: request-transformer
+    enabled: yes
+    config:
+      remove:
+        body:
+        - token_endpoint_auth_method:none
+        - client_uri
+      add:
+        body:
+        - token_endpoint_auth_method:client_secret_basic
+
+#
+# All other authorization server endpoints
+#
+- name: authorization-server
+  url: http://idsvr:8443
+  routes:
+  - name: oauth-route
+    hosts:
+    - $EXTERNAL_HOST_NAME
+    paths:
+    - /
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - 'http://localhost:6274'
