@@ -73,7 +73,7 @@ export class HaapiAuthorizer {
         if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
             return {
                 success: false,
-                message: 'Authorization failed. Please try again later.'
+                message: 'authentication_failure'
             }
         }
 
@@ -94,7 +94,7 @@ export class HaapiAuthorizer {
 
         return {
             success: true,
-            message: 'Authentication finished'
+            message: 'authentication_success'
         };
     }
 

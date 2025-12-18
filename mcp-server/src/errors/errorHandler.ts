@@ -36,7 +36,7 @@ export function getAndLogResponseError(e: any): McpServerError {
     const error = getDefaultServerError();
     error.addException(e);
     logError(error);
-    return error.toMcpToolErrorResponse();
+    return error;
 }
 
 /*

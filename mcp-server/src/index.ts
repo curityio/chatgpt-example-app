@@ -151,7 +151,7 @@ server.registerTool(
         const isRetry = !!session?.highPrivilegeAccessToken;
 
         try {
-            
+
             // The initial request to the portfolio API is with a low privilege access token and triggers a step up
             // Once stepup completes, the portfolio API request re-runs with the session's high privilege access token
             const tokenToExchange = session?.highPrivilegeAccessToken || receivedAccessToken;

@@ -1,5 +1,5 @@
 /*
- * Copied from: https://github.com/openai/openai-apps-sdk-examples
+ * Use the approach from: https://github.com/openai/openai-apps-sdk-examples
  */
 
 export type OpenAiGlobals<
