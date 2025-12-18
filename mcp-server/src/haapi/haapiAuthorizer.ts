@@ -18,7 +18,7 @@ import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
 import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl} from './haapiUtils.js';
 import {authenticateWithBankID, AuthenticateWithBankIDResult, findPollAction, findQrCode} from './bankid.js';
-import Configuration from '../configuration.js';
+import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
 
 export type AuthorizationResult = { success: boolean; message: string; qrCode?: string }
@@ -27,7 +27,7 @@ const qrCodeMessage = 'Please confirm the action by scanning the QR code with yo
 /*
  * The entry point for HAAPI authorization
  */
-export class Authorizer {
+export class HaapiAuthorizer {
 
     private readonly configuration: Configuration;
     private client!: DPoPOAuthClient;

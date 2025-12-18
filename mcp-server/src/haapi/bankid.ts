@@ -17,7 +17,7 @@
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import {BankIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction} from './haapiTypes.js';
 import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapiUtils.js';
-import Configuration from '../configuration.js';
+import {Configuration} from '../configuration.js';
 
 export type AuthenticateWithBankIDResult = {
     status: 'continue' | 'done' | 'failed',

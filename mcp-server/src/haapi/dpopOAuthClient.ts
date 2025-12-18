@@ -17,7 +17,7 @@
 import {Buffer} from 'buffer';
 import https from 'https';
 import * as DPoP from 'dpop'
-import Configuration from '../configuration.js';
+import {Configuration} from '../configuration.js';
 import {TokenResponse} from '../oauth/tokenResponse.js';
 import {makeFetchRequest} from '../errors/fetchClient.js';
 

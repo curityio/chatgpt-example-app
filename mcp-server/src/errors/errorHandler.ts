@@ -19,7 +19,7 @@ import {McpServerError} from '../errors/mcpServerError.js';
 /*
  * Return the default server error
  */
-export function getDefaultServerError(): McpServerError {
+function getDefaultServerError(): McpServerError {
     return new McpServerError(500, 'server_error', 'Problem encountered in the MCP server');
 }
 

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import Configuration from '../configuration.js';
+import {Configuration} from '../configuration.js';
 import {TokenResponse} from './tokenResponse.js';
 import {makeFetchRequest} from '../errors/fetchClient.js';
 

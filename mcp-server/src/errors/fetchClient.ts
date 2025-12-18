@@ -60,10 +60,9 @@ export async function makeFetchRequest(url: string, options: RequestInit): Promi
             'fetch_connection_error',
             'A connection error occurred during a fetch request');
         error.addException(e);
-        return error;
+        throw error;
     }
 }
-
 
 /*
  * Try to read response error details

@@ -45,18 +45,25 @@ export class SessionManager {
         };
     }
 
-    /**
-     * Generates a new session ID
+    /*
+     * Called by MCP's session generator
      */
-    private generateSessionId(): string {
-        return randomUUID();
+    public getOrCreateSession(id: string | undefined): Session {
+      if (id) {
+          const session = this.getSession(id);
+        if (session) {
+          return session;
+        }
+      }
+      const session = this.createSession();
+      return session;
     }
 
-    /**
-     * Creates a new session
+    /*
+     * Creates a new session and initializes data
      */
-    createSession(): Session {
-        // Clean up old sessions if we're at the limit
+    public createSession(): Session {
+
         if (this.sessions.size >= this.config.maxSessions) {
             this.cleanupExpiredSessions();
         }
@@ -93,27 +100,21 @@ export class SessionManager {
         return session;
     }
 
-    getOrCreateSession(id: string | undefined): Session {
-      if (id) {
-          const session = this.getSession(id);
-        if (session) {
-          return session;
-        }
-      }
-      const session = this.createSession();
-      return session;
+    /*
+     * Generates a new session ID
+     */
+    private generateSessionId(): string {
+        return randomUUID();
     }
 
-    /**
-     * Retrieves a session by ID
+    /*
+     * Retrieves a session by ID and handles session expiry
      */
-    getSession(sessionId: string): Session | undefined {
+    public getSession(sessionId: string): Session | undefined {
         const session = this.sessions.get(sessionId);
         if (session) {
-            // Update last accessed time
+            
             session.lastAccessedAt = new Date();
-
-            // Check if authorization has expired
             if (session.authorizationExpiry && session.authorizationExpiry < new Date()) {
                 session.stepupScope = undefined;
                 session.highPrivilegeAccessToken = undefined;
@@ -123,17 +124,28 @@ export class SessionManager {
         return session;
     }
 
-    /**
+    /*
+     * Maintains the MCP session but clears state used for step up authentication
+     */
+    public clearTokenState(session: Session) {
+        session.client = null;
+        session.stepupScope = undefined;
+        session.highPrivilegeAccessToken = undefined;
+        session.pollingUrl = '';
+        session.pollingCount = 0;
+    }
+
+    /*
      * Deletes a session
      */
-    deleteSession(sessionId: string): boolean {
+    public deleteSession(sessionId: string): boolean {
         return this.sessions.delete(sessionId);
     }
 
-    /**
+    /*
      * Manually trigger cleanup of expired sessions
      */
-    cleanupExpiredSessions(): number {
+    public cleanupExpiredSessions(): number {
         const now = new Date();
         const expiredSessionIds: string[] = [];
 
@@ -152,10 +164,10 @@ export class SessionManager {
         return expiredSessionIds.length;
     }
 
-    /**
+    /*
      * Gracefully shuts down the session manager
      */
-    shutdown(): void {
+    public shutdown(): void {
         if (this.cleanupTimer) {
             clearInterval(this.cleanupTimer);
             this.cleanupTimer = undefined;

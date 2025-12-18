@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-import {AuthInfo} from '@modelcontextprotocol/sdk/server/auth/types.js';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
@@ -25,10 +24,11 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {z} from 'zod';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
-import Configuration from './configuration.js';
+import {Configuration} from './configuration.js';
+import {OAuthFilter} from './oauth/oauthFilter.js';
 import {McpServerError} from './errors/mcpServerError.js';
 import {exchangeAccessToken} from './oauth/tokenExchange.js';
-import {Authorizer} from './haapi/authorizer.js';
+import {HaapiAuthorizer} from './haapi/haapiAuthorizer.js';
 import {Session} from './session/session.js';
 import {SessionManager} from './session/sessionManager.js';
 import {getAndLogResponseError} from './errors/errorHandler.js';
@@ -38,7 +38,8 @@ import {getAndLogResponseError} from './errors/errorHandler.js';
  */
 const configuration = new Configuration();
 const sessionManager = new SessionManager();
-const authorizer = new Authorizer(configuration);
+const oauthFilter = new OAuthFilter(configuration);
+const haapiAuthorizer = new HaapiAuthorizer(configuration);
 const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 /*
@@ -147,6 +148,7 @@ server.registerTool(
         
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
+        const isRetry = !!session?.highPrivilegeAccessToken;
 
         try {
             
@@ -170,6 +172,12 @@ server.registerTool(
             }
 
             return error.toMcpToolErrorResponse();
+        } finally {
+
+            // Only run the retry once to prevent loops
+            if (isRetry) {
+                sessionManager.clearTokenState(session);
+            }
         }
     },
 );
@@ -211,6 +219,7 @@ server.registerTool(
         
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId);
+        const isRetry = !!session.highPrivilegeAccessToken;
 
         try {
             
@@ -234,6 +243,13 @@ server.registerTool(
             }
 
             return error.toMcpToolErrorResponse();
+
+        } finally {
+
+            // Only run the retry once to prevent loops
+            if (isRetry) {
+                sessionManager.clearTokenState(session);
+            }
         }
     },
 );
@@ -274,7 +290,7 @@ server.registerTool(
 
             // When polling indicates that the flow is complete, add the high privilege access token to the session
             // The client calls the original but or sell method, which then uses this token to call the Portfolio API
-            const authorizationResult = await authorizer.continueAuthorizeWithBankID(
+            const authorizationResult = await haapiAuthorizer.continueAuthorizeWithBankID(
                 (token) => {
                     console.log('>>> Setting high privilege access token in session: ' + token);
                     session.highPrivilegeAccessToken = token
@@ -297,35 +313,12 @@ server.registerTool(
 );
 
 /*
- * Pass the access token to MCP tools
- */
-const setAuthInfo = (request: Request) => {
-
-    let accessToken = '';
-
-    const authorizationHeader = request.header('authorization');
-    if (authorizationHeader) {
-        const parts = authorizationHeader.split(' ');
-        if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
-            accessToken = parts[1];
-        }
-    }
-
-    const authInfo: AuthInfo = {
-        token: accessToken,
-        clientId: '',
-        scopes: [],
-    };
-    (request as any).auth = authInfo;
-}
-
-/*
  * Return the initial step up response to the MCP client
  */
 export async function requestAuthorization(receivedAccessToken: string, session: Session): Promise<CallToolResult> {
     
     const checkMark = 'iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAABSlJREFUeF7tnUty1DAQhqUjhAtAFVeAXaqS2bDLFeAYsCIZVnAMuEJ2bDKpyo5cIVVwAXIEQzvWPGKPH1Kr3W39sxkSj1vt//ske5wh8a7nUVXVebP5snkOX/fthm3zJ7Bxzt1SG977q752fNfGBjxBB/D5YXJ0sD4mQkuABv4Nx6iooS6BlggHAlRVRctFWO7VdY+GWBI4kGArAOCzhGulyMp7T9cJbl+Aykr36JMlgVqCWgDMfpZArRXZeO9XQQDMfmv4ePpdecx+niSNVoEARsFxtb2hFYDe8+OGD1ekturUAuD8bwsaa7cQgDVOe8UggD1mrB1DANY47RWDAPaYsXYMAVjjtFcMAthjxtoxBGCN014xCGCPGWvHEIA1TnvFIIA9ZqwdQwDWOO0VgwD2mLF2DAFY47RXDALYY8baMQRgjdNeMQhgjxlrxxCANU57xSCAPWasHUMA1jjtFYMA9pixdgwBWOO0VwwC2GPG2jEEYI1zWrG7xz/u20P9izzc3d/f7tPrs/rfH5vnadXiXg0B4nJL3ovAf23gPy9GIkhJAAGSUU4vcHH/o57xfQ8pCSDAdH5Je4yBHwa4fvvBnZ68TBpvaGcIMJQQ4/Yp8GnY0xev3PWb94wdtEtBgKzx7opPhQ8BhMBIDBMDP/T1+O5z1haxAmSN17kU+BIXghAgowAp8KktCJARTu7SFuBTBlgBMpiQCl/i6j8cNgRgFsASfKwAhcOHAIwCWJv5OAUAfp0ArgESRbA687ECJIKn3a3DxwqQIMES4EOASAGWAh8CRAiwJPgQYKIAS4MPASYIsET4EGCkAEuFDwFGCLBk+OICaPgc/Ajm25csHb6oAFo+Bz9WgBLgiwnQBz8AkfwZ+JAEpcAXEWAMfE0SlARfnQDU0JwrQWnwRQQ4+fllaMVtbZ9DghLhiwgQG6ykBLE9ajp1TZ5lzQ7ZPw+QEq6EBCn9zX3KioW+v192Aei9/8Wv79G95pSgdPgipwAaZMo7gS5TckgA+E9JZ18BAlBNgWvqJXppZNpRTADqV0PwGnpgYsdSRlSAuSUA/LYz4gLMJQHgdy8YswggLQHgHz9bzCaAlASA33+pMKsAuSUA/OHrxNkFyCUB4A/DF70PMNQOJzDOWkN9W9+uYgXgvFlEtYZ+CWMftBx3HTVLokoAjtNBStilwVd1CtgHl7qEx0hQIny1AkivBKXCVy2AlAQlw1cvQG4JSodvQoBcEgD+05WSuncBxy7gOC8MAX+XshkBuFYCwD+cYqYESJUA8NvrqzkBYiUA/O6Tq0kBpkoA+MdvjZkVYKwEgN9/X9S0AHRofR85B/zhm+LmBQgS0DP9J5TwoL+7l/svbg3Hq/8VixBAf8x6O4QAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQCKCXjUhnEEAkZr2DQAC9bEQ6gwAiMesdBALoZSPSGQQQiVnvIBBALxuRziCASMx6B4EAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQEuDGOXeut0V0ljGBDQTImK6B0msSgGY/rQJ4lJcABCiP+e6IPT3oS1wHFKnB+j/+qyAATgOFORAmfy1AswpAgnIkqGc/He5WgEYC+uZlOTkUeaRb+C0BIMHihVh57zf7R3mwAuxvqKoKq8FyfCDoNPMP4HeuAM+PuRGBvn2GO4ZmjAig1zXkDvDhSP4BcLDmrm+X+ucAAAAASUVORK5CYII=';
-    const output = await authorizer.authorizeWithBankID(receivedAccessToken, session);
+    const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session);
     if (output.success) {
         const structuredContent = {
             authMessage: {
@@ -356,9 +349,17 @@ export async function requestAuthorization(receivedAccessToken: string, session:
  * Create the Express application
  */
 const app = express();
+
+/*
+ * Use Express to serve the ChatGPT widget's web content
+ */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../../web')));
+
+/*
+ * Add general middleware
+ */
 app.use(morgan('combined'));
 app.use(express.json());
 
@@ -379,20 +380,15 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
 });
 
 /*
+ * For all other routes, apply OAuth validation
+ */
+app.use('/', oauthFilter.execute);
+
+/*
  * Do the MCP boiler plate setup
  */
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 app.post('/', async (req, res) => {
-
-    setAuthInfo(req);
-    if (!(req as any).auth?.token) {
-
-        return res
-            .status(401)
-            .header('Content-Type', 'application/json')
-            .header('WWW-Authenticate', `Bearer error="invalid_token", error_description="Missing, invalid or expired access token", resource_metadata="${configuration.externalBaseUrl}/.well-known/oauth-protected-resource", scope="read"`)
-            .send({'error': 'invalid_token', 'code': 'invalid_token', message: 'Missing, invalid or expired access token'})
-    }
 
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
@@ -427,7 +423,7 @@ app.post('/', async (req, res) => {
 
 const handleSessionRequest = async (req: express.Request, res: express.Response) => {
 
-  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
     if (!sessionId || !transports[sessionId]) {
         res.status(400).send('Invalid or missing session ID');
         return;

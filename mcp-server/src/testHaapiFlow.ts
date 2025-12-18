@@ -15,13 +15,13 @@
  */
 
 
-import Configuration from './configuration.js';
+import {Configuration} from './configuration.js';
 import {SessionManager} from './session/sessionManager.js';
-import {Authorizer} from './haapi/authorizer.js';
+import {HaapiAuthorizer} from './haapi/haapiAuthorizer.js';
 
 // Use the same objects as the MCP server
 const configuration = new Configuration();
-const authorizer = new Authorizer(configuration);
+const authorizer = new HaapiAuthorizer(configuration);
 
 // Configure the session for step up
 const sessionManager = new SessionManager();

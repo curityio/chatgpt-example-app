@@ -15,7 +15,7 @@
  */
 
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
-import Configuration from '../configuration.js';
+import {Configuration} from '../configuration.js';
 import {makeFetchRequest} from '../errors/fetchClient.js';
 
 /*

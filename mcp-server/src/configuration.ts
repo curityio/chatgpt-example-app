@@ -17,9 +17,14 @@
 /*
  * Configuration settings for the OAuth-secured MCP server that runs in front of the Portfolio API
  */
-export default class Configuration {
+export class Configuration {
 
     public port: string;
+    public jwksUri: string;
+    public requiredJwtAlgorithm: string;
+    public requiredIssuer: string;
+    public requiredAudience: string;
+    public requiredScope: string;
     public haapiClientId: string;
     public haapiClientSecret: string;
     public tokenExchangeClientId: string;
@@ -30,7 +35,6 @@ export default class Configuration {
     public authorizationServerBaseUrl: string;
     public tokenEndpoint: string;
     public authorizationEndpoint: string;
-    public requiredScope: string;
     public redirectUri: string;
     public acr: string;
     public developerMode: boolean;
@@ -38,6 +42,11 @@ export default class Configuration {
     
     public constructor() {
         this.port = this.getValue('PORT');
+        this.jwksUri = this.getValue('JWKS_URI');
+        this.requiredJwtAlgorithm = this.getValue('REQUIRED_JWT_ALGORITHM');
+        this.requiredIssuer = this.getValue('REQUIRED_JWT_ISSUER');
+        this.requiredAudience = this.getValue('REQUIRED_JWT_AUDIENCE');
+        this.requiredScope = this.getValue('REQUIRED_SCOPE');
         this.tokenExchangeClientId = this.getValue('TOKEN_EXCHANGE_CLIENT_ID');
         this.tokenExchangeClientSecret = this.getValue('TOKEN_EXCHANGE_CLIENT_PASSWORD');
         this.tokenExchangeAudience = this.getValue('TOKEN_EXCHANGE_AUDIENCE');
@@ -48,7 +57,6 @@ export default class Configuration {
         this.authorizationServerBaseUrl = this.getValue('AUTHORIZATION_SERVER_BASE_URL');
         this.tokenEndpoint = this.getValue('TOKEN_ENDPOINT');
         this.authorizationEndpoint = this.getValue('AUTHORIZATION_ENDPOINT');
-        this.requiredScope = this.getValue('REQUIRED_SCOPE');
         this.redirectUri = this.getValue('REDIRECT_URI');
         this.acr = this.getValue('ACR');
         this.developerMode = this.getValue('DEVELOPER_MODE') === '1';
