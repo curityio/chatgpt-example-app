@@ -25,11 +25,12 @@ import {fileURLToPath} from 'url';
 import {z} from 'zod';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
 import Configuration from './configuration.js';
-import {ApiError} from './errors/apiError.js';
+import {McpServerError} from './errors/mcpServerError.js';
 import {exchangeAccessToken} from './oauth/tokenExchange.js';
 import {Authorizer} from './stepup/authorizer.js';
 import {SessionManager} from './stepup/sessionManager.js';
 import {requestAuthorization} from './stepup/start.js';
+import {getAndLogTypedError} from './errors/errorHandler.js';
 
 /*
  * Create main objects
@@ -105,9 +106,7 @@ server.registerTool(
             return await getPortfolio(configuration, token);
 
         } catch (e: any) {
-
-            const error = e as ApiError;
-            return error.toMcpError();
+            return getAndLogTypedError(e).toMcpToolErrorResponse();
         }
     },
 );
@@ -162,12 +161,12 @@ server.registerTool(
 
             // Handle the step-up challenge from the portfolio API by running ta HAAPI flow
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
-            const error = e as ApiError;
+            const error = getAndLogTypedError(e);
             if (error.status === 403) {
                 return await requestAuthorization(authorizer, receivedAccessToken, session);
             }
 
-            return error.toMcpError();
+            return error.toMcpToolErrorResponse();
         }
     },
 );
@@ -222,12 +221,12 @@ server.registerTool(
 
             // Handle the step-up challenge from the portfolio API by running ta HAAPI flow
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
-            const error = e as ApiError;
+            const error = getAndLogTypedError(e);
             if (error.status === 403) {
                 return await requestAuthorization(authorizer, receivedAccessToken, session);
             }
 
-            return error.toMcpError();
+            return error.toMcpToolErrorResponse();
         }
     },
 );
@@ -255,22 +254,33 @@ server.registerTool(
         ]
     },
     async (context) => {
-        const session = sessionManager.getOrCreateSession(context.sessionId);
-        const authorizationResult = await authorizer.continueAuthorizeWithBankID(
-            (token) => {
-                console.log('>>> Setting new token in session: ' + token);
-                session.token = token
-            },
-            session)
+        
+        try {
 
-        return {
-            content: [],
-            structuredContent: {
-                authMessage: {
-                    message: authorizationResult.message,
-                    qrCode: authorizationResult.qrCode
+            const session = sessionManager.getSession(context.sessionId || '');
+            if (!session) {
+                const message = 'You must have an existing session to call continue_authorization';
+                throw new McpServerError(400, 'invalid_request', message);
+            }
+
+            const authorizationResult = await authorizer.continueAuthorizeWithBankID(
+                (token) => {
+                    console.log('>>> Setting new token in session: ' + token);
+                    session.token = token
+                },
+                session)
+
+            return {
+                content: [],
+                structuredContent: {
+                    authMessage: {
+                        message: authorizationResult.message,
+                        qrCode: authorizationResult.qrCode
+                    }
                 }
             }
+        } catch (e: any) {
+            return getAndLogTypedError(e).toMcpToolErrorResponse();
         }
     }
 );

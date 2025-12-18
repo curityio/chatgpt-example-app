@@ -81,33 +81,26 @@ export class Authorizer {
     * The entry point for the BankID high security authenticator, which handles polling, completion and failure
     */
     public async authorizeWithBankID(receivedAccessToken: string, session: Session): Promise<AuthorizationResult> {
-        try {
-            if (!session.client) {
-                session.client = await this.createAuthenticatedHaapiClient();
-            }
-
-            const client = session.client;
-
-            const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, client);
-            const qrCode = findQrCode(bankIDView);
-
-            const pollAction = findPollAction(bankIDView);
-            const urlForPolling = pollAction.model.href;
-            session.pollingUrl = urlForPolling;
-            session.pollingCount = 0;
-
-            return {
-                success: true,
-                message: qrCodeMessage,
-                qrCode: qrCode,
-            };
-        } catch (error) {
-            console.error('Error generating QR code:', error);
-            return {
-                success: false,
-                message: 'Authorization failed. Please try again later.',
-            };
+        
+        if (!session.client) {
+            session.client = await this.createAuthenticatedHaapiClient();
         }
+
+        const client = session.client;
+
+        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, client);
+        const qrCode = findQrCode(bankIDView);
+
+        const pollAction = findPollAction(bankIDView);
+        const urlForPolling = pollAction.model.href;
+        session.pollingUrl = urlForPolling;
+        session.pollingCount = 0;
+
+        return {
+            success: true,
+            message: qrCodeMessage,
+            qrCode: qrCode,
+        };
     }
 
     /**
@@ -148,49 +141,41 @@ export class Authorizer {
     * Called when ChatGPT app sends a polling notification
     */
     public async continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
-        try {
-            if (!session.client) {
-                session.client = await this.createAuthenticatedHaapiClient();
+        
+        if (!session.client) {
+            session.client = await this.createAuthenticatedHaapiClient();
+        }
+
+        const client = session.client;
+
+        console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`);
+        const authenticationResponse = await authenticateWithBankID(this.configuration, client, session.pollingUrl);
+
+        if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
+            return {
+                success: false,
+                message: 'Authorization failed. Please try again later.'
             }
+        }
 
-            const client = session.client;
+        session.pollingCount = session.pollingCount + 1;
 
-            console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`);
-            const authenticationResponse = await authenticateWithBankID(this.configuration, client, session.pollingUrl);
-
-            if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
-                return {
-                    success: false,
-                    message: 'Authorization failed. Please try again later.'
-                }
-            }
-
-            session.pollingCount = session.pollingCount + 1;
-
-            if (authenticationResponse.status == 'continue') {
-                session.pollingUrl = authenticationResponse.pollingUrl!;
-
-                return {
-                    success: true,
-                    message: qrCodeMessage,
-                    qrCode: authenticationResponse.currentQRCode!,
-                };
-            }
-
-            // Authentication done, we have the high privilege access token
-            onToken(authenticationResponse.accessToken!);
+        if (authenticationResponse.status == 'continue') {
+            session.pollingUrl = authenticationResponse.pollingUrl!;
 
             return {
                 success: true,
-                message: 'Authentication finished'
-            };
-
-        } catch (error) {
-            console.error('Error generating QR code:', error);
-            return {
-                success: false,
-                message: 'Authorization failed. Please try again later.',
+                message: qrCodeMessage,
+                qrCode: authenticationResponse.currentQRCode!,
             };
         }
+
+        // Authentication done, we have the high privilege access token
+        onToken(authenticationResponse.accessToken!);
+
+        return {
+            success: true,
+            message: 'Authentication finished'
+        };
     }
 }

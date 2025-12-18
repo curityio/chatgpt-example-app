@@ -15,24 +15,32 @@
  */
 
 /*
- * A simple API error object
+ * A simple error object
  */
-export class ApiError extends Error {
+export class McpServerError extends Error {
 
     public readonly status: number;
     public readonly code: string;
-    public readonly extra: any;
+    public extra: any;
     public scope: string | null;
 
-    public constructor(status: number, code: string, message: string, extra: any = null) {
+    public constructor(status: number, code: string, message: string) {
         super(message);
         this.status = status;
         this.code = code;
-        this.extra = extra;
+        this.extra = null;
         this.scope = null;
     }
 
-    public set stepupScope(value: string) {
+    public set extraData(value: any) {
+        this.extra = value;
+    }
+
+    public get extraData(): any {
+        return this.extra;
+    }
+
+    public set stepupScope(value: any) {
         this.scope = value;
     }
 
@@ -41,9 +49,23 @@ export class ApiError extends Error {
     }
 
     /*
-     * Errors before there is an MCP session
+     * Capture any exception details
      */
-    public toHttpError(): any {
+    public addException(e: any) {
+       
+        this.extra = {};
+        if (e.message) {
+            this.extra.message = e.message;
+        }
+        if (e.stack) {
+            this.extra.stack = e.stack;
+        }
+    }
+
+    /*
+     * Return the error body for HTTP responses
+     */
+    public toHttpErrorResponse(): any {
 
         return {
             code: this.code,
@@ -52,9 +74,9 @@ export class ApiError extends Error {
     }
 
     /*
-     * Errors after there is an MCP session
+     * Return the error body for MCP tool responses
      */
-    public toMcpError(): any {
+    public toMcpToolErrorResponse(): any {
 
         const data: any = {
             status: this.status,

@@ -17,6 +17,7 @@
 import Configuration from '../configuration.js';
 import {Session} from '../stepup/sessionManager.js';
 import {TokenResponse} from './tokenResponse.js';
+import {makeFetchRequest} from '../errors/fetchClient.js';
 
 /*
  * Get an access token with the audience of the portfolio API
@@ -48,7 +49,7 @@ export async function exchangeAccessToken(configuration: Configuration, session:
     } as RequestInit;
 
     console.log('>>> Token exchange request to: ' + configuration.tokenEndpoint, body, requestHeaders, options);
-    const response = await fetch(configuration.tokenEndpoint, options);
+    const response = await makeFetchRequest(configuration.tokenEndpoint, options);
     const tokenResponse = await response.json() as TokenResponse;
     return tokenResponse.access_token;
 }

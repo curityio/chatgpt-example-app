@@ -24,17 +24,6 @@ if [ ! -d typescript-sdk ]; then
   #
   cd typescript-sdk
   npm install
-  
-  #
-  # Work around the example client not setting a scope during the DCR request
-  #
-  FROM="client_name: 'Simple OAuth MCP Client'"
-  TO="client_name: 'Simple OAuth MCP Client', scope: 'portfolio'"
-    if [ "$(uname -s)" == 'Darwin' ]; then
-    sed -i '' "s/$FROM/$TO/" src/examples/client/simpleOAuthClient.ts
-  else
-    sed -i "s/$FROM/$TO/"    src/examples/client/simpleOAuthClient.ts
-  fi
   cd ..
 fi
 

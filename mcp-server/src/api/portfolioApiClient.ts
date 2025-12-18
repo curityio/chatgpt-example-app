@@ -16,7 +16,7 @@
 
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import Configuration from '../configuration.js';
-import {ApiError} from '../errors/apiError.js';
+import {makeFetchRequest} from '../errors/fetchClient.js';
 
 /*
  * Call the portfolio API with the low privilege access token
@@ -28,7 +28,7 @@ export async function getPortfolio(configuration: Configuration, token: string):
     };
     
     console.log('Fetching portfolio from', configuration.apiUrl);
-    const response = await callApi(configuration.apiUrl, options, 'getPortfolio');
+    const response = await makeFetchRequest(configuration.apiUrl, options);
     const portfolio = await response.json();
     const output = { result: portfolio };
     return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
@@ -47,59 +47,7 @@ export async function buyOrSellStock(configuration: Configuration, id: string, d
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     };
     
-    const response = await callApi(`${configuration.apiUrl}/${id}`, options, 'buyOrSellStock');
+    const response = await makeFetchRequest(`${configuration.apiUrl}/${id}`, options);
     const result = await response.json();
     return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { result } };
-}
-
-/*
- * Call the API and return the response
- * Also handle error processing and logging
- */
-async function callApi(url: string, options: RequestInit, operation: string): Promise<Response> {
-
-    try {
-        const response = await fetch(url, options);
-        if (response.status >= 200 && response.status <= 299) {
-            return response;
-        }
-
-        const error = await getResponseError(response, operation);
-        console.log(error.toLogObject());
-        throw error;
-
-
-    } catch (e: any) {
-
-        if (e instanceof ApiError) {
-            throw e;
-        }
-
-        throw new ApiError(
-            500,
-            'portfolio_api_connection_error',
-            'Unable to connect to the portfolio API',
-            e);
-    }
-}
-
-/*
- * Return error details from the portfolio API
- */
-async function getResponseError(response: Response, operation: string): Promise<ApiError> {
-
-    let code = 'portfolio_api_error';
-    let message = `${operation} error`;
-
-    try {
-        const data = await response.json() as any
-        if (data.code && data.message) {
-            code = data.code;
-            message = data.message;
-        }
-
-    } catch (e: any) {
-    }
-
-    return new ApiError(response.status, code, message);
 }
