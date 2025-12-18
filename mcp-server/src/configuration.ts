@@ -37,7 +37,6 @@ export class Configuration {
     public authorizationEndpoint: string;
     public redirectUri: string;
     public acr: string;
-    public developerMode: boolean;
     public haapiTestAccessToken: string;
     
     public constructor() {
@@ -59,7 +58,6 @@ export class Configuration {
         this.authorizationEndpoint = this.getValue('AUTHORIZATION_ENDPOINT');
         this.redirectUri = this.getValue('REDIRECT_URI');
         this.acr = this.getValue('ACR');
-        this.developerMode = this.getValue('DEVELOPER_MODE') === '1';
         this.haapiTestAccessToken = this.getValue('HAAPI_TEST_ACCESS_TOKEN', '');
     }
 
