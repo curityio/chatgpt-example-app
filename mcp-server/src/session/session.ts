@@ -30,7 +30,6 @@ export interface Session {
     
     // OAuth details
     client: DPoPOAuthClient | null;
-    stepupScope: string | undefined;
     highPrivilegeAccessToken: string | undefined;
     delegationId: string | undefined;
 

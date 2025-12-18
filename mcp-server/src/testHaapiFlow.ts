@@ -26,12 +26,10 @@ const authorizer = new HaapiAuthorizer(configuration);
 // Configure the session for step up
 const sessionManager = new SessionManager();
 const session = sessionManager.createSession();
-session.stepupScope = 'transactions';
-session.pollingUrl = '';
 
 // Debug the start of the flow to get the initial JWT access token, e.g. from MCP server debug logs
 const initialAccessToken = process.env.TEST_ACCESS_TOKEN || '';
-await authorizer.startHaapiTest(initialAccessToken, session);
+await authorizer.startHaapiTest(initialAccessToken, session, 'transactions');
 
 // Render the QR code and approve in BankID
 

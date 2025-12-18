@@ -52,16 +52,10 @@ export class SessionManager {
             this.cleanupExpiredSessions();
         }
 
-        // At the time of writing, ChatGPT developer mode creates a new session on each tool request
-        // The MCP client's OAuth session is represented by the access token's delegation ID
-        // Therefore, use the delegation ID as a stable session identifier
-        if (claims?.delegationId) {
-
-            this.sessions.forEach((s) => {
-                if (s.delegationId === claims.delegationId) {
-                    return s;
-                }
-            });
+        // Only create a new session when the access token proves a new session is needed
+        const existingSession = this.getSessionFromAccessToken(claims);
+        if (existingSession) {
+            return existingSession;
         }
 
         // Create the session data with initial state
@@ -71,7 +65,6 @@ export class SessionManager {
             createdAt: new Date(),
             lastAccessedAt: new Date(),
             client: null,
-            stepupScope: undefined,
             highPrivilegeAccessToken: undefined,
             delegationId: claims?.delegationId,
             pollingUrl: '',
@@ -104,6 +97,10 @@ export class SessionManager {
     public getSession(sessionId: string, claims?: ClaimsPrincipal): Session | undefined {
 
         let session = this.sessions.get(sessionId);
+        if(!session) {
+            session = this.getSessionFromAccessToken(claims);
+        }
+
         if (session) {
             session.lastAccessedAt = new Date();
         }
@@ -116,7 +113,6 @@ export class SessionManager {
      */
     public clearStepupAuthenticationState(session: Session) {
         session.client = null;
-        session.stepupScope = undefined;
         session.highPrivilegeAccessToken = undefined;
         session.pollingUrl = '';
         session.pollingCount = 0;
@@ -127,6 +123,17 @@ export class SessionManager {
      */
     public deleteSession(sessionId: string): boolean {
         return this.sessions.delete(sessionId);
+    }
+
+    /**
+     * Gracefully shuts down the session manager
+     */
+    public shutdown(): void {
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+            this.cleanupTimer = undefined;
+        }
+        this.sessions.clear();
     }
 
     /*
@@ -148,5 +155,24 @@ export class SessionManager {
         }
 
         return expiredSessionIds.length;
+    }
+
+    /*
+     * At the time of writing, ChatGPT developer mode creates a new session on each tool request
+     * The MCP client's OAuth session is represented by the access token's delegation ID
+     * Therefore, use the delegation ID as a stable session identifier
+     */
+    private getSessionFromAccessToken(claims?: ClaimsPrincipal): Session | undefined {
+
+        if (claims?.delegationId) {
+
+            this.sessions.forEach((s) => {
+                if (s.delegationId === claims.delegationId) {
+                    return s;
+                }
+            });
+        }
+
+        return undefined;
     }
 }

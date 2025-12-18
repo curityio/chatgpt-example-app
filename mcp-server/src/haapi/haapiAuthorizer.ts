@@ -39,12 +39,12 @@ export class HaapiAuthorizer {
     /*
      * Begin the HAAPI flow, to trigger the initial download of the QR code
      */
-    public async authorizeWithBankID(receivedAccessToken: string, session: Session): Promise<AuthorizationResult> {
+    public async authorizeWithBankID(receivedAccessToken: string, session: Session, stepupScope: string): Promise<AuthorizationResult> {
         
         this.client = await this.createAuthenticatedHaapiClient();
         session.client = this.client;
 
-        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, session);
+        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
         const qrCode = findQrCode(bankIDView);
 
         const pollAction = findPollAction(bankIDView);
@@ -101,8 +101,8 @@ export class HaapiAuthorizer {
     /*
      * Entry points for testing
      */
-    public async startHaapiTest(receivedAccessToken: string, session: Session): Promise<BankIDAuthenticatorView> {
-        return await this.runBankIDAuthenticationFlow(receivedAccessToken, session);
+    public async startHaapiTest(receivedAccessToken: string, session: Session, stepupScope: string): Promise<BankIDAuthenticatorView> {
+        return await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
     }
 
     public async endHaapiTest(session: Session): Promise<AuthenticateWithBankIDResult> {
@@ -129,9 +129,9 @@ export class HaapiAuthorizer {
      * @param oauthClient optional OAuth client
      * @returns the initial BankID authenticator view (caller must poll until authentication is complete)
      */
-    private async runBankIDAuthenticationFlow(receivedAccessToken: string, session: Session): Promise<BankIDAuthenticatorView> {
+    private async runBankIDAuthenticationFlow(receivedAccessToken: string, session: Session, stepupScope: string): Promise<BankIDAuthenticatorView> {
 
-        const authResponse = await this.sendAuthorizationRequest(session.stepupScope!);
+        const authResponse = await this.sendAuthorizationRequest(stepupScope!);
 
         // Should get to the access_token authenticator view directly
         const accessTokenView = await haapiResponseView<AccessTokenAuthenticatorView>(
@@ -158,13 +158,11 @@ export class HaapiAuthorizer {
     */
     private async sendAuthorizationRequest(stepupScope: string): Promise<Response> {
 
-        console.log(`>>> Starting HAAPI flow with scope: ${stepupScope}`);
-        
         const url = new URL(this.configuration.authorizationEndpoint);
         url.searchParams.append('response_type', 'code');
         url.searchParams.append('client_id', this.configuration.haapiClientId);
         url.searchParams.append('redirect_uri', this.configuration.redirectUri);
-        url.searchParams.append('scope', 'transactions');
+        url.searchParams.append('scope', stepupScope);
         url.searchParams.append('state', 'random-state-value');
         url.searchParams.append('acr', this.configuration.acr);
         return this.client.get(url.toString(), haapiHeaders)

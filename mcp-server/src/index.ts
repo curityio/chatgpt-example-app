@@ -166,9 +166,8 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
-                session.stepupScope = error.scope;
-                console.log(`>>> Setting step-up scope for buy operation to ${session.stepupScope}`);
-                return await requestAuthorization(receivedAccessToken, session);
+                console.log(`>>> Setting step-up scope for buy operation to ${error.scope}`);
+                return requestAuthorization(receivedAccessToken, session, error.scope);
             }
 
             return error.toMcpToolErrorResponse();
@@ -238,9 +237,8 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
-                session.stepupScope = error.scope;
-                console.log(`>>> Setting step-up scope for sell operation to ${session.stepupScope}`);
-                return await requestAuthorization(receivedAccessToken, session);
+                console.log(`>>> Setting step-up scope for sell operation to ${error.scope}`);
+                return requestAuthorization(receivedAccessToken, session, error.scope);
             }
 
             return error.toMcpToolErrorResponse();
@@ -283,11 +281,10 @@ server.registerTool(
 
             // Validate preconditions
             const session = sessionManager.getSession(context.sessionId || '', (context.authInfo?.extra as any)?.claims);
-            if (!session?.stepupScope) {
+            if (!session?.client) {
                 const message = 'The continue_authorization operation was called incorrectly';
                 throw new McpServerError(400, 'invalid_request', message);
             }
-            console.log(`>>> Continue operation has step-up scope: ${session.stepupScope}`);
 
             // When polling indicates that the flow is complete, add the high privilege access token to the session
             // The client calls the original but or sell method, which then uses this token to call the Portfolio API
@@ -316,10 +313,10 @@ server.registerTool(
 /*
  * Return the initial step up response to the MCP client
  */
-export async function requestAuthorization(receivedAccessToken: string, session: Session): Promise<CallToolResult> {
+export async function requestAuthorization(receivedAccessToken: string, session: Session, stepupScope: string): Promise<CallToolResult> {
     
     const checkMark = 'iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAABSlJREFUeF7tnUty1DAQhqUjhAtAFVeAXaqS2bDLFeAYsCIZVnAMuEJ2bDKpyo5cIVVwAXIEQzvWPGKPH1Kr3W39sxkSj1vt//ske5wh8a7nUVXVebP5snkOX/fthm3zJ7Bxzt1SG977q752fNfGBjxBB/D5YXJ0sD4mQkuABv4Nx6iooS6BlggHAlRVRctFWO7VdY+GWBI4kGArAOCzhGulyMp7T9cJbl+Aykr36JMlgVqCWgDMfpZArRXZeO9XQQDMfmv4ePpdecx+niSNVoEARsFxtb2hFYDe8+OGD1ekturUAuD8bwsaa7cQgDVOe8UggD1mrB1DANY47RWDAPaYsXYMAVjjtFcMAthjxtoxBGCN014xCGCPGWvHEIA1TnvFIIA9ZqwdQwDWOO0VgwD2mLF2DAFY47RXDALYY8baMQRgjdNeMQhgjxlrxxCANU57xSCAPWasHUMA1jjtFYMA9pixdgwBWOO0VwwC2GPG2jEEYI1zWrG7xz/u20P9izzc3d/f7tPrs/rfH5vnadXiXg0B4nJL3ovAf23gPy9GIkhJAAGSUU4vcHH/o57xfQ8pCSDAdH5Je4yBHwa4fvvBnZ68TBpvaGcIMJQQ4/Yp8GnY0xev3PWb94wdtEtBgKzx7opPhQ8BhMBIDBMDP/T1+O5z1haxAmSN17kU+BIXghAgowAp8KktCJARTu7SFuBTBlgBMpiQCl/i6j8cNgRgFsASfKwAhcOHAIwCWJv5OAUAfp0ArgESRbA687ECJIKn3a3DxwqQIMES4EOASAGWAh8CRAiwJPgQYKIAS4MPASYIsET4EGCkAEuFDwFGCLBk+OICaPgc/Ajm25csHb6oAFo+Bz9WgBLgiwnQBz8AkfwZ+JAEpcAXEWAMfE0SlARfnQDU0JwrQWnwRQQ4+fllaMVtbZ9DghLhiwgQG6ykBLE9ajp1TZ5lzQ7ZPw+QEq6EBCn9zX3KioW+v192Aei9/8Wv79G95pSgdPgipwAaZMo7gS5TckgA+E9JZ18BAlBNgWvqJXppZNpRTADqV0PwGnpgYsdSRlSAuSUA/LYz4gLMJQHgdy8YswggLQHgHz9bzCaAlASA33+pMKsAuSUA/OHrxNkFyCUB4A/DF70PMNQOJzDOWkN9W9+uYgXgvFlEtYZ+CWMftBx3HTVLokoAjtNBStilwVd1CtgHl7qEx0hQIny1AkivBKXCVy2AlAQlw1cvQG4JSodvQoBcEgD+05WSuncBxy7gOC8MAX+XshkBuFYCwD+cYqYESJUA8NvrqzkBYiUA/O6Tq0kBpkoA+MdvjZkVYKwEgN9/X9S0AHRofR85B/zhm+LmBQgS0DP9J5TwoL+7l/svbg3Hq/8VixBAf8x6O4QAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQCKCXjUhnEEAkZr2DQAC9bEQ6gwAiMesdBALoZSPSGQQQiVnvIBBALxuRziCASMx6B4EAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQEuDGOXeut0V0ljGBDQTImK6B0msSgGY/rQJ4lJcABCiP+e6IPT3oS1wHFKnB+j/+qyAATgOFORAmfy1AswpAgnIkqGc/He5WgEYC+uZlOTkUeaRb+C0BIMHihVh57zf7R3mwAuxvqKoKq8FyfCDoNPMP4HeuAM+PuRGBvn2GO4ZmjAig1zXkDvDhSP4BcLDmrm+X+ucAAAAASUVORK5CYII=';
-    const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session);
+    const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session, stepupScope);
     if (output.success) {
         const structuredContent = {
             authMessage: {
@@ -442,4 +439,19 @@ app.delete('/', handleSessionRequest);
  */
 app.listen(configuration.port, () => {
     console.log(`🚀 MCP Server listening on http://localhost:${configuration.port} ...`);
+});
+
+/*
+ * Graceful shutdown handling
+ */
+process.on('SIGINT', () => {
+  console.log('\nShutting down gracefully...');
+  sessionManager.shutdown();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\nShutting down gracefully...');
+  sessionManager.shutdown();
+  process.exit(0);
 });

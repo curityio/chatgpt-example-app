@@ -52,7 +52,7 @@ export class ErrorHandler {
         if (error.status === 403 && error.scope) {
             response.setHeader(
                 'WWW-Authenticate',
-                `Bearer error="${error.code}", error_description="${error.message}, scope=${error.scope}"`);
+                `Bearer error="${error.code}", error_description="${error.message}, scope="${error.scope}"`);
         }
         else if (error.status === 401 || error.status === 403) {
             response.setHeader(
