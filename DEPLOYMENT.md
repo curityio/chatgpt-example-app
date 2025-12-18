@@ -43,7 +43,7 @@ export LICENSE_FILE_PATH=~/Desktop/license-trial.json
 The deployment outputs the URL of a secured MCP server:
 
 ```text
-Use the following MCP Server URL to connect: https://815faa4bc463.ngrok-free.app/mcp
+Use the external MCP Server URL to connect: https://815faa4bc463.ngrok-free.app/mcp
 ```
 
 Later, once you've finished testing, run this command to free all Docker resources:
@@ -101,4 +101,4 @@ You can also use the following test clients to gain better visibility into MCP r
 
 ## Handle Redeployments
 
-If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from ChatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data. If you run to connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.
+If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from ChatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data. If you run into connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.
