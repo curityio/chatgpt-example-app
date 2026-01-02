@@ -24,7 +24,7 @@ The widget's JavaScript calls an MCP tool to get portfolio data and render it.
 The user can interact with the widget to invoke a tool to buy or sell stocks.\
 When the user initiates a high privilege buy or sell operation it triggers a step up flow:
 
-![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.jpg)
+![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.png?v=1)
 
 The tool triggers a server side API-driven authentication flow using the Hypermedia Authentication API.\
 The tool returns BankID's animated QR code to the widget, which polls the MCP server for completion.\
@@ -37,7 +37,7 @@ First, an [Access Token Authenticator](https://github.com/curityio/access-token-
 Next, BankID captures human approval before the Curity Identity Server issues the high privilege access token.\
 The MCP server then calls the Portfolio API with the high privilege access token to complete the transaction.
 
-![Backend Token Flow](images/token-flow.png)
+![Backend Token Flow](images/token-flow.png?v=1)
 
 ## View Security Configuration
 
