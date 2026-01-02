@@ -37,7 +37,7 @@ First, an [Access Token Authenticator](https://github.com/curityio/access-token-
 Next, BankID captures human approval before the Curity Identity Server issues the high privilege access token.\
 The MCP server then calls the Portfolio API with the high privilege access token to complete the transaction.
 
-![Backend Token Flow](images/token-flow.png?v=1)
+![Backend Token Flow](images/token-flow.png?v=2)
 
 ## View Security Configuration
 
