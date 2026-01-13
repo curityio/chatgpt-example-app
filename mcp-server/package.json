@@ -15,12 +15,12 @@
     "build": "rm -rf dist/mcp && mkdir -p dist/mcp && tsc"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "dpop": "^2.1.1",
     "express": "^5.2.1",
     "jose": "^6.1.3",
     "morgan": "^1.10.1",
-    "zod": "^4.1.13"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

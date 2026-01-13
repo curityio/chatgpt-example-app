@@ -48,6 +48,8 @@ export class SessionManager {
      */
     public createSession(claims?: ClaimsPrincipal): Session {
 
+        console.log('>>> Creating session, claims provided: ', claims);
+
         if (this.sessions.size >= this.config.maxSessions) {
             this.cleanupExpiredSessions();
         }
@@ -69,7 +71,7 @@ export class SessionManager {
             delegationId: claims?.delegationId,
             pollingUrl: '',
             pollingCount: 0,
-            
+
         };
 
         this.sessions.set(id, session);
@@ -80,7 +82,7 @@ export class SessionManager {
      * Called by tools
      */
     public getOrCreateSession(id: string | undefined, claims?: ClaimsPrincipal): Session {
-      
+
         if (id) {
             const session = this.getSession(id);
             if (session) {
@@ -164,15 +166,17 @@ export class SessionManager {
      */
     private getSessionFromAccessToken(claims?: ClaimsPrincipal): Session | undefined {
 
+        let sessionFromAccessToken: Session | undefined = undefined;
+
         if (claims?.delegationId) {
 
             this.sessions.forEach((s) => {
                 if (s.delegationId === claims.delegationId) {
-                    return s;
+                    sessionFromAccessToken = s;
                 }
             });
         }
 
-        return undefined;
+        return sessionFromAccessToken;
     }
 }
