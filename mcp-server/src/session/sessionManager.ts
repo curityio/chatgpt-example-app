@@ -66,12 +66,14 @@ export class SessionManager {
             id,
             createdAt: new Date(),
             lastAccessedAt: new Date(),
-            client: null,
-            highPrivilegeAccessToken: undefined,
             delegationId: claims?.delegationId,
+            dpopKeyPair: undefined,
+            haapiAccessToken: undefined,
+            haapiTokenType: undefined,
+            haapiExpiresAt: undefined,
             pollingUrl: '',
             pollingCount: 0,
-
+            highPrivilegeAccessToken: undefined,
         };
 
         this.sessions.set(id, session);
@@ -114,10 +116,14 @@ export class SessionManager {
      * Maintains the MCP session but clears state used for step up authentication
      */
     public clearStepupAuthenticationState(session: Session) {
-        session.client = null;
-        session.highPrivilegeAccessToken = undefined;
+        
+        session.dpopKeyPair = undefined;
+        session.haapiAccessToken = undefined;
+        session.haapiTokenType = undefined;
+        session.haapiExpiresAt = undefined;
         session.pollingUrl = '';
         session.pollingCount = 0;
+        session.highPrivilegeAccessToken = undefined;
     }
 
     /*

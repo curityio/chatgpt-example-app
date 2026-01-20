@@ -14,26 +14,31 @@
  *  limitations under the License.
  */
 
-import {DPoPOAuthClient} from '../haapi/dpopOAuthClient.js';
+import {KeyPair} from 'dpop'
 
 /*
  * Serializable session data
  */
 export interface Session {
     
-    // Session identifiers
+    // Details about this session
     id: string;
-    
-    // Time details
     createdAt: Date;
     lastAccessedAt: Date;
-    
-    // OAuth details
-    client: DPoPOAuthClient | null;
-    highPrivilegeAccessToken: string | undefined;
-    delegationId: string | undefined;
 
-    // Polling for BankID completion 
+    // The delegation ID from the MCP client's access token from original user authentication
+    delegationId?: string;
+
+    // Serializable details about the backend HAAPI step-up authentication flow
+    dpopKeyPair?: KeyPair;
+    haapiAccessToken?: string;
+    haapiTokenType?: string;
+    haapiExpiresAt?: Date;
+
+    // Polling details for BankID completion
     pollingUrl: string;
     pollingCount: number;
+    
+    // The access token issued once step-up authentication completes
+    highPrivilegeAccessToken?: string;
 }
