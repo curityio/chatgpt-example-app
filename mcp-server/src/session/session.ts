@@ -34,6 +34,7 @@ export interface Session {
     haapiAccessToken?: string;
     haapiTokenType?: string;
     haapiExpiresAt?: Date;
+    haapiSessionId?: string;
 
     // Polling details for BankID completion
     pollingUrl: string;

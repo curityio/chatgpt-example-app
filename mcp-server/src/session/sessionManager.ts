@@ -71,6 +71,7 @@ export class SessionManager {
             haapiAccessToken: undefined,
             haapiTokenType: undefined,
             haapiExpiresAt: undefined,
+            haapiSessionId: undefined,
             pollingUrl: '',
             pollingCount: 0,
             highPrivilegeAccessToken: undefined,
@@ -121,6 +122,7 @@ export class SessionManager {
         session.haapiAccessToken = undefined;
         session.haapiTokenType = undefined;
         session.haapiExpiresAt = undefined;
+        session.haapiSessionId = undefined;
         session.pollingUrl = '';
         session.pollingCount = 0;
         session.highPrivilegeAccessToken = undefined;

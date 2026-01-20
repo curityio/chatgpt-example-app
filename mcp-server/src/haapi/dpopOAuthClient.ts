@@ -33,7 +33,6 @@ export class DPoPOAuthClient {
     private readonly httpsAgent: https.Agent;
     private readonly authnBaseUrl: string;
     private readonly externalAuthnBaseUrl: string;
-    private haapiSessionId?: string;
 
     constructor(configuration: Configuration, session: Session) {
         
@@ -143,13 +142,12 @@ export class DPoPOAuthClient {
 
         const method = options.method || 'GET';
         const dpopProof = await this.createDPoPProof(method, url, this.session.haapiAccessToken);
-
         console.log('>>> Using Dpop: ' + dpopProof);
 
         const headers = {
             'Authorization': `${this.session.haapiTokenType || 'DPoP'} ${this.session.haapiAccessToken}`,
             'DPoP': dpopProof,
-            ... this.haapiSessionId ? { 'Session-Id': this.haapiSessionId } : {},
+            ... this.session.haapiSessionId ? { 'Session-Id': this.session.haapiSessionId } : {},
             ...options.headers,
         };
 
@@ -162,7 +160,7 @@ export class DPoPOAuthClient {
         console.log(`>>> HAAPI request returned status: ${response.status}`);
 
         if (response.headers.has('Set-Session-Id')) {
-            this.haapiSessionId = response.headers.get('Set-Session-Id') || undefined;
+            this.session.haapiSessionId = response.headers.get('Set-Session-Id') || undefined;
         }
 
         return response;
@@ -231,13 +229,5 @@ export class DPoPOAuthClient {
 
     async delete(url: string, headers?: Record<string, string>): Promise<Response> {
         return this.request(url, { method: 'DELETE', headers });
-    }
-
-    // Utility method to get current token info
-    getTokenInfo(): { token: string | undefined; expiresAt: Date | undefined } {
-        return {
-            token: this.session.haapiAccessToken,
-            expiresAt: this.session.haapiExpiresAt,
-        };
     }
 }
