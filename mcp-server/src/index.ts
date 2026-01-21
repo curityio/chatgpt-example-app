@@ -43,30 +43,37 @@ const haapiAuthorizer = new HaapiAuthorizer(configuration);
 const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 /*
+ * Adjust the web files download location if running the MCP server on the host computer instead of in Docker
+ */
+const webFilesPath = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal') ? '../web/dist' : 'web/dist';
+
+/*
  * ChatGPT downloads the MCP resource once connected
  */
-const appBundle = readFileSync("dist/web/bundle.js", "utf8");
-const css = readFileSync("dist/web/app.css", "utf8");
 server.registerResource(
     "portfolio-widget",
     "ui://widget/portfolio-widget.html",
     {},
-    async () => ({
-        contents: [
-            {
-                uri: "ui://widget/portfolio-widget.html",
-                mimeType: "text/html+skybridge",
-                text: `
+    async () => {
+        const appBundle = readFileSync(`${webFilesPath}/bundle.js`, "utf8");
+        const css = readFileSync(`${webFilesPath}/app.css`, "utf8");
+        return ({
+            contents: [
+                {
+                    uri: "ui://widget/portfolio-widget.html",
+                    mimeType: "text/html+skybridge",
+                    text: `
 <div id="root"></div>
 <style>${css}</style>
 <script type="module">${appBundle}</script>
-        `.trim(),
-                _meta: {
-                    "openai/widgetPrefersBorder": true,
+            `.trim(),
+                    _meta: {
+                        "openai/widgetPrefersBorder": true,
+                    },
                 },
-            },
-        ],
-    })
+            ],
+        })
+    },
 );
 
 /*

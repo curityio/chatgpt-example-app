@@ -75,7 +75,6 @@ export class McpServerError extends Error {
 
     /*
      * Return the structured error content for MCP tool responses
-     * Use isError=false so that the ChatGPT app can handle the error
      */
     public toMcpToolErrorResponse(): any {
 
@@ -89,7 +88,7 @@ export class McpServerError extends Error {
 
         return {
             content: [{ type: 'text', text: JSON.stringify(data) }],
-            isError: false,
+            isError: true,
             structuredContent: data,
         };
     }

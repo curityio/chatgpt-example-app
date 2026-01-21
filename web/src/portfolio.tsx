@@ -206,7 +206,6 @@ const PortfolioApp: React.FC = () => {
                     <span className="stock_name"><span className="ticker">{stock.id}</span>: {stock.name}</span><span className="currently_at">, currently at </span><span className="price">{stock.currentPrice}</span> <span className="currency">USD</span>.
                 </p>
                 <p className="quantity">You own: <span>{stock.quantity}</span></p>
-                <div>extra vertical content</div>
                 <input type="number" className="delta" defaultValue="1" id={`delta_${stock.id}`} />
                 <button className="button buy" onClick={() => {
                     const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
@@ -218,7 +217,6 @@ const PortfolioApp: React.FC = () => {
                     const delta = input ? parseInt(input.value, 10) : 1;
                     sellStock(stock.id, delta);
                 }}>Sell</button>
-                <span>extra horizontal content</span>
             </div>
         ))}
     </div>);
