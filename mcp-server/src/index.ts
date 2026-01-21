@@ -220,7 +220,7 @@ server.registerTool(
                 qrCode: z.optional(z.string())
             })),
             error: z.optional(z.object({
-                //status: z.number(),
+                status: z.number(),
                 code: z.string(),
                 message: z.string(),
             })),
@@ -290,7 +290,7 @@ server.registerTool(
                 qrCode: z.optional(z.string())
             }),
             error: z.optional(z.object({
-                //status: z.number(),
+                status: z.number(),
                 code: z.string(),
                 message: z.string(),
             })),
