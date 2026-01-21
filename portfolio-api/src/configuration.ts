@@ -22,20 +22,18 @@ export class Configuration {
     public port: string;
     public jwksUri: string;
     public requiredJwtAlgorithm: string;
-    public requiredIssuer: string;
+    public requiredIssuer: string[];
     public requiredAudience: string;
     public lowPrivilegeScope: string;
-    public highPrivilegeScope: string;
 
     public constructor() {
 
         this.port = this.getValue('PORT');
         this.jwksUri = this.getValue('JWKS_URI');
         this.requiredJwtAlgorithm = this.getValue('REQUIRED_JWT_ALGORITHM');
-        this.requiredIssuer = this.getValue('REQUIRED_JWT_ISSUER');
+        this.requiredIssuer = this.getValue('REQUIRED_JWT_ISSUER').split(',');
         this.requiredAudience = this.getValue('REQUIRED_JWT_AUDIENCE');
         this.lowPrivilegeScope = this.getValue('LOW_PRIVILEGE_SCOPE');
-        this.highPrivilegeScope = this.getValue('HIGH_PRIVILEGE_SCOPE');
     }
 
     private getValue(name: string): string {

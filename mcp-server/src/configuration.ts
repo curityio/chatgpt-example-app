@@ -30,6 +30,7 @@ export class Configuration {
     public tokenExchangeClientId: string;
     public tokenExchangeClientSecret: string;
     public tokenExchangeAudience: string;
+    public tokenExchangeTokenEndpoint: string;
     public externalBaseUrl: string;
     public portfolioApiUrl: string;
     public authorizationServerBaseUrl: string;
@@ -38,7 +39,7 @@ export class Configuration {
     public redirectUri: string;
     public acr: string;
     public haapiTestAccessToken: string;
-    
+
     public constructor() {
         this.port = this.getValue('PORT');
         this.jwksUri = this.getValue('JWKS_URI');
@@ -49,6 +50,7 @@ export class Configuration {
         this.tokenExchangeClientId = this.getValue('TOKEN_EXCHANGE_CLIENT_ID');
         this.tokenExchangeClientSecret = this.getValue('TOKEN_EXCHANGE_CLIENT_PASSWORD');
         this.tokenExchangeAudience = this.getValue('TOKEN_EXCHANGE_AUDIENCE');
+        this.tokenExchangeTokenEndpoint = this.getValue('TOKEN_EXCHANGE_TOKEN_ENDPOINT');
         this.haapiClientId = this.getValue('HAAPI_CLIENT_ID');
         this.haapiClientSecret = this.getValue('HAAPI_CLIENT_PASSWORD');
         this.externalBaseUrl = this.getValue('EXTERNAL_BASE_URL');

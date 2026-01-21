@@ -69,7 +69,7 @@ export class SessionManager {
             client: null,
             highPrivilegeAccessToken: undefined,
             delegationId: claims?.delegationId,
-            pollingUrl: '',
+            pollingData: null,
             pollingCount: 0,
 
         };
@@ -116,7 +116,7 @@ export class SessionManager {
     public clearStepupAuthenticationState(session: Session) {
         session.client = null;
         session.highPrivilegeAccessToken = undefined;
-        session.pollingUrl = '';
+        session.pollingData = null;
         session.pollingCount = 0;
     }
 

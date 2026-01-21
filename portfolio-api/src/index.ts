@@ -46,6 +46,25 @@ const portfolio = [
     },
 ];
 
+class Transaction {
+    public readonly id: number;
+    public readonly stockId: string;
+    public readonly delta: number;
+    public readonly personalNumber: string;
+    public readonly createdAt: number;
+
+
+    constructor(id: number, stockId: string, delta: number, personalNumber: string, createdAt: number) {
+        this.id = id;
+        this.stockId = stockId;
+        this.delta = delta;
+        this.personalNumber = personalNumber;
+        this.createdAt = createdAt;
+    }
+}
+
+const transactions = [] as Transaction[];
+
 /*
  * Load configuration and create helper objects
  */
@@ -65,7 +84,7 @@ app.use(oauthFilter.validateAccessToken);
  * Only a low privilege scope is required to view the portfolio balances
  */
 app.get('/api/portfolio', (request: Request, response: Response) => {
-    
+
     const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
     if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope)) {
 
@@ -76,36 +95,104 @@ app.get('/api/portfolio', (request: Request, response: Response) => {
             error.scope = configuration.lowPrivilegeScope;
             throw error;
     }
-    
+
     response.json(portfolio);
 });
 
-/*
- * A high privilege scope is required to execute transactions
- */
 app.put('/api/portfolio/:id', (request: Request, response: Response) => {
 
     const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
-    if (!claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
-            
+
+    // First, check if the token contains a transaction_transactionID scope
+    const transactionScope = claimsPrincipal.findTransactionScope();
+
+    if (transactionScope) {
+        // Now, check whether the given transaction exists.
+        const transactionId = parseInt(transactionScope.split('_')[1]);
+        const transactionIndex = transactions.findIndex(tr => tr.id === transactionId);
+
+        console.log(`Searching for transaction with ${transactionId}, found index is ${transactionIndex}`)
+
+        if (transactionIndex === -1) {
+            throw new ApiError(
+                404,
+                'not_found',
+                'Transaction not found'
+            );
+        }
+
+        const transaction = transactions[transactionIndex];
+
+        // Check whether personal_number matches the transaction.
+        if (transaction.personalNumber !== claimsPrincipal.personalNumber) {
+            throw new ApiError(
+                404,
+                'not_found',
+                'Transaction not found'
+            );
+        }
+
+        // Commit the transaction and return response.
+        const stockIndex = portfolio.findIndex(t => t.id === transaction.stockId);
+        if (stockIndex === -1) {
+            throw new ApiError(404, 'stock_not_found', `Unable to update data for the requested stock ${transaction.stockId}`);
+        }
+
+        portfolio[stockIndex].quantity = portfolio[stockIndex].quantity + transaction.delta;
+
+        // Remove the commited transaction
+        transactions.splice(transactionIndex, 1);
+
+        response.json(portfolio[stockIndex]);
+
+    } else {
+        // The transaction scope is not present.
+        // Check whether the token contains the portfolio scope
+
+        if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope)) {
             const error = new ApiError(
                 403,
                 'insufficient_scope',
                 'The access token does not contain the required scope');
-            error.scope = configuration.highPrivilegeScope;
+            error.scope = configuration.lowPrivilegeScope;
             throw error;
+        }
+
+        // Create a new transaction and return a 403 response asking for the new scope.
+        const newTransaction = new Transaction(
+            transactions.length + 1,
+            request.params.id,
+            request.body.delta,
+            claimsPrincipal.personalNumber,
+            Date.now()
+        );
+
+        transactions.push(newTransaction);
+
+        const error = new ApiError(
+            403,
+            'insufficient_scope',
+            'To finish transaction obtain an access token with the required scope');
+        error.scope = `transaction_${newTransaction.id}`;
+        throw error;
+    }
+});
+
+// Add GET /api/transactions/:id endpoint
+// Note: this endpoint is currently available anonymously. The intention is that only the AS should have access to this endpoint. Best practice would be to secure it with a proper token (client credentials or user token? or maybe mTLS?)
+app.get('/api/transactions/:id', (request: Request, response: Response) => {
+    const transactionId = parseInt(request.params.id);
+    if (isNaN(transactionId)) {
+        throw new ApiError(404, 'not_found', 'Transaction not found');
     }
 
-    const id = request.params.id;
-    const stockIndex = portfolio.findIndex(t => t.id === id);
-    if (stockIndex === -1) {
-        throw new ApiError(404, 'stock_not_found', `Unable to update data for the requested stock ${id}`);
+    const transaction = transactions.find(tr => tr.id === transactionId);
+
+    if (!transaction) {
+        throw new ApiError(404, 'not_found', 'Transaction not found');
     }
 
-    const delta = request.body.delta;
-    const newQuantity = portfolio[stockIndex].quantity + delta;
-    portfolio[stockIndex].quantity = newQuantity;
-    response.json(portfolio[stockIndex]);
+    response.json(transaction);
 });
 
 /*

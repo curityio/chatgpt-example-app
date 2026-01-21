@@ -20,7 +20,7 @@ base64url_decode() {
   local len=$((${#1} % 4))
   local result="$1"
   if [ $len -eq 2 ]; then result="$1"'=='
-  elif [ $len -eq 3 ]; then result="$1"'=' 
+  elif [ $len -eq 3 ]; then result="$1"'='
   fi
   echo "$result" | tr '_-' '/+' | base64 --decode
 }
@@ -63,8 +63,14 @@ echo ">>> Use the external MCP Server URL to connect: $EXTERNAL_BASE_URL/mcp"
 if [ "$MCP_SERVER_INTERNAL_URL" == '' ]; then
   export MCP_SERVER_INTERNAL_URL='http://mcp-server:8081'
 fi
+if [ "$PORTFOLIO_API_INTERNAL_HOSTNAME" == '' ]; then
+  export PORTFOLIO_API_INTERNAL_HOSTNAME='portfolio-api'
+fi
+if [ "$PORTFOLIO_API_INTERNAL_PORT" == '' ]; then
+  export PORTFOLIO_API_INTERNAL_PORT='8080'
+fi
 if [ "$PORTFOLIO_API_INTERNAL_URL" == '' ]; then
-  export PORTFOLIO_API_INTERNAL_URL='http://portfolio-api:8080'
+  export PORTFOLIO_API_INTERNAL_URL="http://$PORTFOLIO_API_INTERNAL_HOSTNAME:$PORTFOLIO_API_INTERNAL_PORT"
 fi
 
 #

@@ -50,7 +50,7 @@ services:
     environment:
       ADMIN: 'true'
       LICENSE_KEY: "${LICENSE_KEY}"
-      LOGGING_LEVEL: 'INFO'
+      LOGGING_LEVEL: 'DEBUG'
 
   #
   # A database with pre-shipped user accounts, which stores dynamically registered clients

@@ -22,9 +22,14 @@ services:
     config:
       origins:
       - 'http://localhost:6274'
+      exposed_headers:
+        - 'content-type'
+        - 'authorization'
+        - 'mcp-session-id'
+        - 'mcp-protocol-version'
   - name: phantom-token
     config:
-      introspection_endpoint: http://idsvr:8443/oauth/v2/oauth-introspect
+      introspection_endpoint: http://idsvr:8443/mcp-token-service/oauth-introspect
       client_id: api-gateway-client
       client_secret: Password1
       token_cache_seconds: 900
@@ -51,7 +56,7 @@ services:
 # MCP authorization requires a root level OAuth authorization server metadata endpoint
 #
 - name: authorization-server-metadata-reroute
-  url: http://idsvr:8443/.well-known/oauth-authorization-server/oauth/v2/oauth-anonymous
+  url: http://idsvr:8443/.well-known/oauth-authorization-server/mcp-token-service/oauth-anonymous
   routes:
   - name: authorization-server-metadata-reroute
     hosts:
@@ -69,13 +74,13 @@ services:
 # To fix MCP inspector and some other clients, use Kong's request transformer plugin to update incoming requests
 #
 - name: authorization-server-registration
-  url: http://idsvr:8443/oauth/v2/oauth-registration
+  url: http://idsvr:8443/mcp-clients/oauth-registration
   routes:
   - name: authorization-server-registration
     hosts:
     - $EXTERNAL_HOST_NAME
     paths:
-    - /oauth/v2/oauth-registration
+    - /mcp-clients/oauth-registration
   plugins:
   - name: cors
     config:
@@ -91,6 +96,25 @@ services:
       add:
         body:
         - token_endpoint_auth_method:client_secret_basic
+
+#
+# Endpoints of the mcp token service
+#
+- name: authorization-server-mcp-token-service
+  url: http://idsvr:8443/mcp-token-service
+  routes:
+    - name: mcp-oauth-route
+      hosts:
+        - $EXTERNAL_HOST_NAME
+      paths:
+        - /mcp-token-service
+  plugins:
+    - name: cors
+      config:
+        origins:
+          - 'http://localhost:6274'
+
+
 
 #
 # All other authorization server endpoints

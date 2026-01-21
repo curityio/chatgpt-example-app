@@ -15,25 +15,26 @@
  */
 
 import {DPoPOAuthClient} from '../haapi/dpopOAuthClient.js';
+import {PollingData} from "../haapi/bankid.js";
 
 /*
  * Serializable session data
  */
 export interface Session {
-    
+
     // Session identifiers
     id: string;
-    
+
     // Time details
     createdAt: Date;
     lastAccessedAt: Date;
-    
+
     // OAuth details
     client: DPoPOAuthClient | null;
     highPrivilegeAccessToken: string | undefined;
     delegationId: string | undefined;
 
-    // Polling for BankID completion 
-    pollingUrl: string;
+    // Polling for BankID completion
+    pollingData: PollingData | null;
     pollingCount: number;
 }

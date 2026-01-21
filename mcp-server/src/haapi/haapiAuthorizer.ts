@@ -16,8 +16,13 @@
 
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
-import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl} from './haapiUtils.js';
-import {authenticateWithBankID, AuthenticateWithBankIDResult, findPollAction, findQrCode} from './bankid.js';
+import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} from './haapiUtils.js';
+import {
+    authenticateWithBankID,
+    AuthenticateWithBankIDResult,
+    findPollAction,
+    findQrCode
+} from './bankid.js';
 import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
 
@@ -40,16 +45,14 @@ export class HaapiAuthorizer {
      * Begin the HAAPI flow, to trigger the initial download of the QR code
      */
     public async authorizeWithBankID(receivedAccessToken: string, session: Session, stepupScope: string): Promise<AuthorizationResult> {
-        
+
         this.client = await this.createAuthenticatedHaapiClient();
         session.client = this.client;
 
         const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
         const qrCode = findQrCode(bankIDView);
 
-        const pollAction = findPollAction(bankIDView);
-        const urlForPolling = pollAction.model.href;
-        session.pollingUrl = urlForPolling;
+        session.pollingData = createPollingData(findPollAction(bankIDView));
         session.pollingCount = 0;
 
         return {
@@ -63,12 +66,19 @@ export class HaapiAuthorizer {
      * Called when ChatGPT app sends a request to poll for completion
      */
     public async continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
-        
+
         // Use the existing DPoP client from the session when resuming a flow
         this.client = session.client!;
 
-        console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`);
-        const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingUrl);
+        if (!session.pollingData) {
+            return {
+                success: false,
+                message: 'No polling data to continue authorization'
+            }
+        }
+
+        console.log(`>>> Poll authentication at ${session.pollingData.pollingUrl}. Attempt ${session.pollingCount}.`);
+        const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingData);
 
         if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
             return {
@@ -80,7 +90,7 @@ export class HaapiAuthorizer {
         session.pollingCount = session.pollingCount + 1;
 
         if (authenticationResponse.status == 'continue') {
-            session.pollingUrl = authenticationResponse.pollingUrl!;
+            session.pollingData = authenticationResponse.pollingData!;
 
             return {
                 success: true,
@@ -106,14 +116,14 @@ export class HaapiAuthorizer {
     }
 
     public async endHaapiTest(session: Session): Promise<AuthenticateWithBankIDResult> {
-        return await authenticateWithBankID(this.configuration, this.client, session.pollingUrl);
+        return await authenticateWithBankID(this.configuration, this.client, session.pollingData!);
     }
 
     /*
     * Create a HAAPI client and its DPoP keypair
     */
     private async createAuthenticatedHaapiClient(): Promise<DPoPOAuthClient> {
-        
+
         const keypair = await DPoPOAuthClient.generateKeyPair();
         const client = new DPoPOAuthClient(this.configuration, keypair);
         await client.authenticateClient(this.configuration.tokenEndpoint, 'urn:se:curity:scopes:haapi');

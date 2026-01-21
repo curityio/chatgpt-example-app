@@ -41,6 +41,12 @@ export class OAuthFilter {
      */
     public async validateAccessToken(request: Request, response: Response, next: NextFunction): Promise<void> {
 
+        // Allow anonymous access to GET /api/transactions
+        if (request.method === 'GET' && request.path.startsWith('/api/transactions')) {
+            next();
+            return;
+        }
+
         const accessToken = this.readAccessToken(request);
         if (!accessToken) {
             throw new ApiError(401, 'invalid_token', 'Missing, invalid or expired access token');

@@ -15,7 +15,7 @@
     "build": "rm -rf dist/mcp && mkdir -p dist/mcp && tsc"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "dpop": "^2.1.1",
     "express": "^5.2.1",
     "jose": "^6.1.3",

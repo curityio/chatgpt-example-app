@@ -367,5 +367,5 @@ INSERT INTO credentials (id, subject, password, attributes, created, updated) VA
 -- Restore test user accounts that use email authentication
 --
 COPY accounts (account_id, username, password, email, phone, attributes, active, created, updated) FROM stdin;
-670bfc34-6788-11ed-9323-a269d5800c4d	john.doe@demo.example	\N	\N	\N	{"name": {"givenName": "John", "familyName": "Doe"}, "emails": [], "region": "USA", "agreeToTerms": "on", "urn:se:curity:scim:2.0:Devices": []}	1	1668807106	1668807106
+670bfc34-6788-11ed-9323-a269d5800c4d	john.doe@demo.example	\N	\N	\N	{"name": {"givenName": "John", "familyName": "Doe"}, "emails": [], "region": "USA", "agreeToTerms": "on", "urn:se:curity:scim:2.0:Devices": [], "personalNumber": "19520408-2308"}	1	1668807106	1668807106
 74fcf67c-6788-11ed-93e7-a269d5800c4d	jane.test@demo.example	\N	\N	\N	{"name": {"givenName": "Jane", "familyName": "Test"}, "emails": [], "region": "EUR", "agreeToTerms": "on", "urn:se:curity:scim:2.0:Devices": []}	1	1668807129	1668807129

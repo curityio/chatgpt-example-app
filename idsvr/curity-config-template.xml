@@ -25,6 +25,14 @@
           <endpoints>authentication-service-anonymous</endpoints>
           <endpoints>authentication-service-authentication</endpoints>
           <endpoints>authentication-service-registration</endpoints>
+          <endpoints>mcp-clients-anonymous</endpoints>
+          <endpoints>mcp-clients-authorize</endpoints>
+          <endpoints>mcp-clients-dynamic-client-registration</endpoints>
+          <endpoints>mcp-clients-revoke</endpoints>
+          <endpoints>mcp-clients-session</endpoints>
+          <endpoints>mcp-clients-token</endpoints>
+          <endpoints>mcp-clients-userinfo</endpoints>
+          <endpoints>token-introspection</endpoints>
           <endpoints>token-service-anonymous</endpoints>
           <endpoints>token-service-assisted-token</endpoints>
           <endpoints>token-service-authorize</endpoints>
@@ -78,17 +86,13 @@
           <authenticators>
             <authenticator>
               <id>access-token</id>
-              <authentication-actions>
-                <login>second-factor-authentication</login>
-                <sso>second-factor-authentication</sso>
-              </authentication-actions>
               <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
                 <key-verification>
                   <id>default-signature-verification-key</id>
                 </key-verification>
                 <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
                 <required-audience>$EXTERNAL_BASE_URL/</required-audience>
-                <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
+                <required-issuer>$EXTERNAL_BASE_URL/mcp-token-service/oauth-anonymous</required-issuer>
                 <required-scopes>portfolio</required-scopes>
               </access-token>
             </authenticator>
@@ -147,11 +151,14 @@
       </token-issuers>
     </profile>
     <profile>
-      <id>token-service</id>
+      <id>mcp-clients</id>
       <type xmlns:as="https://curity.se/ns/conf/profile/oauth">as:oauth-service</type>
-      <expose-detailed-error-messages/>
       <settings>
         <authorization-server xmlns="https://curity.se/ns/conf/profile/oauth">
+          <account-manager>default-account-manager</account-manager>
+          <database-client>
+            <client-data-source>default-datasource</client-data-source>
+          </database-client>
           <authentication-service>
             <authentication-profile>authentication-service</authentication-profile>
           </authentication-service>
@@ -184,6 +191,9 @@
               <claims>phone_number_verified</claims>
             </scope>
             <scope>
+              <id>portfolio</id>
+            </scope>
+            <scope>
               <id>profile</id>
               <description>OpenId Connect profile scope</description>
               <claims>birthdate</claims>
@@ -202,13 +212,10 @@
               <claims>zoneinfo</claims>
             </scope>
             <scope>
-              <id>portfolio</id>
-              <description>Read information from the user's portfolio</description>
+              <id>transaction</id>
+              <is-prefix>true</is-prefix>
             </scope>
-            <scope>
-              <id>transactions</id>
-              <description>Buy and sell stocks from the user's portfolio</description>
-            </scope>
+            <default-scope-claim>personal_number</default-scope-claim>
           </scopes>
           <claims>
             <claim>
@@ -267,6 +274,14 @@
               <value-provided-by>account-manager-claims-provider</value-provided-by>
             </claim>
             <claim>
+              <name>personal_number</name>
+              <value-provided-by>personal_number_provider</value-provided-by>
+              <transformation>
+                <input-attribute-names>personalNumber</input-attribute-names>
+                <value-transformation-procedure>ZnVuY3Rpb24gdHJhbnNmb3JtKGF0dHJpYnV0ZXMpIHsKICAvLyBUcmFuc2Zvcm0gdGhlIGF0dHJpYnV0ZXMgYW5kIHJldHVybiB0aGUgYXBwcm9wcmlhdGUgdmFsdWUgZm9yIHRoZSBjbGFpbQogIHJldHVybiBhdHRyaWJ1dGVzWyJwZXJzb25hbE51bWJlciJdOwp9</value-transformation-procedure>
+              </transformation>
+            </claim>
+            <claim>
               <name>phone_number</name>
               <description>OpenID Connect phone_number claim</description>
               <value-provided-by>account-manager-claims-provider</value-provided-by>
@@ -314,9 +329,21 @@
                 </account-manager>
               </account-manager-claims-provider>
             </claims-value-provider>
+            <claims-value-provider>
+              <id>personal_number_provider</id>
+              <account-manager-claims-provider xmlns="https://curity.se/ns/ext-conf/account-manager-claims-provider">
+                <account-manager>
+                  <id>default-account-manager</id>
+                </account-manager>
+                <map-account-to-openid-connect-claims>false</map-account-to-openid-connect-claims>
+              </account-manager-claims-provider>
+            </claims-value-provider>
             <claims-mappers>
               <claims-mapper>
                 <id>default</id>
+                <access_token>
+                  <claim>personal_number</claim>
+                </access_token>
                 <id_token>
                   <claim>address</claim>
                   <claim>birthdate</claim>
@@ -369,6 +396,28 @@
             <expose-metadata>
             </expose-metadata>
           </openid-connect>
+          <dynamic-client-registration>
+            <client-data-source>default-datasource</client-data-source>
+            <non-templatized>
+              <capabilities>
+                <code/>
+              </capabilities>
+              <scopes>
+                <scope>portfolio</scope>
+              </scopes>
+              <authenticators>
+                <authenticator>email</authenticator>
+              </authenticators>
+              <client-authentication-method>
+                <secret>
+                  <credential-manager>default-credential-manager</credential-manager>
+                </secret>
+              </client-authentication-method>
+              <no-authentication/>
+              <user-consent>
+              </user-consent>
+            </non-templatized>
+          </dynamic-client-registration>
           <client-store>
             <config-backed>
               <client>
@@ -382,7 +431,356 @@
                 <id>mcp-server</id>
                 <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
                 <scope>portfolio</scope>
-                <scope>transactions</scope>
+                <scope>transaction</scope>
+                <capabilities>
+                  <oauth-token-exchange/>
+                </capabilities>
+              </client>
+            </config-backed>
+          </client-store>
+        </authorization-server>
+      </settings>
+      <endpoints>
+        <endpoint>
+          <id>mcp-clients-anonymous</id>
+          <uri>/mcp-token-service/oauth-anonymous</uri>
+          <endpoint-kind>oauth-anonymous</endpoint-kind>
+        </endpoint>
+        <endpoint>
+          <id>mcp-clients-authorize</id>
+          <uri>/mcp-token-service/oauth-authorize</uri>
+          <endpoint-kind>oauth-authorize</endpoint-kind>
+        </endpoint>
+        <endpoint>
+          <id>mcp-clients-dynamic-client-registration</id>
+          <uri>/mcp-clients/oauth-registration</uri>
+          <endpoint-kind>oauth-dynamic-client-registration</endpoint-kind>
+          <pre-processing-procedure>mcp-client-registration-policy</pre-processing-procedure>
+        </endpoint>
+        <endpoint>
+          <id>mcp-clients-revoke</id>
+          <uri>/mcp-token-service/oauth-revoke</uri>
+          <endpoint-kind>oauth-revoke</endpoint-kind>
+        </endpoint>
+        <endpoint>
+          <id>mcp-clients-session</id>
+          <uri>/mcp-token-service/oauth-session</uri>
+          <endpoint-kind>oauth-session</endpoint-kind>
+        </endpoint>
+        <endpoint>
+          <id>mcp-clients-token</id>
+          <uri>/mcp-token-service/oauth-token</uri>
+          <endpoint-kind>oauth-token</endpoint-kind>
+          <token-endpoint-procedures>
+            <flow>oauth-token-authorization-code</flow>
+            <procedure>set-access-token-audience</procedure>
+          </token-endpoint-procedures>
+          <token-endpoint-procedures>
+            <flow>oauth-token-oauth-token-exchange</flow>
+            <procedure>mcp-token-exchange</procedure>
+          </token-endpoint-procedures>
+        </endpoint>
+        <endpoint>
+          <id>mcp-clients-userinfo</id>
+          <uri>/mcp-token-service/oauth-userinfo</uri>
+          <endpoint-kind>oauth-userinfo</endpoint-kind>
+        </endpoint>
+        <endpoint>
+          <id>token-introspection</id>
+          <uri>/mcp-token-service/oauth-introspect</uri>
+          <client-authentication>disallow</client-authentication>
+          <endpoint-kind>oauth-introspect</endpoint-kind>
+        </endpoint>
+      </endpoints>
+      <token-issuers>
+        <default-token-issuer>
+          <jwt-issuer-settings>
+            <algorithm>PS256</algorithm>
+            <signing-key-id>default-signing-key</signing-key-id>
+          </jwt-issuer-settings>
+          <default-data-source>default-datasource</default-data-source>
+        </default-token-issuer>
+      </token-issuers>
+    </profile>
+    <profile>
+      <id>token-service</id>
+      <type xmlns:as="https://curity.se/ns/conf/profile/oauth">as:oauth-service</type>
+      <expose-detailed-error-messages/>
+      <settings>
+        <authorization-server xmlns="https://curity.se/ns/conf/profile/oauth">
+          <authentication-service>
+            <authentication-profile>authentication-service</authentication-profile>
+          </authentication-service>
+          <client-capabilities>
+            <code>
+            </code>
+            <introspection/>
+            <oauth-token-exchange/>
+          </client-capabilities>
+          <scopes>
+            <scope>
+              <id>address</id>
+              <description>OpenId Connect address scope</description>
+              <claims>address</claims>
+            </scope>
+            <scope>
+              <id>email</id>
+              <description>OpenId Connect email scope</description>
+              <claims>email</claims>
+              <claims>email_verified</claims>
+            </scope>
+            <scope>
+              <id>openid</id>
+              <description>Standard OpenID Connect scope</description>
+            </scope>
+            <scope>
+              <id>phone</id>
+              <description>OpenId Connect phone scope</description>
+              <claims>phone_number</claims>
+              <claims>phone_number_verified</claims>
+            </scope>
+            <scope>
+              <id>portfolio</id>
+              <description>Read information from the user's portfolio</description>
+            </scope>
+            <scope>
+              <id>profile</id>
+              <description>OpenId Connect profile scope</description>
+              <claims>birthdate</claims>
+              <claims>family_name</claims>
+              <claims>gender</claims>
+              <claims>given_name</claims>
+              <claims>locale</claims>
+              <claims>middle_name</claims>
+              <claims>name</claims>
+              <claims>nickname</claims>
+              <claims>picture</claims>
+              <claims>preferred_username</claims>
+              <claims>profile</claims>
+              <claims>updated_at</claims>
+              <claims>website</claims>
+              <claims>zoneinfo</claims>
+            </scope>
+            <scope>
+              <id>transaction</id>
+              <is-prefix>true</is-prefix>
+            </scope>
+            <default-scope-claim>personal_number</default-scope-claim>
+          </scopes>
+          <claims>
+            <claim>
+              <name>address</name>
+              <description>OpenID Connect address claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>birthdate</name>
+              <description>OpenID Connect birthdate claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>email</name>
+              <description>OpenID Connect email claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>email_verified</name>
+              <description>OpenID Connect email_verified claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>family_name</name>
+              <description>OpenID Connect family_name claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>gender</name>
+              <description>OpenID Connect gender claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>given_name</name>
+              <description>OpenID Connect given_name claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>locale</name>
+              <description>OpenID Connect locale claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>middle_name</name>
+              <description>OpenID Connect middle_name claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>name</name>
+              <description>OpenID Connect name claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>nickname</name>
+              <description>OpenID Connect nickname claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>personal_number</name>
+              <value-provided-by>personal_number_provider</value-provided-by>
+              <transformation>
+                <input-attribute-names>personalNumber</input-attribute-names>
+                <value-transformation-procedure>ZnVuY3Rpb24gdHJhbnNmb3JtKGF0dHJpYnV0ZXMpIHsKICAvLyBUcmFuc2Zvcm0gdGhlIGF0dHJpYnV0ZXMgYW5kIHJldHVybiB0aGUgYXBwcm9wcmlhdGUgdmFsdWUgZm9yIHRoZSBjbGFpbQogIHJldHVybiBhdHRyaWJ1dGVzWyJwZXJzb25hbE51bWJlciJdOwp9</value-transformation-procedure>
+              </transformation>
+            </claim>
+            <claim>
+              <name>phone_number</name>
+              <description>OpenID Connect phone_number claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>phone_number_verified</name>
+              <description>OpenID Connect phone_number_verified claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>picture</name>
+              <description>OpenID Connect picture claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>preferred_username</name>
+              <description>OpenID Connect preferred_username claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>profile</name>
+              <description>OpenID Connect profile claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>updated_at</name>
+              <description>OpenID Connect updated_at claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>website</name>
+              <description>OpenID Connect website claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claim>
+              <name>zoneinfo</name>
+              <description>OpenID Connect zoneinfo claim</description>
+              <value-provided-by>account-manager-claims-provider</value-provided-by>
+            </claim>
+            <claims-value-provider>
+              <id>account-manager-claims-provider</id>
+              <account-manager-claims-provider xmlns="https://curity.se/ns/ext-conf/account-manager-claims-provider">
+                <account-manager>
+                  <id>default-account-manager</id>
+                </account-manager>
+              </account-manager-claims-provider>
+            </claims-value-provider>
+            <claims-value-provider>
+              <id>personal_number_provider</id>
+              <account-manager-claims-provider xmlns="https://curity.se/ns/ext-conf/account-manager-claims-provider">
+                <account-manager>
+                  <id>default-account-manager</id>
+                </account-manager>
+                <map-account-to-openid-connect-claims>false</map-account-to-openid-connect-claims>
+              </account-manager-claims-provider>
+            </claims-value-provider>
+            <claims-mappers>
+              <claims-mapper>
+                <id>default</id>
+                <access_token>
+                  <claim>personal_number</claim>
+                </access_token>
+                <id_token>
+                  <claim>address</claim>
+                  <claim>birthdate</claim>
+                  <claim>email</claim>
+                  <claim>email_verified</claim>
+                  <claim>family_name</claim>
+                  <claim>gender</claim>
+                  <claim>given_name</claim>
+                  <claim>locale</claim>
+                  <claim>middle_name</claim>
+                  <claim>name</claim>
+                  <claim>nickname</claim>
+                  <claim>phone_number</claim>
+                  <claim>phone_number_verified</claim>
+                  <claim>picture</claim>
+                  <claim>preferred_username</claim>
+                  <claim>profile</claim>
+                  <claim>updated_at</claim>
+                  <claim>website</claim>
+                  <claim>zoneinfo</claim>
+                </id_token>
+                <userinfo>
+                  <claim>address</claim>
+                  <claim>birthdate</claim>
+                  <claim>email</claim>
+                  <claim>email_verified</claim>
+                  <claim>family_name</claim>
+                  <claim>gender</claim>
+                  <claim>given_name</claim>
+                  <claim>locale</claim>
+                  <claim>middle_name</claim>
+                  <claim>name</claim>
+                  <claim>nickname</claim>
+                  <claim>phone_number</claim>
+                  <claim>phone_number_verified</claim>
+                  <claim>picture</claim>
+                  <claim>preferred_username</claim>
+                  <claim>profile</claim>
+                  <claim>updated_at</claim>
+                  <claim>website</claim>
+                  <claim>zoneinfo</claim>
+                </userinfo>
+              </claims-mapper>
+              <default-claims-mapper>default</default-claims-mapper>
+            </claims-mappers>
+          </claims>
+          <expose-metadata>
+          </expose-metadata>
+          <openid-connect>
+            <expose-metadata>
+            </expose-metadata>
+          </openid-connect>
+          <consentors>
+            <consentor>
+              <id>bankid-consentor</id>
+              <signing-consentor>
+                <text-to-display-procedure>LyoqCiAqIEBwYXJhbSB7c2UuY3VyaXR5LmlkZW50aXR5c2VydmVyLnByb2NlZHVyZXMuY29udGV4dC5TaWduaW5nQ29uc2VudG9yRGlzcGxheVRleHRQcm9jZWR1cmVDb250ZXh0fSBjb250ZXh0CiAqLwpmdW5jdGlvbiByZXN1bHQoY29udGV4dCkgewogIAogIHZhciBhcGlDbGllbnQgPSBjb250ZXh0LmdldFdlYlNlcnZpY2VDbGllbnQoKTsKCiAgdmFyIHRyYW5zYWN0aW9uU2NvcGUgPSBudWxsOwogIHZhciBzY29wZXMgPSBjb250ZXh0LmNvbnNlbnRBdHRyaWJ1dGVzLnNjb3BlczsKICAKICBmb3IgKHZhciBpIGluIGNvbnRleHQuY29uc2VudEF0dHJpYnV0ZXMuc2NvcGVzKSB7CiAgICB2YXIgc2NvcGUgPSBzY29wZXNbaV07CiAgICBpZiAoc2NvcGUuaW5kZXhPZigndHJhbnNhY3Rpb25fJykgIT09IC0xKSB7CiAgICAgICAgdHJhbnNhY3Rpb25TY29wZSA9IHNjb3BlOwogICAgICAgIGNvbnRpbnVlOwogICAgICB9CiAgfQoKICBpZiAoIXRyYW5zYWN0aW9uU2NvcGUpIHsKICAgIHJldHVybiAiTm90IGFwcGxpY2FibGUiOwogIH0KCiAgdmFyIHRyYW5zYWN0aW9uRGF0YVJlc3BvbnNlID0gYXBpQ2xpZW50LnJlcXVlc3QoCiAgICB7CiAgICAgIG1ldGhvZDogJ0dFVCcsCiAgICAgIHBhdGg6IHRyYW5zYWN0aW9uU2NvcGUucmVwbGFjZSgndHJhbnNhY3Rpb25fJywgJycpCiAgICB9CiAgKQoKICBpZiAodHJhbnNhY3Rpb25EYXRhUmVzcG9uc2Uuc3RhdHVzQ29kZSAhPT0gMjAwKSB7CiAgICB0aHJvdyBleGNlcHRpb25GYWN0b3J5LmJhZFJlcXVlc3RFeGNlcHRpb24oJ1NvbWV0aGluZyB3ZW50IHdyb25nIHdpdGggcHJlcGFyaW5nIHRoZSBjb25zZW50LicpOwogIH0KCiAgdmFyIHRyYW5zYWN0aW9uRGF0YSA9IEpTT04ucGFyc2UodHJhbnNhY3Rpb25EYXRhUmVzcG9uc2UuYm9keSk7CgogIHZhciB0cmFuc2FjdGlvblR5cGUgPSAnYnV5JzsKICB2YXIgcXVhbnRpdHkgPSB0cmFuc2FjdGlvbkRhdGEuZGVsdGE7CgogIGlmICh0cmFuc2FjdGlvbkRhdGFbJ2RlbHRhJ10gPCAwKSB7CiAgICB0cmFuc2FjdGlvblR5cGUgPSAnc2VsbCc7CiAgICBxdWFudGl0eSA9IC1xdWFudGl0eTsKICB9CgogIHJldHVybiAnRG8geW91IHdhbnQgdG8gJyArIHRyYW5zYWN0aW9uVHlwZSArICcgJyArIHF1YW50aXR5ICsgJyAnICsgdHJhbnNhY3Rpb25EYXRhLnN0b2NrSWQgKyAnIHN0b2Nrcz8nOwp9Cg==</text-to-display-procedure>
+                <webservice>
+                  <hostname>portfolio-api</hostname>
+                  <port>8080</port>
+                  <context>/api/transactions</context>
+                  <http-client>portfolio-api-client</http-client>
+                </webservice>
+                <bankid-signing-consentor xmlns="https://curity.se/ns/ext-conf/bankid-signing-consentor">
+                  <http-client>
+                    <id>bankid-client</id>
+                  </http-client>
+                  <allowed-bankid-types>any</allowed-bankid-types>
+                  <mode>test</mode>
+                </bankid-signing-consentor>
+              </signing-consentor>
+            </consentor>
+          </consentors>
+          <client-store>
+            <config-backed>
+              <client>
+                <id>api-gateway-client</id>
+                <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
+                <capabilities>
+                  <introspection/>
+                </capabilities>
+              </client>
+              <client>
+                <id>mcp-server</id>
+                <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
+                <scope>portfolio</scope>
+                <scope>transaction</scope>
                 <capabilities>
                   <oauth-token-exchange/>
                 </capabilities>
@@ -390,10 +788,16 @@
               <client>
                 <id>mcp-server-haapi</id>
                 <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
-                <redirect-uris>haapi:callback</redirect-uris>
-                <scope>portfolio</scope>
-                <scope>transactions</scope>
+                <redirect-uris>haapi://callback</redirect-uris>
+                <user-consent>
+                  <only-consentors>true</only-consentors>
+                  <consentors>
+                    <consentor>bankid-consentor</consentor>
+                  </consentors>
+                </user-consent>
                 <audience>$EXTERNAL_BASE_URL/</audience>
+                <scope>portfolio</scope>
+                <scope>transaction</scope>
                 <user-authentication>
                   <allowed-authenticators>access-token</allowed-authenticators>
                 </user-authentication>
@@ -511,6 +915,10 @@
           <use-truststore>true</use-truststore>
           <client-keystore>bankid-test-environement</client-keystore>
         </tls>
+      </client>
+      <client>
+        <id>portfolio-api-client</id>
+        <scheme>http</scheme>
       </client>
     </http>
     <data-sources>

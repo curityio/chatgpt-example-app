@@ -25,13 +25,25 @@ export class ClaimsPrincipal {
 
     private readonly configuration: Configuration;
     private readonly scope: string;
+    public readonly personalNumber: string;
 
     public constructor(configuration: Configuration, claims: JWTPayload) {
 
         this.configuration = configuration;
         this.scope = this.getClaim(claims, 'scope');
+        this.personalNumber = this.getClaim(claims, 'personal_number');
     }
 
+    public findTransactionScope(): string | undefined {
+        const scopes = this.scope.split(' ');
+        for (const scope of scopes) {
+            if (scope.startsWith('transaction_')) {
+                return scope;
+            }
+        }
+
+        return undefined;
+    }
     public hasRequiredScope(expectedScope: string): boolean {
         return this.scope.split(' ').indexOf(expectedScope) !== -1;
     }
