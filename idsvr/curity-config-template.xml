@@ -396,6 +396,26 @@
             <expose-metadata>
             </expose-metadata>
           </openid-connect>
+          <client-store>
+            <config-backed>
+              <client>
+                <id>api-gateway-client</id>
+                <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
+                <capabilities>
+                  <introspection/>
+                </capabilities>
+              </client>
+              <client>
+                <id>mcp-server</id>
+                <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
+                <scope>portfolio</scope>
+                <scope>transaction</scope>
+                <capabilities>
+                  <oauth-token-exchange/>
+                </capabilities>
+              </client>
+            </config-backed>
+          </client-store>
           <dynamic-client-registration>
             <client-data-source>default-datasource</client-data-source>
             <non-templatized>
@@ -418,26 +438,6 @@
               </user-consent>
             </non-templatized>
           </dynamic-client-registration>
-          <client-store>
-            <config-backed>
-              <client>
-                <id>api-gateway-client</id>
-                <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
-                <capabilities>
-                  <introspection/>
-                </capabilities>
-              </client>
-              <client>
-                <id>mcp-server</id>
-                <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
-                <scope>portfolio</scope>
-                <scope>transaction</scope>
-                <capabilities>
-                  <oauth-token-exchange/>
-                </capabilities>
-              </client>
-            </config-backed>
-          </client-store>
         </authorization-server>
       </settings>
       <endpoints>
@@ -508,14 +508,15 @@
       <expose-detailed-error-messages/>
       <settings>
         <authorization-server xmlns="https://curity.se/ns/conf/profile/oauth">
+          <client-authentication>
+            <basic-and-form-post>true</basic-and-form-post>
+          </client-authentication>
           <authentication-service>
             <authentication-profile>authentication-service</authentication-profile>
           </authentication-service>
           <client-capabilities>
             <code>
             </code>
-            <introspection/>
-            <oauth-token-exchange/>
           </client-capabilities>
           <scopes>
             <scope>
@@ -770,22 +771,6 @@
           <client-store>
             <config-backed>
               <client>
-                <id>api-gateway-client</id>
-                <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
-                <capabilities>
-                  <introspection/>
-                </capabilities>
-              </client>
-              <client>
-                <id>mcp-server</id>
-                <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
-                <scope>portfolio</scope>
-                <scope>transaction</scope>
-                <capabilities>
-                  <oauth-token-exchange/>
-                </capabilities>
-              </client>
-              <client>
                 <id>mcp-server-haapi</id>
                 <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
                 <redirect-uris>haapi://callback</redirect-uris>
@@ -813,29 +798,6 @@
               </client>
             </config-backed>
           </client-store>
-          <dynamic-client-registration>
-            <client-data-source>default-datasource</client-data-source>
-            <non-templatized>
-              <capabilities>
-                <code/>
-              </capabilities>
-              <default-refresh-token-ttl>3600</default-refresh-token-ttl>
-              <scopes>
-                <scope>portfolio</scope>
-              </scopes>
-              <authenticators>
-                <authenticator>email</authenticator>
-              </authenticators>
-              <client-authentication-method>
-                <secret>
-                  <credential-manager>default-credential-manager</credential-manager>
-                </secret>
-              </client-authentication-method>
-              <no-authentication/>
-              <user-consent>
-              </user-consent>
-            </non-templatized>
-          </dynamic-client-registration>
         </authorization-server>
       </settings>
       <endpoints>
