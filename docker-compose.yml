@@ -19,10 +19,14 @@ services:
 
   #
   # The MCP server that serves the ChatGPT widget and implements the HAAPI step-up flow
+  # Share widget files from the host to enable code changes without Docker redeployment
   #
   mcp-server:
     image: mcp-server:1.0
     hostname: mcp-server
+    volumes:
+      - ./web/dist/bundle.js:/usr/api/dist/web/bundle.js
+      - ./web/dist/app.css:/usr/api/dist/web/app.css
     env_file: mcp-server/.env
 
   #

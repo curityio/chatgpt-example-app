@@ -6,17 +6,20 @@
   "license": "Apache-2.0",
   "main": "src/portfolio.tsx",
   "scripts": {
-    "build": "esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify",
-    "deploy": "cp app.css dist/bundle.js ../mcp-server/dist/web"
+    "start": "npm run copy && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --watch",
+    "build": "npm run copy && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify",
+    "serve": "node testhost.mjs",
+    "copy": "rm -rf dist && mkdir dist && cp app.css index.html dist"
   },
   "dependencies": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
-    "@types/react-dom": "^19.2.3",
     "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "esbuild": "^0.27.0",
+    "express": "^5.2.1",
     "typescript": "^5.9.3"
   }
 }
