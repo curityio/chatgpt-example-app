@@ -25,9 +25,9 @@ services:
     image: mcp-server:1.0
     hostname: mcp-server
     volumes:
-      - ./web/dist/bundle.js:/usr/api/web/dist/bundle.js
-      - ./web/dist/app.css:/usr/api/web/dist/app.css
-    env_file: mcp-server/.env
+      - ./mcp/widget/dist/bundle.js:/usr/api/widget/dist/bundle.js
+      - ./mcp/widget/dist/app.css:/usr/api/widget/dist/app.css
+    env_file: mcp/server/.env
 
   #
   # The Portfolio API that uses OAuth to secure access

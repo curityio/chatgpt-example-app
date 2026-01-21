@@ -45,7 +45,7 @@ const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 /*
  * Adjust the web files download location if running the MCP server on the host computer instead of in Docker
  */
-const webFilesPath = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal') ? '../web/dist' : 'web/dist';
+const webFilesPath = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal') ? '../widget/dist' : 'widget/dist';
 
 /*
  * ChatGPT downloads the MCP resource once connected
