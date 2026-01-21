@@ -1,0 +1,23 @@
+{
+  "name": "portfolio-widget",
+  "version": "1.0.0",
+  "description": "A ChatGPT app that uses step-up authentication",
+  "author": "Curity AB",
+  "license": "Apache-2.0",
+  "main": "src/portfolio.tsx",
+  "scripts": {
+    "start": "vite build --watch",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}

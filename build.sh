@@ -51,7 +51,6 @@ cd ../widget
 npm i
 rm -rf dist 2>/dev/null
 mkdir dist
-cp app.css dist
 npm run build
 if [ $? -ne 0 ]; then
   echo '>>> Problem building the chatgpt app widget'

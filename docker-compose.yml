@@ -25,8 +25,7 @@ services:
     image: mcp-server:1.0
     hostname: mcp-server
     volumes:
-      - ./mcp/widget/dist/bundle.js:/usr/api/widget/dist/bundle.js
-      - ./mcp/widget/dist/app.css:/usr/api/widget/dist/app.css
+      - ./mcp/web/dist/assets:/usr/api/web/dist/assets
     env_file: mcp/server/.env
 
   #

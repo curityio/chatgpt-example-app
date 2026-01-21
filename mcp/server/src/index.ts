@@ -19,7 +19,7 @@ import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/st
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import express, {Request, Response} from 'express';
 import morgan from 'morgan';
-import {readFileSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'fs';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {z} from 'zod';
@@ -45,7 +45,7 @@ const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 /*
  * Adjust the web files download location if running the MCP server on the host computer instead of in Docker
  */
-const webFilesPath = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal') ? '../widget/dist' : 'widget/dist';
+const webAssetsFolder = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal') ? '../web/dist/assets' : 'web/dist/assets';
 
 /*
  * ChatGPT downloads the MCP resource once connected
@@ -55,8 +55,15 @@ server.registerResource(
     "ui://widget/portfolio-widget.html",
     {},
     async () => {
-        const appBundle = readFileSync(`${webFilesPath}/bundle.js`, "utf8");
-        const css = readFileSync(`${webFilesPath}/app.css`, "utf8");
+        
+        // Get files from the assets folder, which the Vite bundler produces
+        const files = readdirSync(webAssetsFolder);
+        const appBundleFileName = files.find((f) => path.extname(f) === '.js') || '';
+        const cssFileName = files.find((f) => path.extname(f) === '.css') || '';
+        const appBundle = readFileSync(`${webAssetsFolder}/${appBundleFileName}`, 'utf-8');
+        const css = readFileSync(`${webAssetsFolder}/${cssFileName}`, 'utf-8');
+
+        // Return the content in the ChatGPT skybridge format
         return ({
             contents: [
                 {
