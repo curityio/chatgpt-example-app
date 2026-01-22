@@ -13,8 +13,16 @@ cd mcp-server/widget
 npm run watch
 ```
 
-Consider running the widget in a development MCP host that can render widget apps, such as [MCPJam](https://github.com/MCPJam/inspector).\
-Configure the MCP server ngrok URL, run an OAuth flow and then interact with the MCP host and widget app.
+Consider running the widget in a development MCP host that can render widget apps, such as the [MCPJam Inspector](https://github.com/MCPJam/inspector):
+
+```bash
+npx @mcpjam/inspector@latest
+```
+
+Navigate to `Servers` and add the MCP server's ngrok URL and run the OAuth flow when prompted.\
+Then navigate to `App Builder`, run the `get_portfolio` tool and interact with the widget app:
+
+![MCP Test Client](images/test-client.png)
 
 ## Develop the MCP Server
 
