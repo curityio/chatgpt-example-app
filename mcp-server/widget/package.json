@@ -5,6 +5,10 @@
   "author": "Curity AB",
   "license": "Apache-2.0",
   "main": "src/portfolio.tsx",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "watch": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --watch",
     "build": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"

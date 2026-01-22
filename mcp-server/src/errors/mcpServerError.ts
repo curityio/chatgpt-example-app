@@ -79,11 +79,9 @@ export class McpServerError extends Error {
     public toMcpToolErrorResponse(): any {
 
         const data: any = {
-            error: {
-                status: this.status,
-                code: this.code,
-                message: this.message,
-            },
+            status: this.status,
+            code: this.code,
+            message: this.message,
         };
 
         return {
