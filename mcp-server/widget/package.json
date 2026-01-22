@@ -6,8 +6,8 @@
   "license": "Apache-2.0",
   "main": "src/portfolio.tsx",
   "scripts": {
-    "watch": "rm -rf dist/assets/* && vite build --watch",
-    "build": "rm -rf dist/assets/* && vite build"
+    "watch": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --watch",
+    "build": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"
   },
   "dependencies": {
     "react": "^19.2.3",
@@ -16,8 +16,7 @@
   "devDependencies": {
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "esbuild": "^0.27.0",
+    "typescript": "^5.9.3"
   }
 }

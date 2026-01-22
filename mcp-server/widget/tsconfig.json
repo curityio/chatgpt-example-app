@@ -9,6 +9,5 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "dist",
     "sourceMap": true
-  },
-  "include": ["vite.config.ts"]
+  }
 }

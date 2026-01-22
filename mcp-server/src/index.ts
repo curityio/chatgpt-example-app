@@ -19,8 +19,7 @@ import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/st
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import express, {Request, Response} from 'express';
 import morgan from 'morgan';
-import {readdirSync, readFileSync} from 'fs';
-import path from 'path';
+import {readFileSync} from 'fs';
 import {z} from 'zod';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
 import {Configuration} from './configuration.js';
@@ -42,13 +41,7 @@ const haapiAuthorizer = new HaapiAuthorizer(configuration);
 const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 /*
- * Adjust the web files download location if running the MCP server on the host computer instead of in Docker
- */
-const developmentMode = process.env.NODE_ENV === 'development';
-const webAssetsFolder = developmentMode ? '../web/dist/assets' : 'web/dist/assets';
-
-/*
- * ChatGPT downloads the widget resource by calling this method
+ * ChatGPT downloads the widget in the ChatGPT skybridge format
  */
 server.registerResource(
     "portfolio-widget",
@@ -56,14 +49,8 @@ server.registerResource(
     {},
     async () => {
         
-        // Get files from the assets folder, which the Vite bundler produces
-        const files = readdirSync(webAssetsFolder);
-        const appBundleFileName = files.find((f: any) => path.extname(f) === '.js') || '';
-        const cssFileName = files.find((f: any) => path.extname(f) === '.css') || '';
-        const appBundle = readFileSync(`${webAssetsFolder}/${appBundleFileName}`, 'utf-8');
-        const css = readFileSync(`${webAssetsFolder}/${cssFileName}`, 'utf-8');
-
-        // Return the content in the ChatGPT skybridge format
+        const widgetAppBundle = readFileSync('widget/dist/bundle.js', 'utf-8');
+        const css = readFileSync('widget/dist/app.css', 'utf-8');
         return ({
             contents: [
                 {
@@ -72,7 +59,7 @@ server.registerResource(
                     text: `
 <div id="root"></div>
 <style>${css}</style>
-<script type="module">${appBundle}</script>
+<script type="module">${widgetAppBundle}</script>
             `.trim(),
                     _meta: {
                         "openai/widgetPrefersBorder": true,

@@ -30,7 +30,7 @@ cd ..
 # Build the MCP server
 #
 echo '>>> Building the MCP server ...'
-cd mcp/server
+cd mcp-server
 npm install
 if [ $? -ne 0 ]; then
   echo '>>> Problem installing dependencies for the MCP server'
@@ -47,10 +47,8 @@ fi
 # Build the ChatGPT widget app
 #
 echo '>>> Building the ChatGPT widget app ...'
-cd ../web
-npm i
-rm -rf dist 2>/dev/null
-mkdir dist
+cd widget
+npm install
 npm run build
 if [ $? -ne 0 ]; then
   echo '>>> Problem building the chatgpt app widget'
@@ -61,13 +59,13 @@ fi
 # Build the MCP server's Docker container
 #
 echo '>>> Building the MCP server Docker image ...'
-cd ../server
+cd ..
 docker build --no-cache -t mcp-server:1.0 .
 if [ $? -ne 0 ]; then
   echo '>>> Problem building the MCP server Docker image'
   exit 1
 fi
-cd ../..
+cd ..
 
 #
 # Build the Access Token Authenticator plugin
