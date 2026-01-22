@@ -6,8 +6,8 @@
   "license": "Apache-2.0",
   "main": "src/portfolio.tsx",
   "scripts": {
-    "start": "vite build --watch",
-    "build": "vite build"
+    "watch": "rm -rf dist/assets/* && vite build --watch",
+    "build": "rm -rf dist/assets/* && vite build"
   },
   "dependencies": {
     "react": "^19.2.3",

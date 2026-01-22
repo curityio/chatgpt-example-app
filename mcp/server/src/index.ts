@@ -44,7 +44,7 @@ const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 /*
  * Adjust the web files download location if running the MCP server on the host computer instead of in Docker
  */
-const developmentMode = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal');
+const developmentMode = process.env.NODE_ENV === 'development';
 const webAssetsFolder = developmentMode ? '../web/dist/assets' : 'web/dist/assets';
 
 /*
@@ -381,16 +381,6 @@ export async function requestAuthorization(receivedAccessToken: string, session:
 const app = express();
 app.use(morgan('combined'));
 app.use(express.json());
-
-/*
- * In development mode, support running widgets outside of ChatGPT with the Skybridge development tools
- */
-if (developmentMode) {
-    const { devtoolsStaticServer } = await import('@skybridge/devtools');
-    const { widgetsDevServer } = await import('skybridge/server');
-    app.use(await devtoolsStaticServer());
-    app.use(await widgetsDevServer());
-}
 
 /*
  * Serve MCP resource metadata

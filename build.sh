@@ -27,7 +27,7 @@ fi
 cd ..
 
 #
-# Build the MCP server to a docker container
+# Build the MCP server
 #
 echo '>>> Building the MCP server ...'
 cd mcp/server
@@ -56,8 +56,12 @@ if [ $? -ne 0 ]; then
   echo '>>> Problem building the chatgpt app widget'
   exit 1
 fi
-cd ../server
 
+#
+# Build the MCP server's Docker container
+#
+echo '>>> Building the MCP server Docker image ...'
+cd ../server
 docker build --no-cache -t mcp-server:1.0 .
 if [ $? -ne 0 ]; then
   echo '>>> Problem building the MCP server Docker image'

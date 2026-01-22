@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import React, {useEffect} from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import {useWidgetState} from './use-widget-state';
 import {useOpenAiGlobal} from './use-openai-global';
@@ -39,25 +39,20 @@ const PortfolioApp: React.FC = () => {
 
     const toolOutput = useOpenAiGlobal('toolOutput');
     const [widgetState, setWidgetState] = useWidgetState(() => ({
-        portfolio : toolOutput?.result as Stock[],
+        portfolio: toolOutput?.result as Stock[],
         authMessage: toolOutput?.authMessage as any,
         tool: null as Tool | null,
     }));
 
-    useEffect(() => {
-        console.log('>>> Current tool output', toolOutput);
-        
-        // Once the tool output from window.openai is set it doesn't change.
-        // When chatGPT continues the conversation, it seems to start a new widget instance that gets data in toolOutput.
-        // Therefore, overwrite the widget's state with the tool's response only when it is empty
-        if (toolOutput?.result && !widgetState?.portfolio) {
-            setWidgetState({
-                ...widgetState,
-                portfolio: toolOutput?.result as Stock[],
-                authMessage: toolOutput?.authMessage,
-            });
-        }
-    }, [toolOutput]);
+    // If OpenAI hooks supply null widget state, populate the state here
+    if (toolOutput && !widgetState) {
+        setWidgetState({
+            portfolio: toolOutput?.result as Stock[],
+            authMessage: toolOutput?.authMessage,
+            tool: null,
+        });
+    }
+    console.log('>>> Received widgetState: ', widgetState);
 
     /*
      * Initiate the MCP tool to buy stocks
@@ -88,13 +83,14 @@ const PortfolioApp: React.FC = () => {
      */
     const updateStock = async (toolToCall: Tool, id: string, delta: number) => {
 
+        console.log(`>>> updateStock for ${toolToCall.name}`);
         let updateStockResult: CallToolResponse
         const newState = {} as any;
 
         try {
 
             updateStockResult = await window.openai?.callTool(toolToCall.name, { id, quantity: delta });
-            console.log(`>>> Result of call to ${toolToCall.name} `, updateStockResult);
+            console.log(`>>> updateStock: Result of call to ${toolToCall.name} `, updateStockResult);
             
         } catch (e: any) {
 
@@ -109,7 +105,7 @@ const PortfolioApp: React.FC = () => {
         if (updateStockResult?.structuredContent?.result) {
 
             const stockToUpdate = updateStockResult.structuredContent.result as Stock;
-            newState.portfolio = widgetState?.portfolio.map(stock => {
+            newState.portfolio = widgetState?.portfolio?.map(stock => {
                 if (stock.id === stockToUpdate.id) {
                     return stockToUpdate;
                 }
@@ -123,20 +119,25 @@ const PortfolioApp: React.FC = () => {
             pollAuthentication(toolToCall);
         }
 
+        console.log('>>> updateStock: updating widget state');
+        console.log(newState);
         setWidgetState({
             ...widgetState,
             ...newState
         });
     }
-    
+
     /*
      * Poll BankID for completion
      */
     const pollAuthentication = async (originalTool: Tool) => {
-        
-        // Wait 1 second before polling
-        console.log('>>> Current widget state ', widgetState);
-        await setTimeout(() => Promise.resolve(), 1000);
+
+        // Wait a second before polling
+        console.log('>>> pollAuthentication');
+        const timeout = (ms: number) => {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        await timeout(1000);
 
         // Call the MCP polling operation
         const toolResult = await window.openai?.callTool('continue_authorization', { });
@@ -149,7 +150,7 @@ const PortfolioApp: React.FC = () => {
             if (originalToolResult?.structuredContent?.result) {
                 
                 const stockToUpdate = originalToolResult.structuredContent.result as Stock;
-                const updatedPortfolio = widgetState?.portfolio.map(stock => {
+                const updatedPortfolio = widgetState?.portfolio?.map(stock => {
                     if (stock.id === stockToUpdate.id) {
                         return stockToUpdate;
                     }
@@ -157,15 +158,17 @@ const PortfolioApp: React.FC = () => {
                     return stock;
                 });
 
+                console.log('>>> pollAuthentication: update widget state after step-up completion');
                 setWidgetState({
                     ...widgetState,
-                    portfolio: updatedPortfolio,
+                    portfolio: updatedPortfolio!,
                     authMessage: undefined,
                     tool: null
                 });
             }
 
         } else {
+            console.log('>>> pollAuthentication: update widget state with animated QR code');
             setWidgetState({
                 ...widgetState,
                 authMessage: toolResult?.structuredContent.authMessage,
@@ -177,30 +180,23 @@ const PortfolioApp: React.FC = () => {
         }
     }
 
+    console.log('>>> Rendering widgetState: ', widgetState);
+    const hasPortfolio = !!widgetState?.portfolio;
+    const showAuthMessage = !!widgetState?.authMessage;
+    const showPortfolio = hasPortfolio && !showAuthMessage;
+
     /*
-     * React rendering from state
+     * React rendering from widget state
      */
-    const hasPortfolio = widgetState?.portfolio !== undefined;
-    const portfolioNotEmpty = hasPortfolio && widgetState?.portfolio?.length > 0;
-    const noPortfolio = !hasPortfolio;
-    const portfolioEmpty = hasPortfolio && !portfolioNotEmpty;
-    const showAuthMessage = !(widgetState?.authMessage === null || widgetState?.authMessage === undefined);
-    const showPortfolio = !showAuthMessage;
-
-    console.log('Is there a portfolio? Are there elements in the portfolio?', hasPortfolio, portfolioNotEmpty);
-    console.log('>>> Current widget state ', widgetState);
-
     return (<div className="widget_content">
-        {noPortfolio && <div>Loading...</div>}
+        {!hasPortfolio && <div>Loading...</div>}
 
         {showAuthMessage && <div className="auth_message">
             <p>{widgetState.authMessage.message}</p>
             {widgetState.authMessage.qrCode && <img src={`data:image/png;base64,${widgetState.authMessage.qrCode}`} alt="QR Code" />}
         </div>}
 
-        {showPortfolio && portfolioEmpty && <div>You don't have any stocks in your portfolio</div>}
-
-        {showPortfolio && portfolioNotEmpty && widgetState.portfolio.map((stock, idx) => (
+        {showPortfolio && widgetState?.portfolio?.map((stock, idx) => (
             <div key={stock.id} className={idx % 2 === 0 ? 'element_even stock' : 'element_odd stock' }>
                 <p>
                     <span className="stock_name"><span className="ticker">{stock.id}</span>: {stock.name}</span><span className="currently_at">, currently at </span><span className="price">{stock.currentPrice}</span> <span className="currency">USD</span>.
