@@ -17,7 +17,7 @@
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
 import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl} from './haapiUtils.js';
-import {authenticateWithBankID, AuthenticateWithBankIDResult, findPollAction, findQrCode} from './bankid.js';
+import {authenticateWithBankID, findPollAction, findQrCode} from './bankid.js';
 import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
 
@@ -41,8 +41,8 @@ export class HaapiAuthorizer {
      */
     public async authorizeWithBankID(receivedAccessToken: string, session: Session, stepupScope: string): Promise<AuthorizationResult> {
         
-        this.client = await this.createAuthenticatedHaapiClient();
-        session.client = this.client;
+        // Create a HAAPI client that creates a new DPoP keypair to begin a new authentication flow
+        this.client = await this.createAuthenticatedHaapiClient(session);
 
         const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
         const qrCode = findQrCode(bankIDView);
@@ -64,8 +64,8 @@ export class HaapiAuthorizer {
      */
     public async continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
         
-        // Use the existing DPoP client from the session when resuming a flow
-        this.client = session.client!;
+        // Create a HAAPI client that uses the existing HAAPI access token to resume an authentication flow
+        this.client = new DPoPOAuthClient(this.configuration, session);
 
         console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`);
         const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingUrl);
@@ -99,23 +99,11 @@ export class HaapiAuthorizer {
     }
 
     /*
-     * Entry points for testing
-     */
-    public async startHaapiTest(receivedAccessToken: string, session: Session, stepupScope: string): Promise<BankIDAuthenticatorView> {
-        return await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
-    }
-
-    public async endHaapiTest(session: Session): Promise<AuthenticateWithBankIDResult> {
-        return await authenticateWithBankID(this.configuration, this.client, session.pollingUrl);
-    }
-
-    /*
-    * Create a HAAPI client and its DPoP keypair
+    * Create a HAAPI client and get the HAAPI access token
     */
-    private async createAuthenticatedHaapiClient(): Promise<DPoPOAuthClient> {
-        
-        const keypair = await DPoPOAuthClient.generateKeyPair();
-        const client = new DPoPOAuthClient(this.configuration, keypair);
+    private async createAuthenticatedHaapiClient(session: Session): Promise<DPoPOAuthClient> {
+
+        const client = new DPoPOAuthClient(this.configuration, session);
         await client.authenticateClient(this.configuration.tokenEndpoint, 'urn:se:curity:scopes:haapi');
         return client;
     }

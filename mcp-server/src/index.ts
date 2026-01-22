@@ -281,7 +281,7 @@ server.registerTool(
 
             // Validate preconditions
             const session = sessionManager.getSession(context.sessionId || '', (context.authInfo?.extra as any)?.claims);
-            if (!session?.client) {
+            if (!session?.haapiAccessToken) {
                 const message = 'The continue_authorization operation was called incorrectly';
                 throw new McpServerError(400, 'invalid_request', message);
             }

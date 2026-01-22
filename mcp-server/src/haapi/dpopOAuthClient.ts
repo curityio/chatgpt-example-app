@@ -16,51 +16,36 @@
 
 import {Buffer} from 'buffer';
 import https from 'https';
-import * as DPoP from 'dpop'
+import {generateKeyPair, generateProof} from 'dpop'
 import {Configuration} from '../configuration.js';
 import {TokenResponse} from '../oauth/tokenResponse.js';
 import {makeFetchRequest} from '../errors/fetchClient.js';
-
-interface DPoPKeyPair {
-    publicKey: DPoP.CryptoKey;
-    privateKey: DPoP.CryptoKey;
-}
+import {Session} from '../session/session.js';
 
 /*
  * Sends DPoP proofs and follows HAAPI requests
  */
 export class DPoPOAuthClient {
 
+    private readonly session: Session;
     private readonly clientId: string;
     private readonly clientPassword: string;
-    private readonly keyPair: DPoPKeyPair;
     private readonly httpsAgent: https.Agent;
     private readonly authnBaseUrl: string;
     private readonly externalAuthnBaseUrl: string;
-    private readonly tokenEndpoint: string;
-    private accessToken?: string;
-    private tokenType?: string;
-    private expiresAt?: Date;
-    private sessionId?: string;
 
-    static async generateKeyPair(): Promise<DPoPKeyPair> {
-        return await DPoP.generateKeyPair('ES256', { extractable: false });
-    }
-    
-    constructor(configuration: Configuration, keypair: DPoPKeyPair) {
+    constructor(configuration: Configuration, session: Session) {
         
+        this.session = session;
         this.clientId = configuration.haapiClientId;
         this.clientPassword = configuration.haapiClientSecret;
-        this.keyPair = keypair;
         this.clientId = configuration.haapiClientId;
         this.clientPassword = configuration.haapiClientSecret;
-        
         
         // The DPoPOAuthClient could send requests to internal token endpoints
         // However, the `htu` claim in DPoP must always be created using the authorization server's external URL
         this.authnBaseUrl = configuration.authorizationServerBaseUrl;
         this.externalAuthnBaseUrl = configuration.authorizationServerBaseUrl;
-        this.tokenEndpoint = configuration.tokenEndpoint;
 
         // In some developer setups it is useful to create an HTTPS agent that ignores self-signed certificates
         this.httpsAgent = new https.Agent({
@@ -81,8 +66,8 @@ export class DPoPOAuthClient {
 
     private async createDPoPProof(method: string, url: string, accessToken?: string): Promise<string> {
         let nonce!: string | undefined;
-        const dpopProof = await DPoP.generateProof(
-          this.keyPair,
+        const dpopProof = await generateProof(
+          this.session.dpopKeyPair!,
           this.ensureExternalDomain(url.split('?')[0]),
           method,
           nonce,
@@ -101,17 +86,20 @@ export class DPoPOAuthClient {
 
     private isTokenExpired(): boolean {
         
-      if (!this.expiresAt) {
+      if (!this.session.haapiExpiresAt) {
           return true;
         }
-        return new Date() >= this.expiresAt;
+        return new Date() >= this.session.haapiExpiresAt;
     }
 
     async authenticateClient(tokenEndpoint: string, scope: string): Promise<void> {
       
-        if (this.accessToken && !this.isTokenExpired()) {
+        if (this.session.haapiAccessToken && !this.isTokenExpired()) {
             return;
         }
+
+        const keypair = await generateKeyPair('ES256', { extractable: false });
+        this.session.dpopKeyPair = keypair;
 
         const dpopProof = await this.createDPoPProof('POST', tokenEndpoint);
         console.log('>>> Using Dpop: ' + dpopProof);
@@ -137,30 +125,29 @@ export class DPoPOAuthClient {
 
         const tokenData = await response.json() as TokenResponse;
 
-        this.accessToken = tokenData.access_token;
-        this.tokenType = tokenData.token_type;
+        this.session.haapiAccessToken = tokenData.access_token;
+        this.session.haapiTokenType = tokenData.token_type;
 
         if (tokenData.expires_in) {
-            this.expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+            this.session.haapiExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
         }
-        console.log('>>> Obtained client access token, expires at:', this.expiresAt);
+        console.log('>>> Obtained client access token, expires at:', this.session.haapiExpiresAt);
     }
 
     async request(url: string, options: RequestInit = {}): Promise<Response> {
       
-        if (!this.accessToken) {
+        if (!this.session.haapiAccessToken) {
             throw new Error('HAAPI access token not found');
         }
 
         const method = options.method || 'GET';
-        const dpopProof = await this.createDPoPProof(method, url, this.accessToken);
-
+        const dpopProof = await this.createDPoPProof(method, url, this.session.haapiAccessToken);
         console.log('>>> Using Dpop: ' + dpopProof);
 
         const headers = {
-            'Authorization': `${this.tokenType || 'DPoP'} ${this.accessToken}`,
+            'Authorization': `${this.session.haapiTokenType || 'DPoP'} ${this.session.haapiAccessToken}`,
             'DPoP': dpopProof,
-            ... this.sessionId ? { 'Session-Id': this.sessionId } : {},
+            ... this.session.haapiSessionId ? { 'Session-Id': this.session.haapiSessionId } : {},
             ...options.headers,
         };
 
@@ -173,7 +160,7 @@ export class DPoPOAuthClient {
         console.log(`>>> HAAPI request returned status: ${response.status}`);
 
         if (response.headers.has('Set-Session-Id')) {
-            this.sessionId = response.headers.get('Set-Session-Id') || undefined;
+            this.session.haapiSessionId = response.headers.get('Set-Session-Id') || undefined;
         }
 
         return response;
@@ -242,13 +229,5 @@ export class DPoPOAuthClient {
 
     async delete(url: string, headers?: Record<string, string>): Promise<Response> {
         return this.request(url, { method: 'DELETE', headers });
-    }
-
-    // Utility method to get current token info
-    getTokenInfo(): { token: string | undefined; expiresAt: Date | undefined } {
-        return {
-            token: this.accessToken,
-            expiresAt: this.expiresAt,
-        };
     }
 }
