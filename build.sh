@@ -47,7 +47,7 @@ fi
 # Build the ChatGPT widget app
 #
 echo '>>> Building the ChatGPT widget app ...'
-cd ../widget
+cd ../web
 npm i
 rm -rf dist 2>/dev/null
 mkdir dist

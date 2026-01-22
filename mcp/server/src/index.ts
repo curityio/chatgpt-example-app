@@ -21,7 +21,6 @@ import express, {Request, Response} from 'express';
 import morgan from 'morgan';
 import {readdirSync, readFileSync} from 'fs';
 import path from 'path';
-import {fileURLToPath} from 'url';
 import {z} from 'zod';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
 import {Configuration} from './configuration.js';
@@ -45,10 +44,11 @@ const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 /*
  * Adjust the web files download location if running the MCP server on the host computer instead of in Docker
  */
-const webAssetsFolder = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal') ? '../web/dist/assets' : 'web/dist/assets';
+const developmentMode = process.env.MCP_SERVER_INTERNAL_URL?.includes('host.docker.internal');
+const webAssetsFolder = developmentMode ? '../web/dist/assets' : 'web/dist/assets';
 
 /*
- * ChatGPT downloads the MCP resource once connected
+ * ChatGPT downloads the widget resource by calling this method
  */
 server.registerResource(
     "portfolio-widget",
@@ -58,8 +58,8 @@ server.registerResource(
         
         // Get files from the assets folder, which the Vite bundler produces
         const files = readdirSync(webAssetsFolder);
-        const appBundleFileName = files.find((f) => path.extname(f) === '.js') || '';
-        const cssFileName = files.find((f) => path.extname(f) === '.css') || '';
+        const appBundleFileName = files.find((f: any) => path.extname(f) === '.js') || '';
+        const cssFileName = files.find((f: any) => path.extname(f) === '.css') || '';
         const appBundle = readFileSync(`${webAssetsFolder}/${appBundleFileName}`, 'utf-8');
         const css = readFileSync(`${webAssetsFolder}/${cssFileName}`, 'utf-8');
 
@@ -376,20 +376,9 @@ export async function requestAuthorization(receivedAccessToken: string, session:
 }
 
 /*
- * Create the Express application
+ * Create the Express HTTP server and add middleware
  */
 const app = express();
-
-/*
- * Use Express to serve the ChatGPT widget's web content
- */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, '../../web')));
-
-/*
- * Add general middleware
- */
 app.use(morgan('combined'));
 app.use(express.json());
 
@@ -415,7 +404,7 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
 app.use('/', oauthFilter.execute);
 
 /*
- * Do the MCP boiler plate setup
+ * Add boiler plate code to integrate the MCP server with the Express HTTP server
  */
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 app.post('/', async (request: Request, response: Response) => {
