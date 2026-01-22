@@ -383,6 +383,16 @@ app.use(morgan('combined'));
 app.use(express.json());
 
 /*
+ * In development mode, support running widgets outside of ChatGPT with the Skybridge development tools
+ */
+if (developmentMode) {
+    const { devtoolsStaticServer } = await import('@skybridge/devtools');
+    const { widgetsDevServer } = await import('skybridge/server');
+    app.use(await devtoolsStaticServer());
+    app.use(await widgetsDevServer());
+}
+
+/*
  * Serve MCP resource metadata
  */
 app.get('/.well-known/oauth-protected-resource', (request: Request, response: Response) => {

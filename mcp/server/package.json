@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
-      "node": ">=20"
+    "node": ">=20"
   },
   "scripts": {
     "start": "node --env-file=.env --import=tsx --watch ./src/index.ts",
@@ -22,9 +22,11 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@skybridge/devtools": "^0.26.0",
     "@types/express": "^5.0.6",
     "@types/morgan": "^1.9.10",
     "@types/node": "^22.18.8",
+    "skybridge": "^0.26.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
