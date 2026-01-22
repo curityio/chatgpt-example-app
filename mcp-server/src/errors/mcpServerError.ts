@@ -87,7 +87,6 @@ export class McpServerError extends Error {
         return {
             content: [{ type: 'text', text: JSON.stringify(data) }],
             isError: true,
-            structuredContent: { data }
         };
     }
 

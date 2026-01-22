@@ -99,7 +99,7 @@ export class HaapiAuthorizer {
     }
 
     /*
-    * Create a HAAPI client and begin the HAAPI flow
+    * Create a HAAPI client and get the HAAPI access token
     */
     private async createAuthenticatedHaapiClient(session: Session): Promise<DPoPOAuthClient> {
 
