@@ -49,6 +49,7 @@ server.registerResource(
     {},
     async () => {
         
+        // Update the widget URI for every download during development
         const widgetAppBundle = readFileSync('widget/dist/bundle.js', 'utf-8');
         const css = readFileSync('widget/dist/app.css', 'utf-8');
         return ({
@@ -303,6 +304,7 @@ server.registerTool(
                     }
                 }
             }
+
         } catch (e: any) {
             return getAndLogResponseError(e).toMcpToolErrorResponse();
         }

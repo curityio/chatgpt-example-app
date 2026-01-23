@@ -14,8 +14,8 @@
  *  limitations under the License.
  */
 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import {FC} from 'react';
+import {createRoot} from 'react-dom/client';
 import {useWidgetState} from './use-widget-state';
 import {useOpenAiGlobal} from './use-openai-global';
 import {CallToolResponse} from './types';
@@ -35,24 +35,45 @@ type Tool = {
     }
 }
 
-const PortfolioApp: React.FC = () => {
+const PortfolioApp: FC = () => {
 
+    // OpenAI provides the output of the tool that invoked the widget
     const toolOutput = useOpenAiGlobal('toolOutput');
+    console.log('>>> Received toolOutput: ', toolOutput);
+
+     // Read details from an MCP error response
+    const readMcpErrorResponse = (response: any) => {
+
+        if (response) {
+            const data = (response as any).content;
+            if (data && Array.isArray(data) && data.length > 0 && data[0].text) {
+                
+                const details = JSON.parse(data[0].text);
+                return `${details.message}, status: ${details.status}, code: ${details.code}`;
+            }
+        }
+
+        return null;
+    }
+
+    // Ask OpenAI to store the following data across invocations of the widget
     const [widgetState, setWidgetState] = useWidgetState(() => ({
         portfolio: toolOutput?.result as Stock[],
         authMessage: toolOutput?.authMessage as any,
+        errorMessage: readMcpErrorResponse(toolOutput),
         tool: null as Tool | null,
     }));
+    console.log('>>> Received widgetState: ', widgetState);
 
-    // If OpenAI hooks supply null widget state, populate the state here
+    // If OpenAI hooks supply null widget state, populate state to force a re-render
     if (toolOutput && !widgetState) {
         setWidgetState({
             portfolio: toolOutput?.result as Stock[],
             authMessage: toolOutput?.authMessage,
+            errorMessage: readMcpErrorResponse(toolOutput),
             tool: null,
         });
     }
-    console.log('>>> Received widgetState: ', widgetState);
 
     /*
      * Initiate the MCP tool to buy stocks
@@ -79,48 +100,29 @@ const PortfolioApp: React.FC = () => {
     }
 
     /*
-     * Common update processing
+     * Initiate buying or selling
      */
     const updateStock = async (toolToCall: Tool, id: string, delta: number) => {
 
         console.log(`>>> updateStock for ${toolToCall.name}`);
-        let updateStockResult: CallToolResponse
+        let updateStockResult: CallToolResponse;
         const newState = {} as any;
 
-        try {
+        updateStockResult = await callTool(toolToCall.name, { id, quantity: delta });
+        console.log(`>>> updateStock result: ${updateStockResult}`);
 
-            updateStockResult = await window.openai?.callTool(toolToCall.name, { id, quantity: delta });
-            console.log(`>>> updateStock: Result of call to ${toolToCall.name} `, updateStockResult);
-            
-        } catch (e: any) {
+        // Handle errors if required
+        newState.errorMessage = updateStockResult.errorMessage;
+        if (!newState.errorMessage) {
 
-            setWidgetState({
-                ...widgetState,
-                authMessage: undefined,
-                tool: null,
-            });
-            return;
+            // Handle the step up response that begins polling
+            if (updateStockResult?.structuredContent?.authMessage) {
+                newState.authMessage = updateStockResult?.structuredContent.authMessage;
+                pollAuthentication(toolToCall);
+            }
         }
 
-        if (updateStockResult?.structuredContent?.result) {
-
-            const stockToUpdate = updateStockResult.structuredContent.result as Stock;
-            newState.portfolio = widgetState?.portfolio?.map(stock => {
-                if (stock.id === stockToUpdate.id) {
-                    return stockToUpdate;
-                }
-
-                return stock;
-            });
-        }
-
-        if (updateStockResult?.structuredContent?.authMessage) {
-            newState.authMessage = updateStockResult?.structuredContent.authMessage;
-            pollAuthentication(toolToCall);
-        }
-
-        console.log('>>> updateStock: updating widget state');
-        console.log(newState);
+        console.log(`>>> updateStock new widget state: ${newState}`);
         setWidgetState({
             ...widgetState,
             ...newState
@@ -128,70 +130,117 @@ const PortfolioApp: React.FC = () => {
     }
 
     /*
-     * Poll BankID for completion
+     * Poll BankID and then complete the transaction
      */
     const pollAuthentication = async (originalTool: Tool) => {
 
-        // Wait a second before polling
         console.log('>>> pollAuthentication');
         const timeout = (ms: number) => {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
         await timeout(1000);
 
-        // Call the MCP polling operation
-        const toolResult = await window.openai?.callTool('continue_authorization', { });
-        console.log('>>> Result of polling ', toolResult);
+        // Call the MCP polling operation once per second
+        const toolResult = await callTool('continue_authorization', { });
+        console.log(`>>> pollAuthentication result: ${toolResult}`);
 
-        if (toolResult.structuredContent.authMessage?.message === 'authentication_success') {
-            
-            // On success, invoke the original tool again
-            const originalToolResult = await window.openai?.callTool(originalTool.name, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
-            if (originalToolResult?.structuredContent?.result) {
+        // Handle errors if required
+        const newState = {} as any;
+        newState.errorMessage = toolResult.errorMessage;
+        if (!newState.errorMessage) {
+
+            if (toolResult.structuredContent?.authMessage?.message === 'authentication_success') {
                 
-                const stockToUpdate = originalToolResult.structuredContent.result as Stock;
-                const updatedPortfolio = widgetState?.portfolio?.map(stock => {
-                    if (stock.id === stockToUpdate.id) {
-                        return stockToUpdate;
+                // On success, invoke the original buy / sell tool again, to use the high privilege access token
+                const originalToolResult = await callTool(originalTool.name, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
+                newState.errorMessage = originalToolResult.errorMessage;
+                if (!newState.errorMessage) {
+                
+                    // Get the updated portfolio balance and add it to the state
+                    if (originalToolResult?.structuredContent?.result) {
+                        
+                        const stockToUpdate = originalToolResult.structuredContent.result as Stock;
+                        const updatedPortfolio = widgetState?.portfolio?.map(stock => {
+                            if (stock.id === stockToUpdate.id) {
+                                return stockToUpdate;
+                            }
+
+                            return stock;
+                        });
+
+                        console.log('>>> pollAuthentication: updated widget state after step-up completion');
+                        newState.portfolio = updatedPortfolio!;
+                        newState.authMessage = undefined;
+                        newState.tool = null;
                     }
+                }
 
-                    return stock;
-                });
+            } else {
+                
+                // During step-up authentication, show an updated animated QR code
+                console.log('>>> pollAuthentication: update widget state with animated QR code');
+                newState.authMessage = toolResult?.structuredContent?.authMessage;
+                if (toolResult?.structuredContent?.authMessage?.message !== 'authentication_failure') {
+                    pollAuthentication(originalTool);
+                }
+            }
+        }
 
-                console.log('>>> pollAuthentication: update widget state after step-up completion');
-                setWidgetState({
-                    ...widgetState,
-                    portfolio: updatedPortfolio!,
-                    authMessage: undefined,
-                    tool: null
-                });
+        console.log(`>>> pollAuthentication new widget state: ${newState}`);
+        setWidgetState({
+            ...widgetState,
+            ...newState
+        });
+    }
+
+    /*
+     * Call an MCP tool and do some basic error handling
+     */
+    const callTool = async (name: string, data: any): Promise<CallToolResponse> => {
+        
+        const defaultError = `Problem encountered calling tool ${name}`;
+        try {
+
+            const response = await window.openai?.callTool(name, data);
+            if ((response as any).isError) {
+                const message = readMcpErrorResponse(response);
+                if (message) {
+                    return {
+                        errorMessage: message,
+                    };
+                }
+
+                return {
+                    errorMessage: defaultError,
+                };
             }
 
-        } else {
-            console.log('>>> pollAuthentication: update widget state with animated QR code');
-            setWidgetState({
-                ...widgetState,
-                authMessage: toolResult?.structuredContent.authMessage,
-            });
+            return response;
 
-            if (toolResult?.structuredContent?.authMessage?.message !== 'authentication_failure') {
-                pollAuthentication(originalTool);
-            }
+        } catch (e: any) {
+
+            return {
+                errorMessage: e.message as string || defaultError,
+            };
         }
     }
 
     console.log('>>> Rendering widgetState: ', widgetState);
-    const hasPortfolio = !!widgetState?.portfolio;
+    const hasError = !!widgetState?.errorMessage;
+    const isLoading = !widgetState?.portfolio && !hasError;
     const showAuthMessage = !!widgetState?.authMessage;
-    const showPortfolio = hasPortfolio && !showAuthMessage;
+    const showPortfolio = !!widgetState?.portfolio && !showAuthMessage;
 
     /*
      * React rendering from widget state
      */
     return (<div className="widget_content">
-        {!hasPortfolio && <div>Loading...</div>}
+        
+        {isLoading && <div>Loading...</div>}
 
-        {showAuthMessage && <div className="auth_message">
+        {hasError && <div className="error">{widgetState?.errorMessage}</div>}
+
+        {!hasError && showAuthMessage && <div className="auth_message">
             <p>{widgetState.authMessage.message}</p>
             {widgetState.authMessage.qrCode && <img src={`data:image/png;base64,${widgetState.authMessage.qrCode}`} alt="QR Code" />}
         </div>}
@@ -218,5 +267,10 @@ const PortfolioApp: React.FC = () => {
     </div>);
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(<PortfolioApp />);
+// If the widget downloads multiple times, only load it into the DOM once
+let container = null;
+if (!container) {
+    container = document.getElementById('root') as HTMLElement;
+    const root = createRoot(container);
+    root.render(<PortfolioApp />);
+}
