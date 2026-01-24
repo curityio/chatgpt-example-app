@@ -80,11 +80,16 @@ server.registerTool(
         title: 'Get portfolio',
         description: "Returns the contents of the user's portfolio.",
         outputSchema: {
-            result: z.array(z.object({
+            result: z.optional(z.array(z.object({
                 id: z.string(),
                 name: z.string(),
                 currentPrice: z.number(),
                 quantity: z.number()
+            }))),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
             })),
         },
         _meta: {
@@ -132,6 +137,11 @@ server.registerTool(
             authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
             })),
         },
         _meta: {
@@ -204,6 +214,11 @@ server.registerTool(
                 message: z.string(),
                 qrCode: z.optional(z.string())
             })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -265,10 +280,15 @@ server.registerTool(
             "openai/visibility": 'private' // Don't expose the tool to the LLM
         },
         outputSchema: {
-            authMessage: z.object({
+            authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            }),
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         // @ts-ignore
         securitySchemes: [

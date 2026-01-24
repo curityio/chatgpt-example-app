@@ -18,7 +18,7 @@ import {FC} from 'react';
 import {createRoot} from 'react-dom/client';
 import {useWidgetState} from './use-widget-state';
 import {useOpenAiGlobal} from './use-openai-global';
-import {CallToolResponse} from './types';
+import {CallToolResponse, ToolError} from './types';
 
 type Stock = {
     id: string,
@@ -41,26 +41,11 @@ const PortfolioApp: FC = () => {
     const toolOutput = useOpenAiGlobal('toolOutput');
     console.log('>>> Received toolOutput: ', toolOutput);
 
-     // Read details from an MCP error response
-    const readMcpErrorResponse = (response: any) => {
-
-        if (response) {
-            const data = (response as any).content;
-            if (data && Array.isArray(data) && data.length > 0 && data[0].text) {
-                
-                const details = JSON.parse(data[0].text);
-                return `${details.message}, status: ${details.status}, code: ${details.code}`;
-            }
-        }
-
-        return null;
-    }
-
     // Ask OpenAI to store the following data across invocations of the widget
     const [widgetState, setWidgetState] = useWidgetState(() => ({
         portfolio: toolOutput?.result as Stock[],
         authMessage: toolOutput?.authMessage as any,
-        errorMessage: readMcpErrorResponse(toolOutput),
+        error: toolOutput?.error as ToolError,
         tool: null as Tool | null,
     }));
     console.log('>>> Received widgetState: ', widgetState);
@@ -70,7 +55,7 @@ const PortfolioApp: FC = () => {
         setWidgetState({
             portfolio: toolOutput?.result as Stock[],
             authMessage: toolOutput?.authMessage,
-            errorMessage: readMcpErrorResponse(toolOutput),
+            error: toolOutput?.error as ToolError,
             tool: null,
         });
     }
@@ -109,20 +94,22 @@ const PortfolioApp: FC = () => {
         const newState = {} as any;
 
         updateStockResult = await callTool(toolToCall.name, { id, quantity: delta });
-        console.log(`>>> updateStock result: ${updateStockResult}`);
+        console.log('>>> updateStock result');
+        console.log(updateStockResult);
 
         // Handle errors if required
-        newState.errorMessage = updateStockResult.errorMessage;
-        if (!newState.errorMessage) {
+        newState.error = updateStockResult.structuredContent?.error;
+        if (!newState.error) {
 
             // Handle the step up response that begins polling
-            if (updateStockResult?.structuredContent?.authMessage) {
-                newState.authMessage = updateStockResult?.structuredContent.authMessage;
+            if (updateStockResult.structuredContent?.authMessage) {
+                newState.authMessage = updateStockResult.structuredContent.authMessage;
                 pollAuthentication(toolToCall);
             }
         }
 
-        console.log(`>>> updateStock new widget state: ${newState}`);
+        console.log('>>> updateStock new widget state');
+        console.log(newState);
         setWidgetState({
             ...widgetState,
             ...newState
@@ -142,22 +129,25 @@ const PortfolioApp: FC = () => {
 
         // Call the MCP polling operation once per second
         const toolResult = await callTool('continue_authorization', { });
-        console.log(`>>> pollAuthentication result: ${toolResult}`);
+        console.log('>>> pollAuthentication result');
+        console.log(toolResult);
 
         // Handle errors if required
         const newState = {} as any;
-        newState.errorMessage = toolResult.errorMessage;
-        if (!newState.errorMessage) {
+        newState.error = toolResult.structuredContent?.error;
+        if (!newState.error) {
 
             if (toolResult.structuredContent?.authMessage?.message === 'authentication_success') {
                 
                 // On success, invoke the original buy / sell tool again, to use the high privilege access token
                 const originalToolResult = await callTool(originalTool.name, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
-                newState.errorMessage = originalToolResult.errorMessage;
-                if (!newState.errorMessage) {
+                console.log('>>> original tool result');
+                console.log(originalToolResult);
+                newState.error = originalToolResult.structuredContent?.error;
+                if (!newState.error) {
                 
                     // Get the updated portfolio balance and add it to the state
-                    if (originalToolResult?.structuredContent?.result) {
+                    if (originalToolResult.structuredContent?.result) {
                         
                         const stockToUpdate = originalToolResult.structuredContent.result as Stock;
                         const updatedPortfolio = widgetState?.portfolio?.map(stock => {
@@ -186,7 +176,8 @@ const PortfolioApp: FC = () => {
             }
         }
 
-        console.log(`>>> pollAuthentication new widget state: ${newState}`);
+        console.log('>>> pollAuthentication new widget state');
+        console.log(newState);
         setWidgetState({
             ...widgetState,
             ...newState
@@ -194,51 +185,86 @@ const PortfolioApp: FC = () => {
     }
 
     /*
-     * Call an MCP tool and do some basic error handling
+     * Call an MCP tool and handle exceptions
      */
     const callTool = async (name: string, data: any): Promise<CallToolResponse> => {
         
-        const defaultError = `Problem encountered calling tool ${name}`;
         try {
 
-            const response = await window.openai?.callTool(name, data);
-            if ((response as any).isError) {
-                const message = readMcpErrorResponse(response);
-                if (message) {
-                    return {
-                        errorMessage: message,
-                    };
-                }
-
-                return {
-                    errorMessage: defaultError,
-                };
-            }
-
-            return response;
+            return await window.openai?.callTool(name, data);
 
         } catch (e: any) {
 
+            console.log(`>>> callTool ${name} exception: `, e.message);
+            let status = 0;
+            let code = 'call_tool_error';
+            let message = `Problem encountered calling tool ${name}`;
+
+            // ChatGPT returns a raw string message so defensively dig out the server details of interest
+            const errorMessage = e.message as string;
+            if (errorMessage) {
+                const statusMatch = errorMessage.match(/\"status\":(.+?),/);
+                if (statusMatch && statusMatch[1]) {
+                    status = Number(statusMatch[1]);
+                }
+
+                const codeMatch = errorMessage.match(/\"code\":\"(.+?)\"/);
+                if (codeMatch && codeMatch[1]) {
+                    code = codeMatch[1];
+                }
+
+                const messageMatch = errorMessage.match(/\"message\":\"(.+?)\"/);
+                if (messageMatch && messageMatch[1]) {
+                    message = messageMatch[1];
+                }
+            }
+
             return {
-                errorMessage: e.message as string || defaultError,
+                structuredContent: {
+                    error: {
+                        status,
+                        code,
+                        message,
+                    },
+                },
             };
         }
     }
 
+    /*
+     * Format error fields for display
+     */
+    const errorDisplayMessage = () => {
+        
+        if (widgetState?.error) {
+            
+            const parts: string[] = [];
+            parts.push(widgetState.error.message);
+            if (widgetState.error.status) {
+                parts.push(`status: ${widgetState.error.status}`)
+            }
+            parts.push(`code: ${widgetState.error.code}`)
+
+            return parts.join(', ');
+        }
+
+        return '';
+    }
+
+    /*
+     * Render the widget from state
+     */
     console.log('>>> Rendering widgetState: ', widgetState);
-    const hasError = !!widgetState?.errorMessage;
+    const hasError = !!widgetState?.error;
     const isLoading = !widgetState?.portfolio && !hasError;
     const showAuthMessage = !!widgetState?.authMessage;
     const showPortfolio = !!widgetState?.portfolio && !showAuthMessage;
 
-    /*
-     * React rendering from widget state
-     */
     return (<div className="widget_content">
         
         {isLoading && <div>Loading...</div>}
 
-        {hasError && <div className="error">{widgetState?.errorMessage}</div>}
+        {hasError && <div className="error">{errorDisplayMessage()}</div>}
 
         {!hasError && showAuthMessage && <div className="auth_message">
             <p>{widgetState.authMessage.message}</p>
