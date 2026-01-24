@@ -41,23 +41,20 @@ const PortfolioApp: FC = () => {
     const toolOutput = useOpenAiGlobal('toolOutput');
     console.log('>>> Received toolOutput: ', toolOutput);
 
-    // Ask OpenAI to store the following data across invocations of the widget
-    const [widgetState, setWidgetState] = useWidgetState(() => ({
+    const defaultState = {
         portfolio: toolOutput?.result as Stock[],
         authMessage: toolOutput?.authMessage as any,
         error: toolOutput?.error as ToolError,
         tool: null as Tool | null,
-    }));
+    };
+
+    // Ask OpenAI to store data across invocations of the widget
+    const [widgetState, setWidgetState] = useWidgetState(defaultState);
     console.log('>>> Received widgetState: ', widgetState);
 
-    // If OpenAI hooks supply null widget state, populate state to force a re-render
-    if (toolOutput && !widgetState) {
-        setWidgetState({
-            portfolio: toolOutput?.result as Stock[],
-            authMessage: toolOutput?.authMessage,
-            error: toolOutput?.error as ToolError,
-            tool: null,
-        });
+    // If OpenAI hooks supply null widget state, set state to force a re-render
+    if (!widgetState) {
+        setWidgetState(defaultState);
     }
 
     /*
