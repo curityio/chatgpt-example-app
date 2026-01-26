@@ -16,8 +16,9 @@ function result(context) {
         }
     }
 
+    // The consentor is only used with the transaction prefix scope so do not show it otherwise
     if (!transactionScope) {
-        return "Not applicable";
+        return 'Not applicable';
     }
 
     var transactionDataResponse = apiClient.request(
