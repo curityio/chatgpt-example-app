@@ -184,6 +184,7 @@
               <id>transaction</id>
               <is-prefix>true</is-prefix>
               <description>Buy and sell stocks from the user's portfolio</description>
+              <claims>personal_number</claims>
             </scope>
           </scopes>
           <claims>
@@ -243,6 +244,14 @@
               <value-provided-by>account-manager-claims-provider</value-provided-by>
             </claim>
             <claim>
+              <name>personal_number</name>
+              <value-provided-by>consentor-claims-provider</value-provided-by>
+              <transformation>
+                <input-attribute-names>personalNumber</input-attribute-names>
+                <value-transformation-procedure>ZnVuY3Rpb24gdHJhbnNmb3JtKGF0dHJpYnV0ZXMpIHsKICAvL1RyYW5zZm9ybSB0aGUgYXR0cmlidXRlcyBhbmQgcmV0dXJuIHRoZSBhcHByb3ByaWF0ZSB2YWx1ZSBmb3IgdGhlIGNsYWltCiAgcmV0dXJuIGF0dHJpYnV0ZXMucGVyc29uYWxOdW1iZXI7Cn0=</value-transformation-procedure>
+              </transformation>
+            </claim>
+            <claim>
               <name>phone_number</name>
               <description>OpenID Connect phone_number claim</description>
               <value-provided-by>account-manager-claims-provider</value-provided-by>
@@ -290,9 +299,16 @@
                 </account-manager>
               </account-manager-claims-provider>
             </claims-value-provider>
+            <claims-value-provider>
+              <id>consentor-claims-provider</id>
+              <consent-claims-provider xmlns="https://curity.se/ns/ext-conf/consent-claims-provider"/>
+            </claims-value-provider>
             <claims-mappers>
               <claims-mapper>
                 <id>default</id>
+                <access_token>
+                  <claim>personal_number</claim>
+                </access_token>
                 <id_token>
                   <claim>address</claim>
                   <claim>birthdate</claim>

@@ -18,14 +18,16 @@ export class Transaction {
     public readonly id: number;
     public readonly stockId: string;
     public readonly delta: number;
-    public readonly personalNumber: string;
     public readonly createdAt: number;
+    public readonly subject: string;
+    public personalNumber: string;
 
-    constructor(id: number, stockId: string, delta: number, personalNumber: string, createdAt: number) {
+    constructor(id: number, stockId: string, delta: number, subject: string, createdAt: number) {
         this.id = id;
         this.stockId = stockId;
         this.delta = delta;
-        this.personalNumber = personalNumber;
         this.createdAt = createdAt;
+        this.subject = subject;
+        this.personalNumber = '';
     }
 }

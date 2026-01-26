@@ -23,11 +23,13 @@ import {ApiError} from '../errors/apiError.js';
 export class ClaimsPrincipal {
 
     private readonly scope: string;
-    public readonly personalNumber: string;
+    public readonly subject: string;
+    public readonly personalNumber: string | undefined;
 
     public constructor(claims: JWTPayload) {
         this.scope = this.getClaim(claims, 'scope');
-        this.personalNumber = '19520408-2308';
+        this.subject = this.getClaim(claims, 'sub');
+        this.personalNumber = this.getClaim(claims, 'personal_number', false) || '';
     }
 
     public hasRequiredScope(expectedScope: string): boolean {
