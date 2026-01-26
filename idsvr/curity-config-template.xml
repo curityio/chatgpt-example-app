@@ -184,8 +184,8 @@
               <id>transaction</id>
               <is-prefix>true</is-prefix>
               <description>Buy and sell stocks from the user's portfolio</description>
-              <claims>personal_number</claims>
             </scope>
+            <default-scope-claim>personal_number</default-scope-claim>
           </scopes>
           <claims>
             <claim>
@@ -248,7 +248,7 @@
               <value-provided-by>consentor-claims-provider</value-provided-by>
               <transformation>
                 <input-attribute-names>personalNumber</input-attribute-names>
-                <value-transformation-procedure>ZnVuY3Rpb24gdHJhbnNmb3JtKGF0dHJpYnV0ZXMpIHsKICAvL1RyYW5zZm9ybSB0aGUgYXR0cmlidXRlcyBhbmQgcmV0dXJuIHRoZSBhcHByb3ByaWF0ZSB2YWx1ZSBmb3IgdGhlIGNsYWltCiAgcmV0dXJuIGF0dHJpYnV0ZXMucGVyc29uYWxOdW1iZXI7Cn0=</value-transformation-procedure>
+                <value-transformation-procedure>ZnVuY3Rpb24gdHJhbnNmb3JtKGF0dHJpYnV0ZXMpIHsKICByZXR1cm4gYXR0cmlidXRlcy5wZXJzb25hbE51bWJlcjsKfQ==</value-transformation-procedure>
               </transformation>
             </claim>
             <claim>
