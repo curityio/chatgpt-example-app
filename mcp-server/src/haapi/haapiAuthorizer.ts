@@ -19,7 +19,6 @@ import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haap
 import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} from './haapiUtils.js';
 import {
     authenticateWithBankID,
-    AuthenticateWithBankIDResult,
     findPollAction,
     findQrCode
 } from './bankid.js';

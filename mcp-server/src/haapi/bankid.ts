@@ -147,10 +147,6 @@ export function findPollAction(view: BankIDAuthenticatorView): PollAction {
     return findAction(view, 'poll') as PollAction
 }
 
-function findFormAction(view: BankIDAuthenticatorView): RedirectAction {
-    return findAction(view, 'form') as RedirectAction
-}
-
 function findRedirectAction(view: BankIDAuthenticatorView): RedirectAction {
     return findAction(view, 'redirect') as RedirectAction;
 }

@@ -91,14 +91,12 @@ app.get('/api/portfolio', (request: Request, response: Response) => {
  */
 app.get('/api/transactions/:id', (request: Request, response: Response) => {
 
-    console.log('*** AUTH SERVER GETTING CONSENT DATA');
     const transactionId = parseInt(request.params.id as string);
     if (isNaN(transactionId)) {
         throw new ApiError(404, 'not_found', 'Transaction not found');
     }
 
     const transaction = transactions.find(tr => tr.id === transactionId);
-
     if (!transaction) {
         throw new ApiError(404, 'not_found', 'Transaction not found');
     }
@@ -116,8 +114,7 @@ app.put('/api/portfolio/:id', (request: Request, response: Response) => {
     const transactionScope = claimsPrincipal.findTransactionScope();
     if (!transactionScope) {
 
-        // The transaction scope is not present, so the token should contain the portfolio scope
-        console.log('*** PUT TRANSACTION WITHOUT PREFIX SCOPE');
+        // The access token does not have a high-privilege transaction scope, so validate that is has a portfolio scope
         if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope)) {
             const error = new ApiError(
                 403,
@@ -127,7 +124,7 @@ app.put('/api/portfolio/:id', (request: Request, response: Response) => {
             throw error;
         }
 
-        // Create a new uncommitted transaction
+        // Create a new uncommitted transaction for the ID
         const stockId = request.params.id as string;
         const newTransaction = new Transaction(
             transactions.length + 1,
@@ -138,18 +135,17 @@ app.put('/api/portfolio/:id', (request: Request, response: Response) => {
         );
         transactions.push(newTransaction);
 
-        // Return a 403 response that requests the high privilege transaction scope and triggers BankID step up
+        // Return a 403 response to inform the client to step-up and supply an access token with the high privilege transaction scope
         const error = new ApiError(
             403,
             'insufficient_scope',
-            'To finish transaction obtain an access token with the required scope');
+            'To complete the transaction, obtain an access token with the required scope');
         error.scope = `transaction_${newTransaction.id}`;
         throw error;
 
     } else  {
 
-        // After step-up in BankID, the transaction scope is now present
-        console.log('*** PUT TRANSACTION WITH PREFIX SCOPE');
+        // After step-up, the access token has a transaction scope, so get the transaction ID part of the prefix scope
         const transactionId = parseInt(transactionScope.split('_')[1]);
         const transactionIndex = transactions.findIndex(tr => tr.id === transactionId);
         

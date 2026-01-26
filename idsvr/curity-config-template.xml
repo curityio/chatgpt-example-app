@@ -44,7 +44,7 @@
       <type xmlns:apps="https://curity.se/ns/conf/profile/apps">apps:apps-service</type>
       <settings>
         <apps-service xmlns="https://curity.se/ns/conf/profile/apps">
-          <oauth-profile-id>mcp-token-service</oauth-profile-id>
+          <oauth-profile-id>token-service</oauth-profile-id>
         </apps-service>
       </settings>
       <endpoints>
@@ -61,27 +61,9 @@
       <settings>
         <authentication-service xmlns="https://curity.se/ns/conf/profile/authentication">
           <persisted-sso-session>true</persisted-sso-session>
-          <authentication-actions>
-            <authentication-action>
-              <id>second-factor-authentication</id>
-              <multi-factor-condition xmlns="https://curity.se/ns/ext-conf/multi-factor-condition">
-                <disable-second-factor-subject-check>true</disable-second-factor-subject-check>
-                <always>
-                  <second-factor>
-                    <id>bank-id</id>
-                  </second-factor>
-                  <allow-authentication-with-sso-for-second-factor>false</allow-authentication-with-sso-for-second-factor>
-                </always>
-              </multi-factor-condition>
-            </authentication-action>
-          </authentication-actions>
           <authenticators>
             <authenticator>
               <id>access-token</id>
-              <authentication-actions>
-                <login>second-factor-authentication</login>
-                <sso>second-factor-authentication</sso>
-              </authentication-actions>
               <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
                 <key-verification>
                   <id>default-signature-verification-key</id>
@@ -91,14 +73,6 @@
                 <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
                 <required-scopes>portfolio</required-scopes>
               </access-token>
-            </authenticator>
-            <authenticator>
-              <id>bank-id</id>
-              <bankid xmlns="https://curity.se/ns/conf/authenticators/bankid">
-                <http-client>bankid-client</http-client>
-                <mode>test</mode>
-                <api-version>version-6</api-version>
-              </bankid>
             </authenticator>
             <authenticator>
               <id>email</id>
@@ -147,7 +121,7 @@
       </token-issuers>
     </profile>
     <profile>
-      <id>mcp-token-service</id>
+      <id>token-service</id>
       <type xmlns:as="https://curity.se/ns/conf/profile/oauth">as:oauth-service</type>
       <expose-detailed-error-messages/>
       <settings>
@@ -156,6 +130,7 @@
             <authentication-profile>authentication-service</authentication-profile>
           </authentication-service>
           <client-capabilities>
+            <client-credentials/>
             <code>
             </code>
             <introspection/>
@@ -395,13 +370,15 @@
             <config-backed>
               <client>
                 <id>api-gateway-client</id>
+                <description>The API gateway acts as an OAuth introspection client</description>
                 <secret>§5§7zfl3Bsen5f/vJsr§fBiHnGCiDh8dh.E7XHzVgRRlSnD18dqBtHxtKAn6Q45</secret>
                 <capabilities>
                   <introspection/>
                 </capabilities>
               </client>
               <client>
-                <id>mcp-server</id>
+                <id>mcp-server-token-exchange</id>
+                <description>The MCP server acts as a token exchange client to get tokens with the correct audience for upstream APIs</description>
                 <secret>§5§4VcWtNqulwJgD7Zw§419nONvuY5nMFnyA7nYmrdhYE5wp1dP/ZPeeE1U3WAA</secret>
                 <scope>portfolio</scope>
                 <scope>transaction</scope>
@@ -411,8 +388,15 @@
               </client>
               <client>
                 <id>mcp-server-haapi</id>
+                <description>The MCP server acts as a HAAPI client to run a backend API-driven step-up authentication flow</description>
                 <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
                 <redirect-uris>haapi:/callback</redirect-uris>
+                <user-consent>
+                  <only-consentors>true</only-consentors>
+                  <consentors>
+                    <consentor>bankid-consentor</consentor>
+                  </consentors>
+                </user-consent>
                 <scope>portfolio</scope>
                 <scope>transaction</scope>
                 <audience>$EXTERNAL_BASE_URL/</audience>
@@ -428,6 +412,16 @@
                   </haapi>
                 </capabilities>
                 <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
+              </client>
+              <client>
+                <id>consent-details-client</id>
+                <description>The authorization server uses this client to call the portfolio API and get consent details for the transaction ID in the prefix scope</description>
+                <secret>$5$/MHdcosAB4QGv3OL$5qcgscdBc.5IAGOYlEK/bvy.NRb54qbf574XHJMXI66</secret>
+                <scope>portfolio</scope>
+                <audience>https://api.demo.example</audience>
+                <capabilities>
+                  <client-credentials/>
+                </capabilities>
               </client>
             </config-backed>
           </client-store>
@@ -505,6 +499,10 @@
             <flow>oauth-token-oauth-token-exchange</flow>
             <procedure>mcp-token-exchange</procedure>
           </token-endpoint-procedures>
+          <token-endpoint-procedures>
+            <flow>oauth-token-client-credentials</flow>
+            <procedure>issue-jwt</procedure>
+          </token-endpoint-procedures>
         </endpoint>
         <endpoint>
           <id>token-service-userinfo</id>
@@ -537,6 +535,12 @@
       <client>
         <id>portfolio-api-client</id>
         <scheme>http</scheme>
+        <oauth-credentials>
+          <client-id>consent-details-client</client-id>
+          <client-secret>data:text/plain;aes,v:S.SmlBNm41NFY4YVRvaXpGVA==.RCa-G2s-bxpkb_2vHFH3cQ==.foQXwxzmnpz6pi1jvJq20w==.y91bI83bXLdbJ_c_TgxBTS7fv4UBy1DYDusYo5LMaTw=</client-secret>
+          <token-endpoint>$EXTERNAL_BASE_URL/oauth/v2/oauth-token</token-endpoint>
+          <scope>portfolio</scope>
+        </oauth-credentials>
       </client>
     </http>
     <data-sources>
