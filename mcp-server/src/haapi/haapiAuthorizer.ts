@@ -16,8 +16,13 @@
 
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
-import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl} from './haapiUtils.js';
-import {authenticateWithBankID, findPollAction, findQrCode} from './bankid.js';
+import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} from './haapiUtils.js';
+import {
+    authenticateWithBankID,
+    AuthenticateWithBankIDResult,
+    findPollAction,
+    findQrCode
+} from './bankid.js';
 import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
 
@@ -40,16 +45,13 @@ export class HaapiAuthorizer {
      * Begin the HAAPI flow, to trigger the initial download of the QR code
      */
     public async authorizeWithBankID(receivedAccessToken: string, session: Session, stepupScope: string): Promise<AuthorizationResult> {
-        
-        // Create a HAAPI client that creates a new DPoP keypair to begin a new authentication flow
+
         this.client = await this.createAuthenticatedHaapiClient(session);
 
-        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
+        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, stepupScope);
         const qrCode = findQrCode(bankIDView);
 
-        const pollAction = findPollAction(bankIDView);
-        const urlForPolling = pollAction.model.href;
-        session.pollingUrl = urlForPolling;
+        session.pollingData = createPollingData(findPollAction(bankIDView));
         session.pollingCount = 0;
 
         return {
@@ -63,12 +65,19 @@ export class HaapiAuthorizer {
      * Called when ChatGPT app sends a request to poll for completion
      */
     public async continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
-        
+
         // Create a HAAPI client that uses the existing HAAPI access token to resume an authentication flow
         this.client = new DPoPOAuthClient(this.configuration, session);
 
-        console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`);
-        const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingUrl);
+        if (!session.pollingData) {
+            return {
+                success: false,
+                message: 'No polling data to continue authorization'
+            }
+        }
+
+        console.log(`>>> Poll authentication at ${session.pollingData.pollingUrl}. Attempt ${session.pollingCount}.`);
+        const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingData);
 
         if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
             return {
@@ -80,7 +89,7 @@ export class HaapiAuthorizer {
         session.pollingCount = session.pollingCount + 1;
 
         if (authenticationResponse.status == 'continue') {
-            session.pollingUrl = authenticationResponse.pollingUrl!;
+            session.pollingData = authenticationResponse.pollingData!;
 
             return {
                 success: true,
@@ -99,8 +108,8 @@ export class HaapiAuthorizer {
     }
 
     /*
-    * Create a HAAPI client and get the HAAPI access token
-    */
+     * Create a HAAPI client and get the HAAPI access token
+     */
     private async createAuthenticatedHaapiClient(session: Session): Promise<DPoPOAuthClient> {
 
         const client = new DPoPOAuthClient(this.configuration, session);
@@ -117,7 +126,7 @@ export class HaapiAuthorizer {
      * @param oauthClient optional OAuth client
      * @returns the initial BankID authenticator view (caller must poll until authentication is complete)
      */
-    private async runBankIDAuthenticationFlow(receivedAccessToken: string, session: Session, stepupScope: string): Promise<BankIDAuthenticatorView> {
+    private async runBankIDAuthenticationFlow(receivedAccessToken: string, stepupScope: string): Promise<BankIDAuthenticatorView> {
 
         const authResponse = await this.sendAuthorizationRequest(stepupScope!);
 

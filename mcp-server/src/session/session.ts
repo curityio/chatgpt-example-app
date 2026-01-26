@@ -15,6 +15,7 @@
  */
 
 import {KeyPair} from 'dpop'
+import {PollingData} from '../haapi/bankid.js';
 
 /*
  * Serializable session data
@@ -37,7 +38,7 @@ export interface Session {
     haapiSessionId?: string;
 
     // Polling details for BankID completion
-    pollingUrl: string;
+    pollingData: PollingData | null;
     pollingCount: number;
     
     // The access token issued once step-up authentication completes

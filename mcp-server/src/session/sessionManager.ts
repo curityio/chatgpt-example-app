@@ -72,7 +72,7 @@ export class SessionManager {
             haapiTokenType: undefined,
             haapiExpiresAt: undefined,
             haapiSessionId: undefined,
-            pollingUrl: '',
+            pollingData: null,
             pollingCount: 0,
             highPrivilegeAccessToken: undefined,
         };
@@ -123,7 +123,7 @@ export class SessionManager {
         session.haapiTokenType = undefined;
         session.haapiExpiresAt = undefined;
         session.haapiSessionId = undefined;
-        session.pollingUrl = '';
+        session.pollingData = null;
         session.pollingCount = 0;
         session.highPrivilegeAccessToken = undefined;
     }

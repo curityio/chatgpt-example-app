@@ -21,9 +21,10 @@ import {Configuration} from './configuration.js';
 import {ErrorHandler} from './errors/errorHandler.js';
 import {ApiError} from './errors/apiError.js';
 import {ClaimsPrincipal} from './security/claimsPrincipal.js';
+import {Transaction} from './transaction.js';
 
 /*
- * This API uses hard coded initial stocks for any test user
+ * The example API returns this hard-coded list of in-memory stocks for any test user
  */
 const portfolio = [
     {
@@ -45,6 +46,11 @@ const portfolio = [
         quantity: 12
     },
 ];
+
+/*
+ * The example API returns this hard-coded list of in-memory stocks for any test user
+ */
+const transactions = [] as Transaction[];
 
 /*
  * Load configuration and create helper objects
@@ -81,31 +87,103 @@ app.get('/api/portfolio', (request: Request, response: Response) => {
 });
 
 /*
- * A high privilege scope is required to execute transactions
+ * Returns information to the authorization server to render in a custom consent display in BankID
+ */
+app.get('/api/transactions/:id', (request: Request, response: Response) => {
+
+    console.log('*** AUTH SERVER GETTING CONSENT DATA');
+    const transactionId = parseInt(request.params.id as string);
+    if (isNaN(transactionId)) {
+        throw new ApiError(404, 'not_found', 'Transaction not found');
+    }
+
+    const transaction = transactions.find(tr => tr.id === transactionId);
+
+    if (!transaction) {
+        throw new ApiError(404, 'not_found', 'Transaction not found');
+    }
+
+    response.json(transaction);
+});
+
+/*
+ * This method is called twice, to first create an uncommitted transaction
  */
 app.put('/api/portfolio/:id', (request: Request, response: Response) => {
 
     const claimsPrincipal = (response.locals as any).claimsPrincipal as ClaimsPrincipal;
-    if (!claimsPrincipal.hasRequiredScope(configuration.highPrivilegeScope)) {
-            
+
+    const transactionScope = claimsPrincipal.findTransactionScope();
+    if (!transactionScope) {
+
+        // The transaction scope is not present, so the token should contain the portfolio scope
+        console.log('*** PUT TRANSACTION WITHOUT PREFIX SCOPE');
+        if (!claimsPrincipal.hasRequiredScope(configuration.lowPrivilegeScope)) {
             const error = new ApiError(
                 403,
                 'insufficient_scope',
                 'The access token does not contain the required scope');
-            error.scope = configuration.highPrivilegeScope;
+            error.scope = configuration.lowPrivilegeScope;
             throw error;
-    }
+        }
 
-    const id = request.params.id;
-    const stockIndex = portfolio.findIndex(t => t.id === id);
-    if (stockIndex === -1) {
-        throw new ApiError(404, 'stock_not_found', `Unable to update data for the requested stock ${id}`);
-    }
+        // Create a new uncommitted transaction
+        const stockId = request.params.id as string;
+        const newTransaction = new Transaction(
+            transactions.length + 1,
+            stockId,
+            request.body.delta,
+            claimsPrincipal.personalNumber,
+            Date.now()
+        );
+        transactions.push(newTransaction);
 
-    const delta = request.body.delta;
-    const newQuantity = portfolio[stockIndex].quantity + delta;
-    portfolio[stockIndex].quantity = newQuantity;
-    response.json(portfolio[stockIndex]);
+        // Return a 403 response that requests the high privilege transaction scope and triggers BankID step up
+        const error = new ApiError(
+            403,
+            'insufficient_scope',
+            'To finish transaction obtain an access token with the required scope');
+        error.scope = `transaction_${newTransaction.id}`;
+        throw error;
+
+    } else  {
+
+        // After step-up in BankID, the transaction scope is now present
+        console.log('*** PUT TRANSACTION WITH PREFIX SCOPE');
+        const transactionId = parseInt(transactionScope.split('_')[1]);
+        const transactionIndex = transactions.findIndex(tr => tr.id === transactionId);
+        
+        // Handle not found
+        console.log(`Searching for transaction with ${transactionId}, found index is ${transactionIndex}`)
+        if (transactionIndex === -1) {
+            throw new ApiError(
+                404,
+                'not_found',
+                'Transaction not found'
+            );
+        }
+
+        // Ensure that the personal_number claim matches the transaction
+        const transaction = transactions[transactionIndex];
+        if (transaction.personalNumber !== claimsPrincipal.personalNumber) {
+            throw new ApiError(
+                404,
+                'not_found',
+                'Transaction not found'
+            );
+        }
+
+        // Commit the transaction by updating the balance
+        const stockIndex = portfolio.findIndex(t => t.id === transaction.stockId);
+        if (stockIndex === -1) {
+            throw new ApiError(404, 'stock_not_found', `Unable to update data for the requested stock ${transaction.stockId}`);
+        }
+        portfolio[stockIndex].quantity = portfolio[stockIndex].quantity + transaction.delta;
+        transactions.splice(transactionIndex, 1);
+
+        // Return the updated balance for the stock that was bought or sold
+        response.json(portfolio[stockIndex]);
+    }
 });
 
 /*
