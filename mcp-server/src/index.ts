@@ -19,9 +19,7 @@ import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/st
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import express, {Request, Response} from 'express';
 import morgan from 'morgan';
-import {readFileSync} from 'node:fs';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import {readFileSync} from 'fs';
 import {z} from 'zod';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
 import {Configuration} from './configuration.js';
@@ -43,30 +41,34 @@ const haapiAuthorizer = new HaapiAuthorizer(configuration);
 const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 /*
- * ChatGPT downloads the MCP resource once connected
+ * ChatGPT downloads the widget in the ChatGPT skybridge format
  */
-const widgetAppBundle = readFileSync("dist/web/bundle.js", "utf8");
-const css = readFileSync("dist/web/app.css", "utf8");
 server.registerResource(
     "portfolio-widget",
     "ui://widget/portfolio-widget.html",
     {},
-    async () => ({
-        contents: [
-            {
-                uri: "ui://widget/portfolio-widget.html",
-                mimeType: "text/html+skybridge",
-                text: `
+    async () => {
+        
+        // Update the widget URI for every download during development
+        const widgetAppBundle = readFileSync('widget/dist/bundle.js', 'utf-8');
+        const css = readFileSync('widget/dist/app.css', 'utf-8');
+        return ({
+            contents: [
+                {
+                    uri: "ui://widget/portfolio-widget.html",
+                    mimeType: "text/html+skybridge",
+                    text: `
 <div id="root"></div>
 <style>${css}</style>
 <script type="module">${widgetAppBundle}</script>
-        `.trim(),
-                _meta: {
-                    "openai/widgetPrefersBorder": true,
+            `.trim(),
+                    _meta: {
+                        "openai/widgetPrefersBorder": true,
+                    },
                 },
-            },
-        ],
-    })
+            ],
+        })
+    },
 );
 
 /*
@@ -78,14 +80,17 @@ server.registerTool(
         title: 'Get portfolio',
         description: "Returns the contents of the user's portfolio.",
         outputSchema: {
-            result: z.array(
-                z.object({
-                    id: z.string(),
-                    name: z.string(),
-                    currentPrice: z.number(),
-                    quantity: z.number()
-                })
-            )
+            result: z.optional(z.array(z.object({
+                id: z.string(),
+                name: z.string(),
+                currentPrice: z.number(),
+                quantity: z.number()
+            }))),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -132,7 +137,12 @@ server.registerTool(
             authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            }))
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -203,7 +213,12 @@ server.registerTool(
             authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            }))
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -265,10 +280,15 @@ server.registerTool(
             "openai/visibility": 'private' // Don't expose the tool to the LLM
         },
         outputSchema: {
-            authMessage: z.object({
+            authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            })
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         // @ts-ignore
         securitySchemes: [
@@ -304,6 +324,7 @@ server.registerTool(
                     }
                 }
             }
+
         } catch (e: any) {
             return getAndLogResponseError(e).toMcpToolErrorResponse();
         }
@@ -344,20 +365,9 @@ export async function requestAuthorization(receivedAccessToken: string, session:
 }
 
 /*
- * Create the Express application
+ * Create the Express HTTP server and add middleware
  */
 const app = express();
-
-/*
- * Use Express to serve the ChatGPT widget's web content
- */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, '../../web')));
-
-/*
- * Add general middleware
- */
 app.use(morgan('combined'));
 app.use(express.json());
 
@@ -383,7 +393,7 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
 app.use('/', oauthFilter.execute);
 
 /*
- * Do the MCP boiler plate setup
+ * Add boiler plate code to integrate the MCP server with the Express HTTP server
  */
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 app.post('/', async (request: Request, response: Response) => {

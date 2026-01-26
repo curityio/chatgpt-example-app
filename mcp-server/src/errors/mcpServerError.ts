@@ -74,19 +74,22 @@ export class McpServerError extends Error {
     }
 
     /*
-     * Return the error body for MCP tool responses
+     * Return the structured error content for MCP tool responses
      */
     public toMcpToolErrorResponse(): any {
 
         const data: any = {
-            status: this.status,
-            code: this.code,
-            message: this.message,
+            error: {
+                status: this.status,
+                code: this.code,
+                message: this.message,
+            },
         };
-        
+
         return {
-            content: [{ type: 'text', text: JSON.stringify(data) }],
             isError: true,
+            content: [{ type: 'text', text: JSON.stringify(data) }],
+            structuredContent: data,
         };
     }
 

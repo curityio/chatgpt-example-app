@@ -7,7 +7,7 @@
       "moduleResolution": "Node16",
       "allowSyntheticDefaultImports": true,
       "skipLibCheck": true,
-      "outDir": "dist/mcp"
+      "outDir": "dist"
     },
     "include": [
       "./src"

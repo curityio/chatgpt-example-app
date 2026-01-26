@@ -21,7 +21,7 @@ services:
   - name: cors
     config:
       origins:
-      - 'http://localhost:6274'
+      - 'http://127.0.0.1:6274'
   - name: phantom-token
     config:
       introspection_endpoint: http://idsvr:8443/oauth/v2/oauth-introspect
@@ -45,7 +45,7 @@ services:
   - name: cors
     config:
       origins:
-      - 'http://localhost:6274'
+      - 'http://127.0.0.1:6274'
 
 #
 # MCP authorization requires a root level OAuth authorization server metadata endpoint
@@ -62,7 +62,7 @@ services:
   - name: cors
     config:
       origins:
-      - 'http://localhost:6274'
+      - 'http://127.0.0.1:6274'
 
 #
 # The settings token_endpoint_auth_method=none and client_uri are incompatible with the Curity Identity Server
@@ -80,7 +80,7 @@ services:
   - name: cors
     config:
       origins:
-      - 'http://localhost:6274'
+      - 'http://127.0.0.1:6274'
   - name: request-transformer
     enabled: yes
     config:
@@ -107,4 +107,4 @@ services:
   - name: cors
     config:
       origins:
-      - 'http://localhost:6274'
+      - 'http://127.0.0.1:6274'

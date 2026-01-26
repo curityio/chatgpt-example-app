@@ -73,11 +73,18 @@ export type RequestDisplayMode = (args: { mode: DisplayMode }) => Promise<{
     mode: DisplayMode;
 }>;
 
+export type ToolError = {
+    status: number;
+    code: string;
+    message: string;
+}
+
 export type CallToolResponse = {
     structuredContent: {
-        result: any;
-        authMessage: any;
-    }
+        result?: any;
+        authMessage?: any;
+        error?: ToolError;
+    },
 };
 
 /** Calling APIs */
