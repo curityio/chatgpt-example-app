@@ -30,15 +30,14 @@ Override URLs so that the API gateway of the deployed system routes to the local
 Then re-run the deployment with a local development routing:
 
 ```bash
-export MCP_SERVER_INTERNAL_URL=http://host.docker.internal:8081
-export PORTFOLIO_API_INTERNAL_URL=http://localhost:8080
+export MCP_SERVER_HOST=host.docker.internal
+export PORTFOLIO_API_HOST=host.docker.internal
 ./deploy.sh
 ```
 
-To develop the MCP server, run it locally on port 8081:
+To develop the MCP server, run it locally on port 8081 and point to a local Portfolio API:
 
 ```shell
-export PORTFOLIO_API_INTERNAL_URL=http://localhost:8080
 cd mcp-server
 npm start
 ```
@@ -49,4 +48,3 @@ In another terminal window, run the Portfolio API on port 8080:
 cd portfolio-api
 npm start
 ```
-
