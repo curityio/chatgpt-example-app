@@ -39,7 +39,7 @@ const PortfolioApp: FC = () => {
 
     // OpenAI provides the output of the tool that invoked the widget
     const toolOutput = useOpenAiGlobal('toolOutput');
-    console.log('>>> Received toolOutput: ', toolOutput);
+    //console.log('>>> Received toolOutput: ', toolOutput);
 
     const defaultState = {
         portfolio: toolOutput?.result as Stock[],
@@ -50,7 +50,7 @@ const PortfolioApp: FC = () => {
 
     // Ask OpenAI to store data across invocations of the widget
     const [widgetState, setWidgetState] = useWidgetState(defaultState);
-    console.log('>>> Received widgetState: ', widgetState);
+    //console.log('>>> Received widgetState: ', widgetState);
 
     // If OpenAI hooks supply null widget state, set state to force a re-render
     if (!widgetState) {
@@ -91,8 +91,8 @@ const PortfolioApp: FC = () => {
         const newState = {} as any;
 
         updateStockResult = await callTool(toolToCall.name, { id, quantity: delta });
-        console.log('>>> updateStock result');
-        console.log(updateStockResult);
+        //console.log('>>> updateStock result');
+        //console.log(updateStockResult);
 
         // Handle errors if required
         newState.error = updateStockResult.structuredContent?.error;
@@ -105,8 +105,8 @@ const PortfolioApp: FC = () => {
             }
         }
 
-        console.log('>>> updateStock new widget state');
-        console.log(newState);
+        //console.log('>>> updateStock new widget state');
+        //console.log(newState);
         setWidgetState({
             ...widgetState,
             ...newState
@@ -118,7 +118,7 @@ const PortfolioApp: FC = () => {
      */
     const pollAuthentication = async (originalTool: Tool) => {
 
-        console.log('>>> pollAuthentication');
+        console.log('>>> pollAuthentication step');
         const timeout = (ms: number) => {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
@@ -126,8 +126,8 @@ const PortfolioApp: FC = () => {
 
         // Call the MCP polling operation once per second
         const toolResult = await callTool('continue_authorization', { });
-        console.log('>>> pollAuthentication result');
-        console.log(toolResult);
+        //console.log('>>> pollAuthentication result');
+        //console.log(toolResult);
 
         // Handle errors if required
         const newState = {} as any;
@@ -138,8 +138,8 @@ const PortfolioApp: FC = () => {
                 
                 // On success, invoke the original buy / sell tool again, to use the high privilege access token
                 const originalToolResult = await callTool(originalTool.name, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
-                console.log('>>> original tool result');
-                console.log(originalToolResult);
+                //console.log('>>> original tool result');
+                //console.log(originalToolResult);
                 newState.error = originalToolResult.structuredContent?.error;
                 if (!newState.error) {
                 
@@ -155,7 +155,7 @@ const PortfolioApp: FC = () => {
                             return stock;
                         });
 
-                        console.log('>>> pollAuthentication: updated widget state after step-up completion');
+                        //console.log('>>> pollAuthentication: updated widget state after step-up completion');
                         newState.portfolio = updatedPortfolio!;
                         newState.authMessage = undefined;
                         newState.tool = null;
@@ -165,7 +165,7 @@ const PortfolioApp: FC = () => {
             } else {
                 
                 // During step-up authentication, show an updated animated QR code
-                console.log('>>> pollAuthentication: update widget state with animated QR code');
+                //console.log('>>> pollAuthentication: update widget state with animated QR code');
                 newState.authMessage = toolResult?.structuredContent?.authMessage;
                 if (toolResult?.structuredContent?.authMessage?.message !== 'authentication_failure') {
                     pollAuthentication(originalTool);
@@ -173,8 +173,8 @@ const PortfolioApp: FC = () => {
             }
         }
 
-        console.log('>>> pollAuthentication new widget state');
-        console.log(newState);
+        //console.log('>>> pollAuthentication new widget state');
+        //console.log(newState);
         setWidgetState({
             ...widgetState,
             ...newState
@@ -251,7 +251,7 @@ const PortfolioApp: FC = () => {
     /*
      * Render the widget from state
      */
-    console.log('>>> Rendering widgetState: ', widgetState);
+    //console.log('>>> Rendering widgetState: ', widgetState);
     const hasError = !!widgetState?.error;
     const isLoading = !widgetState?.portfolio && !hasError;
     const showAuthMessage = !!widgetState?.authMessage;

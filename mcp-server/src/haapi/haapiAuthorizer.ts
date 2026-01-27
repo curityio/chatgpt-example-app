@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+import crypto from 'crypto';
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
 import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} from './haapiUtils.js';
@@ -24,8 +25,9 @@ import {
 } from './bankid.js';
 import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
+import { McpServerError } from '../errors/mcpServerError.js';
 
-export type AuthorizationResult = { success: boolean; message: string; qrCode?: string }
+export type AuthorizationResult = { message: string; qrCode?: string }
 const qrCodeMessage = 'Please confirm the action by scanning the QR code with your BankID app.';
 
 /*
@@ -54,7 +56,6 @@ export class HaapiAuthorizer {
         session.pollingCount = 0;
 
         return {
-            success: true,
             message: qrCodeMessage,
             qrCode: qrCode,
         };
@@ -69,20 +70,14 @@ export class HaapiAuthorizer {
         this.client = new DPoPOAuthClient(this.configuration, session);
 
         if (!session.pollingData) {
-            return {
-                success: false,
-                message: 'No polling data to continue authorization'
-            }
+            throw new McpServerError(400, 'invalid_session', 'No polling data to continue authorization');
         }
 
-        console.log(`>>> Poll authentication at ${session.pollingData.pollingUrl}. Attempt ${session.pollingCount}.`);
+        //console.log(`>>> Poll authentication at ${session.pollingData.pollingUrl}. Attempt ${session.pollingCount}.`);
         const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingData);
 
         if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
-            return {
-                success: false,
-                message: 'authentication_failure'
-            }
+            throw new McpServerError(400, 'authentication_failure', 'Authentication failed or timed out');
         }
 
         session.pollingCount = session.pollingCount + 1;
@@ -91,7 +86,6 @@ export class HaapiAuthorizer {
             session.pollingData = authenticationResponse.pollingData!;
 
             return {
-                success: true,
                 message: qrCodeMessage,
                 qrCode: authenticationResponse.currentQRCode!,
             };
@@ -101,7 +95,6 @@ export class HaapiAuthorizer {
         onToken(authenticationResponse.accessToken!);
 
         return {
-            success: true,
             message: 'authentication_success'
         };
     }
@@ -135,7 +128,7 @@ export class HaapiAuthorizer {
             authResponse,
             this.client);
 
-        console.log('>>> Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
+        //console.log('>>> Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
 
         // submit the access token, expect the next authenticator to be BankID
         const bankIDView = await haapiResponseView<BankIDAuthenticatorView>(
@@ -144,7 +137,7 @@ export class HaapiAuthorizer {
             this.client
         );
 
-        console.log('>>> HAAPI BankID authenticator response:', JSON.stringify(bankIDView, null, 2));
+        //console.log('>>> HAAPI BankID authenticator response:', JSON.stringify(bankIDView, null, 2));
 
         return bankIDView;
     }
@@ -159,7 +152,7 @@ export class HaapiAuthorizer {
         url.searchParams.append('client_id', this.configuration.haapiClientId);
         url.searchParams.append('redirect_uri', this.configuration.redirectUri);
         url.searchParams.append('scope', stepupScope);
-        url.searchParams.append('state', 'random-state-value');
+        url.searchParams.append('state', encodeURIComponent(crypto.randomBytes(32).toString('base64')));
         url.searchParams.append('acr', this.configuration.acr);
         return this.client.get(url.toString(), haapiHeaders)
     }

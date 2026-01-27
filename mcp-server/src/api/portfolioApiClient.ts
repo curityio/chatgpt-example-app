@@ -27,7 +27,6 @@ export async function getPortfolio(configuration: Configuration, token: string):
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     };
     
-    console.log('>>> Fetching portfolio from', configuration.portfolioApiUrl);
     const response = await makeFetchRequest(configuration.portfolioApiUrl, options);
     const portfolio = await response.json();
     const output = { result: portfolio };

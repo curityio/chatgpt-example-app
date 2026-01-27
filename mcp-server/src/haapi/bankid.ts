@@ -57,7 +57,7 @@ export async function authenticateWithBankID(
         client
     );
 
-    console.log('>>> BankID poll response status:', bankIDViewCurrent);
+    //console.log('>>> BankID poll response status:', bankIDViewCurrent);
 
     const status = bankIDViewCurrent.properties.status;
 
@@ -78,10 +78,10 @@ export async function authenticateWithBankID(
     // Finish authentication and eventually set token in the session
     const redirectAction = findRedirectAction(bankIDViewCurrent);
 
-    console.log('>>> Continue authentication', redirectAction)
+    //console.log('>>> Continue authentication', redirectAction)
 
     const url = ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, redirectAction.model.href);
-    console.log('>>> Redirecting after successful authentication: ', redirectAction);
+    //console.log('>>> Redirecting after successful authentication: ', redirectAction);
 
     let redirectResponse = null;
 
@@ -100,12 +100,12 @@ export async function authenticateWithBankID(
     const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(
         configuration.authorizationServerBaseUrl, redirectResponse as Response, client);
 
-    console.log('>>> Final authenticator response:', JSON.stringify(finalView, null, 2));
+    //console.log('>>> Final authenticator response:', JSON.stringify(finalView, null, 2));
 
     if (finalView.metadata.viewName !== 'templates/oauth/success-authorization-response') {
         throw new Error('Expected final authorization-response view now!');
     }
-    console.log('>>> Authentication successful! Exchanging authorization code for access token...');
+    //console.log('>>> Authentication successful! Exchanging authorization code for access token...');
 
     const oauthCallbackUrl = finalView.links.find(link => link.rel === 'authorization-response')?.href;
     if (!oauthCallbackUrl) {
@@ -115,7 +115,7 @@ export async function authenticateWithBankID(
     const tokenResponse = await client.postAuthorizationCode(configuration.tokenEndpoint,
         finalView.properties.code, oauthCallbackUrl.substring(0, oauthCallbackUrl.indexOf('?')));
 
-    console.log('>>> HAAPI token response:', tokenResponse);
+    //console.log('>>> HAAPI token response:', tokenResponse);
 
     return {
         status: 'done',

@@ -43,7 +43,6 @@ export async function exchangeAccessToken(configuration: Configuration, accessTo
         body: body.toString(),
     } as RequestInit;
 
-    console.log('>>> Token exchange request to: ' + configuration.tokenEndpoint, body, requestHeaders, options);
     const response = await makeFetchRequest(configuration.tokenEndpoint, options);
     const tokenResponse = await response.json() as TokenResponse;
     return tokenResponse.access_token;

@@ -32,6 +32,7 @@ Then re-run the deployment with a local development routing:
 ```bash
 export MCP_SERVER_HOST=host.docker.internal
 export PORTFOLIO_API_HOST=host.docker.internal
+./build.sh
 ./deploy.sh
 ```
 

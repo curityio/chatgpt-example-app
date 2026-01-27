@@ -176,8 +176,13 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
+
                 console.log(`>>> Setting step-up scope for buy operation to ${error.scope}`);
-                return requestAuthorization(receivedAccessToken, session, error.scope);
+                try {
+                    return await requestAuthorization(receivedAccessToken, session, error.scope);
+                } catch (e2: any) {
+                    return getAndLogResponseError(e2).toMcpToolErrorResponse();
+                }
             }
 
             return error.toMcpToolErrorResponse();
@@ -252,8 +257,13 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
+                
                 console.log(`>>> Setting step-up scope for sell operation to ${error.scope}`);
-                return requestAuthorization(receivedAccessToken, session, error.scope);
+                try {
+                    return await requestAuthorization(receivedAccessToken, session, error.scope);
+                } catch (e2: any) {
+                    return getAndLogResponseError(e2).toMcpToolErrorResponse();
+                }
             }
 
             return error.toMcpToolErrorResponse();
@@ -310,7 +320,7 @@ server.registerTool(
             // The client calls the original but or sell method, which then uses this token to call the Portfolio API
             const authorizationResult = await haapiAuthorizer.continueAuthorizeWithBankID(
                 (token) => {
-                    console.log('>>> Setting high privilege access token in session: ' + token);
+                    //console.log('>>> Setting high privilege access token in session: ' + token);
                     session.highPrivilegeAccessToken = token
                 },
                 session)
@@ -337,27 +347,20 @@ server.registerTool(
 export async function requestAuthorization(receivedAccessToken: string, session: Session, stepupScope: string): Promise<CallToolResult> {
     
     const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session, stepupScope);
-    if (output.success) {
-        const structuredContent = {
-            authMessage: {
-                message: output.message,
-                qrCode: output.qrCode
-            }
-        };
-        return {
-            // The structuredContent should be exactly the same as the unstructured content
-            // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
-            // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
-            content: [
-                { type: 'text', annotations: { audience: ['user'] }, text: JSON.stringify(structuredContent) } as any,
-                { type: 'image', data: output.qrCode || '', mimeType: 'image/png', annotations: { audience: ['user']} } as any,
-            ],
-            structuredContent,
-        };
-    }
-    const structuredContent = { success: false, authMessage: { message: output.message, qrCode: null }};
+    const structuredContent = {
+        authMessage: {
+            message: output.message,
+            qrCode: output.qrCode
+        }
+    };
     return {
-        content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+        // The structuredContent should be exactly the same as the unstructured content
+        // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
+        // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
+        content: [
+            { type: 'text', annotations: { audience: ['user'] }, text: JSON.stringify(structuredContent) } as any,
+            { type: 'image', data: output.qrCode || '', mimeType: 'image/png', annotations: { audience: ['user']} } as any,
+        ],
         structuredContent,
     };
 }

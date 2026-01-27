@@ -16,7 +16,8 @@
 
 import type {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {HaapiView, HaapiRedirect, PollAction} from './haapiTypes.js';
-import {PollingData} from "./bankid.js";
+import {PollingData} from './bankid.js';
+import {McpServerError} from '../errors/mcpServerError.js';
 
 export const haapiHeaders = {
     'Accept': 'application/vnd.auth+json'
@@ -26,23 +27,26 @@ export async function haapiResponseView<View extends HaapiView>(
     baseUrl: string, response: Response, client: DPoPOAuthClient): Promise<View> {
 
     if (response.status != 200) {
-        throw new Error(`HAAPI request failed: ${response.status} ${await response.text()}`);
+        const error = new McpServerError(response.status, 'haapi_request_failed', 'The HAAPI request did not complete successfully');
+        error.extraData = await response.text();
+        throw error;
     }
+
     if (response.headers.get('Content-Type') !== 'application/vnd.auth+json') {
         throw new Error(`Unexpected HAAPI response content type: ${response.headers.get('Content-Type')}`);
     }
 
     let view = await response.json() as HaapiView;
 
-    console.log('>>> The haapi view JSON: ', view);
+    //console.log('>>> The haapi view JSON: ', view);
 
     // attempt to handle HAAPI redirects automatically
     if (view.type === 'redirection-step') {
 
         const redirectView = view as HaapiRedirect;
-        console.log('>>> Redirect: ', JSON.stringify(redirectView, null, 2));
+        //console.log('>>> Redirect: ', JSON.stringify(redirectView, null, 2));
         const url = ensureAbsoluteUrl(baseUrl, redirectView.actions[0].model.href);
-        console.log('>>> Following HAAPI redirect to:', url);
+        //console.log('>>> Following HAAPI redirect to:', url);
         const action = redirectView.actions[0];
 
         if (action.model.method === 'POST') {

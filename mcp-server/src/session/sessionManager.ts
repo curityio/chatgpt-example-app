@@ -48,7 +48,7 @@ export class SessionManager {
      */
     public createSession(claims?: ClaimsPrincipal): Session {
 
-        console.log('>>> Creating session, claims provided: ', claims);
+        //console.log('>>> Creating session, claims provided: ', claims);
 
         if (this.sessions.size >= this.config.maxSessions) {
             this.cleanupExpiredSessions();
