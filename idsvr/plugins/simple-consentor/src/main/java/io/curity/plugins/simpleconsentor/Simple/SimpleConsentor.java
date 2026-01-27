@@ -29,6 +29,13 @@ public final class SimpleConsentor implements Consentor
     @Override
     public ConsentorResult apply(ConsentAttributes consentAttributes, String consentId)
     {
+        /* Debug available attributes if required
++        for (var attr : consentAttributes) {
++            _logger.info("Consent attribute name: " + attr.getName().getValue());
++            _logger.info("Consent attribute value: " + attr.getValue().toString());
++        }
++        */
+        
         if (!isCompleted(consentId)) {
 
             // Put values for the handler

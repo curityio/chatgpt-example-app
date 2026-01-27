@@ -38,6 +38,7 @@ export PORTFOLIO_API_INTERNAL_URL=http://localhost:8080
 To develop the MCP server, run it locally on port 8081:
 
 ```shell
+export PORTFOLIO_API_INTERNAL_URL=http://localhost:8080
 cd mcp-server
 npm start
 ```
