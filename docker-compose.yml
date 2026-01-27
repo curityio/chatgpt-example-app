@@ -46,7 +46,9 @@ services:
       - 6749:6749
     volumes:
       - ./idsvr/curity-config.xml:/opt/idsvr/etc/init/curity-config.xml
-      - ./idsvr/plugins/access-token-authenticator/target/plugin:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator
+      - ./idsvr/plugins/access-token-authenticator/target/identityserver.plugins.authenticators.access_token-1.0.2.jar:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator/identityserver.plugins.authenticators.access_token-1.0.2.jar
+      - ./idsvr/plugins/access-token-authenticator/target/jose4j-0.9.5.jar:/opt/idsvr/usr/share/plugins/accessTokenAuthenticator/jose4j-0.9.5.jar
+      - ./idsvr/plugins/simple-consentor/target/simple-consentor-1.0.0-SNAPSHOT.jar:/opt/idsvr/usr/share/plugins/simpleConsentor/simple-consentor-1.0.0-SNAPSHOT.jar
       - ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js:/opt/idsvr/etc/init/pre-processing-procedures/mcp-client-registration-policy.js
       - ./idsvr/token-procedures/set-access-token-audience.js:/opt/idsvr/etc/init/token-procedures/oauth-token-authorization-code/set-access-token-audience.js
       - ./idsvr/token-procedures/mcp-token-exchange.js:/opt/idsvr/etc/init/token-procedures/oauth-token-oauth-token-exchange/mcp-token-exchange.js

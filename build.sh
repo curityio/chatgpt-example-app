@@ -88,9 +88,17 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-mkdir target/plugin
-cp target/*.jar target/plugin
-cd ../../..
+#
+# Build the Simple Consentor plugin which MCP clients use instead of the BankID consentor
+#
+echo '>>> Building the simple consentor plugin ...'
+cd ../simple-consentor
+mvn package
+if [ $? -ne 0 ]; then
+  echo '>>> Problem building the simple consentor plugin'
+  exit 1
+fi
+cd ../../../
 
 #
 # Build the API gateway custom Docker image, with the phantom token plugin
