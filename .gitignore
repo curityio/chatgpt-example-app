@@ -10,3 +10,5 @@ typescript-sdk
 /idsvr/curity-config.xml
 /idsvr/pre-processing-procedures/mcp-client-registration-policy.js
 /idsvr/token-procedures/mcp-token-exchange.js
+.idea
+target
