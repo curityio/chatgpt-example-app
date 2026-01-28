@@ -52,7 +52,7 @@ public class SimpleConsentorHandler implements ConsentorCompletionRequestHandler
         var scope = _sessionManager.get(_consentId + SimpleConsentor.SESSION_ATTRIBUTE_NAME_SCOPE).getValuesOfType(String.class);
         var userId = Map.of(
                 "required", true,
-                "displayName", "Account ID",
+                "displayName", "account ID",
                 "scopePrefix", "",
                 "scopeSuffix", "",
                 "value", "",
