@@ -185,7 +185,6 @@
               <is-prefix>true</is-prefix>
               <description>Buy and sell stocks from the user's portfolio</description>
             </scope>
-            <default-scope-claim>personal_number</default-scope-claim>
           </scopes>
           <claims>
             <claim>
@@ -244,14 +243,6 @@
               <value-provided-by>account-manager-claims-provider</value-provided-by>
             </claim>
             <claim>
-              <name>personal_number</name>
-              <value-provided-by>consentor-claims-provider</value-provided-by>
-              <transformation>
-                <input-attribute-names>personalNumber</input-attribute-names>
-                <value-transformation-procedure>ZnVuY3Rpb24gdHJhbnNmb3JtKGF0dHJpYnV0ZXMpIHsKICByZXR1cm4gYXR0cmlidXRlcy5wZXJzb25hbE51bWJlcjsKfQ==</value-transformation-procedure>
-              </transformation>
-            </claim>
-            <claim>
               <name>phone_number</name>
               <description>OpenID Connect phone_number claim</description>
               <value-provided-by>account-manager-claims-provider</value-provided-by>
@@ -299,16 +290,9 @@
                 </account-manager>
               </account-manager-claims-provider>
             </claims-value-provider>
-            <claims-value-provider>
-              <id>consentor-claims-provider</id>
-              <consent-claims-provider xmlns="https://curity.se/ns/ext-conf/consent-claims-provider"/>
-            </claims-value-provider>
             <claims-mappers>
               <claims-mapper>
                 <id>default</id>
-                <access_token>
-                  <claim>personal_number</claim>
-                </access_token>
                 <id_token>
                   <claim>address</claim>
                   <claim>birthdate</claim>
@@ -366,25 +350,6 @@
               <id>simple-consentor</id>
               <simple xmlns="https://curity.se/ns/ext-conf/simple"/>
             </consentor>
-            <consentor>
-              <id>bankid-consentor</id>
-              <signing-consentor>
-                <text-to-display-procedure>LyoqCiAqIEBwYXJhbSB7c2UuY3VyaXR5LmlkZW50aXR5c2VydmVyLnByb2NlZHVyZXMuY29udGV4dC5TaWduaW5nQ29uc2VudG9yRGlzcGxheVRleHRQcm9jZWR1cmVDb250ZXh0fSBjb250ZXh0CiAqLwpmdW5jdGlvbiByZXN1bHQoY29udGV4dCkgewogIAogIHZhciBhcGlDbGllbnQgPSBjb250ZXh0LmdldFdlYlNlcnZpY2VDbGllbnQoKTsKCiAgdmFyIHRyYW5zYWN0aW9uU2NvcGUgPSBudWxsOwogIHZhciBzY29wZXMgPSBjb250ZXh0LmNvbnNlbnRBdHRyaWJ1dGVzLnNjb3BlczsKICAKICBmb3IgKHZhciBpIGluIGNvbnRleHQuY29uc2VudEF0dHJpYnV0ZXMuc2NvcGVzKSB7CiAgICB2YXIgc2NvcGUgPSBzY29wZXNbaV07CiAgICBpZiAoc2NvcGUuaW5kZXhPZigndHJhbnNhY3Rpb25fJykgIT09IC0xKSB7CiAgICAgICAgdHJhbnNhY3Rpb25TY29wZSA9IHNjb3BlOwogICAgICAgIGNvbnRpbnVlOwogICAgICB9CiAgfQoKICBpZiAoIXRyYW5zYWN0aW9uU2NvcGUpIHsKICAgIHJldHVybiAnTm90IGFwcGxpY2FibGUnOwogIH0KCiAgdmFyIHRyYW5zYWN0aW9uRGF0YVJlc3BvbnNlID0gYXBpQ2xpZW50LnJlcXVlc3QoCiAgICB7CiAgICAgIG1ldGhvZDogJ0dFVCcsCiAgICAgIHBhdGg6IHRyYW5zYWN0aW9uU2NvcGUucmVwbGFjZSgndHJhbnNhY3Rpb25fJywgJycpCiAgICB9CiAgKQoKICBpZiAodHJhbnNhY3Rpb25EYXRhUmVzcG9uc2Uuc3RhdHVzQ29kZSAhPT0gMjAwKSB7CiAgICB0aHJvdyBleGNlcHRpb25GYWN0b3J5LmJhZFJlcXVlc3RFeGNlcHRpb24oJ1NvbWV0aGluZyB3ZW50IHdyb25nIHdpdGggcHJlcGFyaW5nIHRoZSBjb25zZW50LicpOwogIH0KCiAgdmFyIHRyYW5zYWN0aW9uRGF0YSA9IEpTT04ucGFyc2UodHJhbnNhY3Rpb25EYXRhUmVzcG9uc2UuYm9keSk7CgogIHZhciB0cmFuc2FjdGlvblR5cGUgPSAnYnV5JzsKICB2YXIgcXVhbnRpdHkgPSB0cmFuc2FjdGlvbkRhdGEuZGVsdGE7CgogIGlmICh0cmFuc2FjdGlvbkRhdGFbJ2RlbHRhJ10gPCAwKSB7CiAgICB0cmFuc2FjdGlvblR5cGUgPSAnc2VsbCc7CiAgICBxdWFudGl0eSA9IC1xdWFudGl0eTsKICB9CgogIHJldHVybiAnRG8geW91IHdhbnQgdG8gJyArIHRyYW5zYWN0aW9uVHlwZSArICcgJyArIHF1YW50aXR5ICsgJyAnICsgdHJhbnNhY3Rpb25EYXRhLnN0b2NrSWQgKyAnIHN0b2Nrcz8nOwp9Cg==</text-to-display-procedure>
-                <webservice>
-                  <hostname>$PORTFOLIO_API_HOST</hostname>
-                  <port>8080</port>
-                  <context>/api/transactions</context>
-                  <http-client>portfolio-api-client</http-client>
-                </webservice>
-                <bankid-signing-consentor xmlns="https://curity.se/ns/ext-conf/bankid-signing-consentor">
-                  <http-client>
-                    <id>bankid-client</id>
-                  </http-client>
-                  <allowed-bankid-types>any</allowed-bankid-types>
-                  <mode>test</mode>
-                </bankid-signing-consentor>
-              </signing-consentor>
-            </consentor>
           </consentors>
           <client-store>
             <config-backed>
@@ -404,43 +369,6 @@
                 <scope>transaction</scope>
                 <capabilities>
                   <oauth-token-exchange/>
-                </capabilities>
-              </client>
-              <client>
-                <id>mcp-server-haapi</id>
-                <description>The MCP server acts as a HAAPI client to run a backend API-driven step-up authentication flow</description>
-                <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
-                <redirect-uris>haapi:/callback</redirect-uris>
-                <user-consent>
-                  <only-consentors>true</only-consentors>
-                  <consentors>
-                    <consentor>bankid-consentor</consentor>
-                  </consentors>
-                </user-consent>
-                <scope>portfolio</scope>
-                <scope>transaction</scope>
-                <audience>$EXTERNAL_BASE_URL/</audience>
-                <user-authentication>
-                  <allowed-authenticators>access-token</allowed-authenticators>
-                </user-authentication>
-                <capabilities>
-                  <code>
-                  </code>
-                  <haapi>
-                    <allow-without-attestation>true</allow-without-attestation>
-                    <use-legacy-dpop>true</use-legacy-dpop>
-                  </haapi>
-                </capabilities>
-                <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
-              </client>
-              <client>
-                <id>consent-details-client</id>
-                <description>The authorization server uses this client to call the portfolio API and get consent details for the transaction ID in the prefix scope</description>
-                <secret>$5$/MHdcosAB4QGv3OL$5qcgscdBc.5IAGOYlEK/bvy.NRb54qbf574XHJMXI66</secret>
-                <scope>portfolio</scope>
-                <audience>https://api.demo.example</audience>
-                <capabilities>
-                  <client-credentials/>
                 </capabilities>
               </client>
             </config-backed>
@@ -546,27 +474,6 @@
     </profile>
   </profiles>
   <facilities xmlns="https://curity.se/ns/conf/base">
-    <http>
-      <client>
-        <id>bankid-client</id>
-        <connection-pool>
-        </connection-pool>
-        <tls>
-          <use-truststore>true</use-truststore>
-          <client-keystore>bankid-test-environement</client-keystore>
-        </tls>
-      </client>
-      <client>
-        <id>portfolio-api-client</id>
-        <scheme>http</scheme>
-        <oauth-credentials>
-          <client-id>consent-details-client</client-id>
-          <client-secret>data:text/plain;aes,v:S.SmlBNm41NFY4YVRvaXpGVA==.RCa-G2s-bxpkb_2vHFH3cQ==.foQXwxzmnpz6pi1jvJq20w==.y91bI83bXLdbJ_c_TgxBTS7fv4UBy1DYDusYo5LMaTw=</client-secret>
-          <token-endpoint>$EXTERNAL_BASE_URL/oauth/v2/oauth-token</token-endpoint>
-          <scope>portfolio</scope>
-        </oauth-credentials>
-      </client>
-    </http>
     <data-sources>
       <data-source>
         <id>default-datasource</id>
@@ -598,22 +505,6 @@
           <id>default-admin-ssl-key</id>
           <keystore>data:application/p12;aes,v:S.VXVPVGFrOGY1SVNvUzlqZQ==.tJu2Si6m_xdNLD2JBsVFxw==.M1PMDVJWFF7aki60_P-Bhkn_lTMgbZDX80SRMIbuas3kvZNUq3oPVFCo8M3hq0nTY0j5ZVcK1naSj3fWdSb6NWuqaluFQKvNan6qwxHOvsIcvHJ3HGgnv_wvenbutfhzTUNAYHiQs2b8wLLaBNc7-1NlW2KLFWlJaDVniXZrCq2olAWSZP7HeZSHIVckbDzfl3eKBctKmA6FvNG9khs3n0K2LmOkDZi5kjYipJ7pLhP798_ip6UdsOPZs430KKo0oBLexu2DvyjKilqb_2zHj6YUHFmjeH9s4YDrwpehtpIbI51W3bYGq_rPtxxjSeSjYfUiXi5dFnS5WOx3nyCDwe6a5DsmApx5lRZih6uI9jbNPoOgFLftvRr6exyW_hqI0ZK-9iM8tJ4KRiTaHV9DeVlVpWNN2PkryBAlx2m3CUO4k6dM3BurYyfUzTftBF5seV1snPKDqn3pfpekLmF8EIwuPlZfKrWEWmvLiEZGYpk9oCzIHmXZO0tKZktyR_EUXkRbYYDwnGfPRCuq0F9NQBkIBme2cOPLRHcjbmvdOISW9gz8dXkAPbduBk7wQ3WbLR1lzZknqNzMwzrehbpgNe1PSEw3h0ch_I8v-AKTrZaRlRejZU1bxZBtqpO7dDnykSIVivNFGmuXTYia210kSNji0-kLEbJK6qSzDgPvT2QmTn1xaz7WZm7UViLQlmlTyTZByJ4wlJXAry0-zdAeXM4_HjP26O3fZN4a7T2XqJuUeFQMqnhSCbE1BRQh-rAiK6sbOmDxxR3LcKN6g3J4UElOUPopQupFiCzdgx15-jpxvbF54DCyd-ExEFgNohkoRIMMOdlo7pUBbDQ9QmY719SPP27hKwCUxDXOc4q9PLnpO3cNhLojixDZtv7Mi4rPdWHvzDLgMUFv-3CfpiyrHOaR_HZceDa4wRgNp89QRZVuvl14mer6HCt0loziEVJAggnaY2APcVrp5XgH9WotX-o8jsiJMHNZ-bMXgBG0PuF3bGboiF2IUqpdnofm7R1XErHkEnXf6BTOAPzvmw3HMe5WAH8Pv8a_5K8rEDn2yUDFuPHFWU1qUMsi2uUacmIIkp-KzfRBPGn3XHQwi6-NDihr9LYLZC4kX3NLRxsWKXymxnmoAIIMlLeGT6GGrRgCfpablACyZnHEVBXf7RE3x8Ndfp82ztxOilPA-_tt1eAvQNjX_3ZZ2pfiJxt2hCFIUeW9ZtgupyeWuGopR5EWouHUjPHrGQ9mc6Ais2AzJS76GLVBHT2ZjlNO-IEstcjgHEa5KIzCw9RYmtNrREYRE0jIPg4XGuvja9BWBSRwm0JNN0Na1rjCKhsROU-oXENKpDt5xjpFGHbAejy848CHHNA35dLU8jeIERkzQ6VXs0uA5k25aueJI0klxzJyBHyWZdXOWpdd-b2xWxaN3uzg_Ogpknfa76bMCaHUP4y5ajXR8fbVrfM_2rwn4dY7hZI62xsSu8AlaquzGKyDfrNOyxn-dZSNguR28cUPPW2NA1mYOTVI8xyPpiGx8A2IgMRA1it_wCHeK9EIjk5Q0plD2tC6JFCHFmbU6xLIygk-DLf29iYmZqx1koCsdWOFu7GlPK8L7Q_MSqvE2JH2POVeOos6xE4-tcpoeycFme4iwY6rwa6j2KvB-TSrKX0TZLKdHNirF7ntw1RI-36qJiO3GDPIQpxDvYHX8cRJ2LZmHsOWsOKgIRC9GhwNiqSbm1qWS3RjC5o02d4LYwP7qjwLmK-uWJeRce_m6w2EKnQ3sRKA8nQob3C4Rv0-xFYykYVoGAUpoht7E6ZPlNOZhdQmtpV5cz1OvgvdnPJ6olCJXlIWlz8ZNdiRrOkfW8zSRwt60Fqc_P1e6BLeIMxCO6GQtzqV1aaCtON8imC7fRJjmGeqg7_LgMhVx66dFSui5nsfKqY0fwRXNVqUdrlhtioxzuEWXmsTdJBcQlXa2t1qa-mDs14BLRETrxM291HIGJhFUZ450pLHpJTEMzXszpFCezZ5A82Jw7rnFMZgdW0ZNeFGo6BL9-R2hTUv8254hcPcsNXKpI_GpDAROReCbuGcS169tAluWGmKbYuIYDnLfMfHGeUwcK5jYpW3bHPjZwdw1sreAIsC1-foIbwcZ8oOZC5Y4sdLTRL3q1mckEWW1elOHHp5PGK7-wFVpfphCkH2n7lEBjn0s0WnXOmtuYjreMuS8D5f7htRaC6_ehbIKPuPOpt7JjZ5XeGtFsrGcdeWfWtPPa_hTnpyZg8czZNaQSt74vGdUyAtJqQv3PofzlX98qr4V3vkQtokYSleWIizV1afrRQtyUCFia0-DcnoPkRD60dOGPkECfg3W4M0LnIr4UdfSHksiMi3JatkD_WsDfXwGbgPiNJTgknXJ7XqhQrwvIY1tRKfwTY4P5EmU9phGBMzCsaq2HpkmGnPJ4B36Zyi7nFD2RgHMbbnABcFHvE55qDbETYhLdaRay6esNdJsa27Rh7-8EJNZu-AXrYn6Wk_JBRdhpWyTyybk6sJ05qE19zK4doXivsterRFjX4VvkTyBSUwsNiBXDVLOAS82mUeIPQCbowkbf5R4fzM2KBZfQSWGRudUuI-qsJfI6YOG_ixTwDXsETpy0aD11wjz6EY4RaJdbRNO4522rDyHuPUZ5WvCqtyNpTrl1t9-PPghyBASFkYFvinhjg00ggFG6i9VcRgPXHQeyhaNxbUzBnjV2K-x7rAJjd-m8LSjvsAxvQtrBt8_O12BGtE1USZON_vlXW0Ln-ZDJ6mkH4U3YoNX3kEQGn95R7cxa22VBuh-c6Ikjr04HFYHO1XeZlGrr1ru8mDXJrCXGYBGJAm3MAvKgoe8_uFy2Yr67LtSQ94pxLMRSkxMw2amaEAIqBkF7D7Rl5fLsjA7EVVKdTrOjOKZIFC_MugKXJIDLqaKwhY0pwppgCEiCoBSiE8mnR7SGUtK-tZdhQ3DCR2XjfMO0H5vgnuof7It0PQN1k8kIwtOgP_mfMjl4APYsrlVf7xoW29eHDb3Vl6yxv63nHHWD1OT45th-3_CJVOSggxuNJkReVetqS6q70DcxwFN1IJuhiOt2Z_DTUZXmDdtcagnie74etdFwKyxbWmCMfqY9JFZXMmvg8uDZSYweU0FePnrfWSmToVfMwokoP_muHQswqnnADBYZh4MQnu1rAV08lwrGXu4h-vIM0muX4c7rOgu-BgKr9zDGC4gYkSi_r1CzmSJe2gwTbYl4F38WspsjBpE4AIB4M8bfixGSniW1Kg09Mz9CWEcgR4u07-Aka04PuC0LHDUBNsdtCytAC6BxhP0K3Nwtc01RIS7bs-AULElJNwv5gQRGjZBFpIWiDdV1Bk3oxGr_yzetIH-iNLdadq_zNDaHd-kmeWQEVa88K-qcBO8FnQD4KzgdRFB61CdgmOFUmSqzD4tmQ63xRjqde6zXkc7Lwv3bXPG-S7UfAW73C-tMgigRiIGqehPso3OCMFLWS4RT3uKQnlkw-rkhjTVEMPGPwW9hHLmRSdItCrA_P-mvdleUH7vLoBJ6Fc7uRIUtbPtKk7QaNqhQatAVVE6XiLnsbD40rxvnAiXJJSNqxRmV_p9rvmVsYkrOzFlQ==.Lf6jFu7ZPbjRkYwxKfIfLO6IVdVi3Biq_Tx-DDJSZIk=</keystore>
         </server-keystore>
-        <server-truststore>
-          <server-certificate>
-            <id>appapi2_test_bankid_com</id>
-            <size>2048</size>
-            <keystore>data:application/pem;aes,v:S.UEF3RVdXc3J6OGhuMEpsTg==.pOWxwH8BbX47mf1kqmSYeg==.0lody6PLYOnNvYyC-QNSn_erZObr2T3uvkj-xf6PdcfUOM5sq64ybCtJeUzpJ1tKSYINOFDYzmzFCa6GigfVlaeRyJ6xUtSYFp1CR8nVTn_RM8v4WQiIQWqig5A8KDCm7IDLFU0pPQSD8emmN_JwVkczgl-awrdk3G2rABRHn1-1asLmxU8eveOKSOm3i83IR0ZtvWykdopxwNEvBuI4s5QH_rCPGfKijMW5cFuLEDCTaJQHpwZRDs12sh8WFiTUQdVNZlhoxIZMbSEoGA3uvDI5JVzN1YnXYY1WsM9EdnTmd9Xoi8KMOgfWC36AesQaa5soPtLNsae76djcqbUNhKB_vvIHzb1-O3Qym7GX42wH_nMIJMooVZzYir3icS6eyKvDwWGmYEihvoY-Pnv4XikZRpT8Eu2DqR6_uttFiWZwZIl23Ye12dfM5O8gkmrD8q3gyD7P0k-hYNQ6kks_NQ2i8kMjDPI3ZuL5BnsOgtVMd3OCHxrEfmPh5Vrxfbf85X4CBC8-0zXfQA2A3ez--4t2xmGgp42w52enQITWPnNys0xjCuc5xLpsCll2SJZeu0-amHAyA9ulkDHJAubxsfgBR5vx6R1yymify1uHtQqy1M3SCtkd-5B-7seoa6CxtZ78CbqhDdHIgm57ItMYe2ZS1qvPzYM-WO2JtJ329L-XJFt_-wPqiuup3V7d7Ne_ZgbXwYFxxpISk8k_lIU_tscKVGMj2WFy5pouvU7ImAc4zhPchFV7qmxoTPWBzKIMFxnc3lNApA8asgbFFz29vq37ADW06O2-Q3hKnIpjC9gCAAmj3eNcP5ML8_s3blugyha2G641BQpYf2uEN1mirix8azHOkNUYVZhwptppm178bwnZThg_z73V3LUmQSthAn6bVpOUHmr4QqZUdKZlTIbB6u3Chi1JpU1fc-BAwBMGeevjXVgiW1QDu4x-jAKR9tP9Mgz2YnjFqWg0EPfLMK5mOjNX6vin7GRZqCaZEcrlF95AcDRT4-aKiSaTawz9gmsvL107JgIfip6D2qPQ807-GE7S2IGWGXQkcTqlSuzJIe-XdEL-nw-yGRgk8u5agT7T7pdxm_4XwMoXK1HbtjuQt6bU15EhxStwqyWSXkEAe8LY-z-HHOaswJkE44SKr6Lf46008Ri-OnJ_JSdG4ye_t0my_2gTJlrx1r94XlMzShO-60RsZyJcRofrHfZnLrwaIhDFrEPZqpJYs9QPwIMxCP8f8Tyj-_EU7JZNTRnXWIguTwMWz2pJtFUaUDvO_AXMpRvFRaQqpLb8NWn2I_FDlE_2rU4HD78_fp_UCfihMipEwxEQDKeU4ntzsL6e46pJ3NMCBkN9tjLTRdP_EUjzQSb9nPsN-nsDZPf8vjXCKh50rT0owaMEZBejM5b1nA0ZGbtiBXgAZLBcmzqCVG14IAUpDOltOsk62Zs7YeW5Eurlrr_mTgDpceO28KLHXLvevcFTu3He4xTSHcdyp-JYlBvYEwLwLexQ2U2-d6Hz42AD6_5dtwj0gg7SzyAPfYDiQLsoDfLG9W2aocw5xhrJ_lXHWJu60B9XRAWmk3KxVFHQh-Q7j5EQlKiNFYehEUWi56hdOLAYMfI5P55Vk-A4CEM8HEDQf4O3v7Tv1PDuqoWHAsAIucqF7mKgJNXR55u4IweCV6x7cpXbmkYBz6qI3LVXqrMwZw7HsCTI5pL9IKALuLYkJSaymmiO9K9GrI3D_3JNpP5EmAKyBBHGGXYVKyjusWCKfhipQ-7Pgj7ZfCUHFFkX7_kmKu-jR0_YEZAiKxS0I1QqI5dhaKk9wodGKsXT9TXrKl5btL4KwTBTyktlxNXAiMZBzjJDbWqRvWA7-Bp0MWJPQFwloWAh6GpsL3_qE7cHcXHnQX3z6YHiit_LdjYFg6vryuq4gl-YaUT_-4VIUXw3BFu4Nkkv-1d0YmVD3lKQKxBzbnsBExIGcH6IKcBx6uEoCfWLncUPP0aM9VD4AbymS8se0fBugQF4xmeSH1RQVPFtxZGScQ5HzVdTAcVxr4YJPdqFGTjQiaobMEMzwqMttFWGDL4xEJ75PAvIQXMdhPX4V0syovywVNvBI-XhOQXjfiaeZUg701O9ALjZrMLN76iyzUeg9k4ybx_pGSoTt88PkU2ouJTF3AEhXMXGTzCDXmvVTV8j_w4dj2uzUDfRg6AugJ5jZ8RE3qOpURpnwljHsm8bKuz1i4xA92kTXE5oQ-SmzWBMx0oyKOHvPeazW3eCaoSUC1pJgZIj1wSzpNnc0mkqOTMFDlrhsxD0_j1UquDDygVtpP2WqVeCAGqEt-glohQglw4fyX39wHyX6O-psu2Gkhml4NQ9x_iTYEy0wRDDjdof29aGF9UE_FYS5bNLqTWzwwnItMw8u0nHNVMg6RHVeMGJ9MTCQ87kcmpWa4aSHyLi.rQZD98zzRk43QgSgvMYtPoI_uZtPCeNjsaUGyBfoBAc=</keystore>
-            <type>rsa</type>
-          </server-certificate>
-        </server-truststore>
-        <client-keystores>
-          <client-keystore>
-            <id>bankid-test-environement</id>
-            <size>2048</size>
-            <keystore>data:application/p12;aes,v:S.QmdQOVVoZEcyVkdyOXJuMw==.R5rOv2DBF8VnHRVzhgrWcA==.hm7GPraMP126bHMOWvUkRidSe24alfqdKHN9zxcOZT2aOF7D36Vp8sY8bI9y5-LbcUHyucRVDV0P7f-35v0gj1RTEVnq8bPzV7q1Atj2WF6kfqpcEsnOuPfOLgV8qxu9Yov2iKpMY-wnnOK94jcghzUh6Hd71PLXzBNmiTagS4n4qMIBSgCl30QNIXnr0G6F93RJw3-2gCm9bLK1GMOh03LYVxB3fo_1JPwAxB6lI7aQUMocv5IUIEAXKGNIeP4L-s-zmnNU2A_rhevPU1ex0paz59wqT40haNlApiVC1y9dH0OfvHd4kO8WiwjTB10ZWj6u9Pe-ycxKW54BrB6tJiyHnB-hdQiRR4bFWADjQiGgJtKiSjORN0f7AcJaCiWrR77_q6roKPY5j1GPiemq8f8CjkVVFMh8tyKgkZNJAlGbsKCDWSlfhX82J_2VYvHfLK7dkcsAqMChJBQdOz3mm6AWm4tlCbFB3xi2nGflnMGZED8ztulqs__1oXfXOCzxmCIeeoj_Zo2y_VAN-AMIhivvwcATactTcBMbaBYZcbVJ209DCj85_gCJtY8lKH5e9s-EFBIWkSdhdHovcl9x-lC55dsUdzdVFTgAnzufxjkOgmdzU_4N4gu4o29IF7GUR7xgHNRtWifCrpcpcW_t7QhANRvUoKntPIm1xzp9r_WbNFxL-0Div4pxpyR3AC-pnPZVAzjgRrl3tXLHVMq6OdQAv_pGGJr5Zod_9MOqcRgcpiJrHVhx6EhYbdfDbvTISwOLaws7ec4WnPvvbkARfizAoli8z7bdNQmGEZy8m-lrxtMbcWlT9fTPXCpFJjoEaWV0KPTkHUkx8eqL8c_AuaN7li116MwY__pVXUlyBeaK_C6J6TRL3VPDNvmiydjL3G4ktvXKUExVlRpPIUi2Jv7UmH99mRCJ2JVZOPAla2KCIZknsjxcStItkov_eHoJtou_fcqR1r1m3_QCUugy7dE-aiwBhKCZoHJNHJgnh77xmP9w8fe2xeqQXd5UPBTRTiX9WXQH4prqdhm3U7D3jdDLrQtXBmhWsH9H3_oR5hTY7KpXBlarNi25QCn28j7eGjbiyzh2leR-aBxKLlSfFXmydsx3ogvHdn8HYiJD7ZgNYrsXgykwYXM6z0g-kaaDAHGT1r_QS02OgWS8Uaq86pu6Ov2KTs8FBEDYDMFcjNqusiRmmV_FpTlxGMSANfrii7F9xnb4cF_y4ZzZPh4KFQDGlprFiLNchenKyCcEAEbIawqr6i3iSYuiktg9gzJFOVM3PZerUrT2Bewo7nKnPM5jOcBLhSo7YVQRIai3pBERfoBVFrR8zSDRHHVBb7BdLnUxpqqnabOsidlUPT5-y69gp7KGR1cVJebR3GwU4zvllZNkdhzvLbMNM7rf_703ODQTzI3A25NLKCBXr2YLYuH-eBL6vgNdFv4ObOvYW58ZrSQHmRp-BOKAvQcxsmStrmEkIzYZzYXJr1nhje3ex_q7YJSR8qvs18WdBOJgvlcKKEcK63BwJl01VmORYRmxEDKH6m8B3TTAn_c1WYeo4iL7aGuVJWxyU5WHJwhGLkuaX9zjPBuKZapkFpA8U-rAHw1LPxpyPt6CByCvfNyP4LcfNzkpfa0KRlmq1x2xvyhn1kA-chLxH5KHJGJtVCkm9tI1DbVIVwhKWNoasHC0LW0O18OVpAOY5cw_-YZ9XUPhbmU9PgRKuNLI4AIcYT-k3gKFsUHCExuhlHvmohml-vGd3wdxn_9EaLBFmY-FzKGLXQ_bxI0G7ns6rft3DAaPihIJzG6sOAXhlQdkbJKyyWljFltuiuK9q4PalAry4OpIQITC3yd6eIRMZAOQLim6dtZIFsbSxfHT5_KjuTZikgwoVmOnIWVApJO52EJye0qOBFqRArt00l9Ly7ki4BJpRXxewplHlRfa1q295zaq0HfUYCCfQCC1YRE-8SzXFBBpv54yj_XBqwJ9TAoysm_P-06wnUYI2wYPL-NYsRtkx_jGr83Rxy4Jp9OgpHmdgRHan4O27NFmJC4SNS_3Uk1rAxAO0NTMiaTL0UB0-7kkyFcCV-pwNWeM2ZK0YsYFrD6nqaYK7aLb3UDYnsu_zoYHicYaBoMSrRpmL11B4Z8o30jgqnVe720amZ7plokS1AQwZHoDmGEEdjlJ3Y7Sxi5KXlzdOn0DLmsJ_9DhMYRj3PMAWJrKpPjP7683WtexeLmg8men-8c4IMSTResfGNbvJ2Dr0End_XzrJ7eZd3YoUlSWhclsP0cJXOPlHLnGGtqKc7-2TknHGR6IA_t5WSmqrIgA3HP8uQfm5XYUfOtyj5PPHJXAsQ5wkQ-RNPrIO5LCcNMjkIPNgvGHkP-spTztAYgSvAHoouBZYushGzS1SvrTYiBXzVbTSHdaM8Pgs1ylVqVj3KUzljQIdhb7MCkGtzNRtH4LFhnbxsbgezFlG9XOqsnk3RvgpwMskc5IudR0TsbjJPN91Ad5sYhcwV5jR0DPz_x8i-pR52uB3uemnshZovrjrKFBl64dAgBAE-S48OMWywbfkYPl6a-XvhN1AvdvkeOKjyv4g9TNWO19_5ba8j0joquQWbsl0dQgOct73UNzhOPzZmOlQUcOVO1bAUVAmUmsZSTf2MXdWmaKi15HBXNTQsuCxZxIf8VxltGihgg4PqvOTpiWEJ58TxhtjsjBahelrqoPfx9pQjMRrhoqr8iDk39LPDFz4c2aF0lxHZIBPu82BpEUlTcBKnAhFgozn22LAHayYEQc5BE4qJ8TdmvsVJrCpl4VYeMBAk01QzlRnnwqCAqEDZNTRgddhS8gBrLnqrONr9knJfr6-dfABnMrwQTvDBScL3o3knJ56-4HXwvRVGTiiZGmIpMyRCXZw13SwXwSYLgQ2N7_VMuHz0akquSsYqNMvlvpiw4stdxBew7rBEJfUajXHU99QArEd1--nV-OjUOys2R1U_qRqWpLq1yr7N2Iwqedd1rzbGA3h7gyQ9MXEmwiv2Iqc9CYKEEulyZyRv0oGuiwh7-hIoG_h6YiT_Mb4gIrwgoUJL7DWEuUWhFq3EZ53FabZBFZ29lyslfmothQEdAzJFuFqDIjRwYOeTOFUmnZulJBGL3d6XEYAV4j05YnrD_uva3rI8Tvg_mlh-EnzpH5rGtUiGVy00nKzNnbVDAQcscnQPFhA-2RZM5DzAi6xBOhqJeWjktD8pTssNAw0TUGPiBwV7g8q6KsUlNZwqB07AEsu-jUrLxRt8djHDLKDDVKpIqDZyopq_iz6mjo3mVigHnEChmMWyx6oVZ0GaTfFAodpXyyBBab0uQvkP9h9LGd_Dcv-4z7c8RIAWCL8hTXkOmpuAJsVTpgEmrOvT0HXVav9OGIJIIkc2wz2lbqZ0-O77U5aXMlUpR6wiD6ekPi4NajfugsKI4BhkRn-h4p7nrk_6Fv8HQ2pLRIlYW7yQceAQoIz2l-d219a6FE0Kmmma-nyP8I3oTFGDBu-Ac8NnOM1gENN_f2cYPY4AR39bw09AmhkeUOFr-Y5jfqKQqi2UaW7EtCVfkJsfxC39mLdDZ--eysdhPQA1MtfQja4feETeAJT9xDUkb1-jLcws8n0pGRYiGiEtR2H47Ed9yxoTJHnDna2_w9XfOZsdm6t6QPtvXJ5z4d_2eguktZ_6xeiVmxxUEZw82f1KrRnxGRZBAIhTQLo3Lqe8d7efnvqiLLpxNVJ8Xq3nLuf6czWKJ6s5a4AFa7R2-j59yjCJB02p84SSoTOWAgnWGlADLdSk6PDH4W_kbe5wZMZOQF6IL5YOnvO9Ou0Yx-UODTmU_U2kHxvn7fX6FqL5LhSF14RB5rf9kLsS_X8jrShKHdOopP8Cxm9-yuKLlhfLEuVnjtv6zGEXvRYa3u6Z5Cdvyw3UmHWDf7lVJve357pVWC0Erwh_Nzp_UlyHnwLryvW5G22SwcXCdr4u_c2np5r_GJnWB5_F4-u5RVzRCYKN-MECEUEH2n5misLv8KIcWk4G8-xVx_yb_PZ-6ID6oP7WDe_YVoduWpIkG8BxQ-ljRyamCTuln-BiMsfJ9EXAl061TIvym5iGx5Cvz3Rv6jeZ_UKVhVKvR0xJLSoPGhf6ZCz0UXrA==.S_jRWhaUzJtmJwPwWYOIvJtgJudhTcBYRgOTLul2ZXA=</keystore>
-            <type>rsa</type>
-          </client-keystore>
-        </client-keystores>
       </ssl>
       <signing-keys>
         <signing-key>

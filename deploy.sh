@@ -71,7 +71,8 @@ fi
 # Since ngrok URLs are not predictable we must perform URL replacements for the deployment
 #
 envsubst < ./apigateway/kong-template.yml > ./apigateway/kong.yml
-envsubst < ./idsvr/curity-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-config.xml
+envsubst < ./idsvr/curity-base-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-base-config.xml
+envsubst < ./idsvr/curity-scenario-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-scenario-config.xml
 envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-template.js > ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js
 envsubst < ./idsvr/token-procedures/mcp-token-exchange-template.js > ./idsvr/token-procedures/mcp-token-exchange.js
 
