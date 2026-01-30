@@ -12,7 +12,7 @@
                 <disable-second-factor-subject-check>true</disable-second-factor-subject-check>
                 <always>
                   <second-factor>
-                    <id>sms</id>
+                    <id>email</id>
                   </second-factor>
                   <allow-authentication-with-sso-for-second-factor>false</allow-authentication-with-sso-for-second-factor>
                 </always>
@@ -21,11 +21,26 @@
           </authentication-actions>
           <authenticators>
             <authenticator>
+              <id>html-form</id>
+              <html-form xmlns="https://curity.se/ns/conf/authenticators/html-form">
+                <account-manager>default-account-manager</account-manager>
+                <credential-manager>default-credential-manager</credential-manager>
+              </html-form>
+            </authenticator>
+            <authenticator>
               <id>access-token</id>
               <authentication-actions>
                 <login>second-factor-authentication</login>
                 <sso>second-factor-authentication</sso>
               </authentication-actions>
+              <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
+                <key-verification>
+                  <id>default-signature-verification-key</id>
+                </key-verification>
+                <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
+                <required-audience>$EXTERNAL_BASE_URL/</required-audience>
+                <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
+                <required-scopes>portfolio</required-scopes>
               </access-token>
             </authenticator>
           </authenticators>
@@ -63,18 +78,35 @@
               </client>
             </config-backed>
           </client-store>
+          <dynamic-client-registration>
+            <client-data-source>default-datasource</client-data-source>
+            <non-templatized>
+              <capabilities>
+                <code/>
+              </capabilities>
+              <default-refresh-token-ttl>3600</default-refresh-token-ttl>
+              <scopes>
+                <scope>portfolio</scope>
+              </scopes>
+              <authenticators>
+                <authenticator>html-form</authenticator>
+              </authenticators>
+              <client-authentication-method>
+                <secret>
+                  <credential-manager>default-credential-manager</credential-manager>
+                </secret>
+              </client-authentication-method>
+              <no-authentication/>
+              <user-consent>
+                <only-consentors>true</only-consentors>
+                <consentors>
+                  <consentor>simple-consentor</consentor>
+                </consentors>
+              </user-consent>
+            </non-templatized>
+          </dynamic-client-registration>
         </authorization-server>
       </settings>
     </profile>
   </profiles>
-  <facilities xmlns="https://curity.se/ns/conf/base">
-    <sms-provider>
-      <id>sms</id>
-      <twilio>
-        <from-number>MyTestAccount</from-number>
-        <account-sid>my-account-id</account-sid>
-        <auth-token>my-auth-token</auth-token>
-      </twilio>
-    </sms-provider>
-  </facilities>
 </config>

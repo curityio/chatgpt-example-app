@@ -1,6 +1,28 @@
 <config xmlns="http://tail-f.com/ns/config/1.0">
   <profiles xmlns="https://curity.se/ns/conf/base">
     <profile>
+      <id>authentication-service</id>
+      <type xmlns:auth="https://curity.se/ns/conf/profile/authentication">auth:authentication-service</type>
+      <settings>
+        <authentication-service xmlns="https://curity.se/ns/conf/profile/authentication">
+          <authenticators>
+            <authenticator>
+              <id>access-token</id>
+              <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
+                <key-verification>
+                  <id>default-signature-verification-key</id>
+                </key-verification>
+                <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
+                <required-audience>$EXTERNAL_BASE_URL/</required-audience>
+                <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
+                <required-scopes>portfolio</required-scopes>
+              </access-token>
+            </authenticator>
+          </authenticators>
+        </authentication-service>
+      </settings>
+    </profile>
+    <profile>
       <id>token-service</id>
       <type xmlns:as="https://curity.se/ns/conf/profile/oauth">as:oauth-service</type>
       <expose-detailed-error-messages/>

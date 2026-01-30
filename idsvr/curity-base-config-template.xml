@@ -63,18 +63,6 @@
           <persisted-sso-session>true</persisted-sso-session>
           <authenticators>
             <authenticator>
-              <id>access-token</id>
-              <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
-                <key-verification>
-                  <id>default-signature-verification-key</id>
-                </key-verification>
-                <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
-                <required-audience>$EXTERNAL_BASE_URL/</required-audience>
-                <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
-                <required-scopes>portfolio</required-scopes>
-              </access-token>
-            </authenticator>
-            <authenticator>
               <id>email</id>
               <email>
                 <account-manager>default-account-manager</account-manager>

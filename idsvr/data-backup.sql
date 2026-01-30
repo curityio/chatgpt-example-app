@@ -360,12 +360,9 @@ COMMENT ON COLUMN buckets.attributes IS 'All attributes stored for this subject/
 COMMENT ON COLUMN buckets.created IS 'When this bucket was created';
 COMMENT ON COLUMN buckets.updated IS 'When this bucket was last updated';
 
+--
+-- Restore a test user account
+-- 
 INSERT INTO credentials (id, subject, password, attributes, created, updated) VALUES ('fba58f95-2445-4016-a1dd-6adb21998968', 'john.doe@demo.example', '$5$rounds=20000$VF9DwEYV5Gs4zSnQ$/FXN0S/.znDXzKvYSTpwHL5rQp2d9a6O0u5cwsci.z2', '{}', '2025-11-21 13:23:52.386427', '2025-11-21 13:23:52.386427');
-
-
---
--- Restore test user accounts that use email authentication
---
 COPY accounts (account_id, username, password, email, phone, attributes, active, created, updated) FROM stdin;
 670bfc34-6788-11ed-9323-a269d5800c4d	john.doe@demo.example	\N	\N	\N	{"name": {"givenName": "John", "familyName": "Doe"}, "emails": [], "region": "USA", "agreeToTerms": "on", "urn:se:curity:scim:2.0:Devices": []}	1	1668807106	1668807106
-74fcf67c-6788-11ed-93e7-a269d5800c4d	jane.test@demo.example	\N	\N	\N	{"name": {"givenName": "Jane", "familyName": "Test"}, "emails": [], "region": "EUR", "agreeToTerms": "on", "urn:se:curity:scim:2.0:Devices": []}	1	1668807129	1668807129
