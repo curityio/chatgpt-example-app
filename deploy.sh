@@ -77,7 +77,8 @@ envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-temp
 envsubst < ./idsvr/token-procedures/mcp-token-exchange-template.js > ./idsvr/token-procedures/mcp-token-exchange.js
 
 #
-# Also update API URLs and account for local development
+# In development mode, both the MCP server and portfolio API run locally.
+# Therefore, the MCP server configuration needs to use localhost to route to the portfolio API.
 #
 if [ "$PORTFOLIO_API_HOST" == 'host.docker.internal' ]; then
   export PORTFOLIO_API_HOST='localhost'

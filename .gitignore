@@ -13,3 +13,4 @@ typescript-sdk
 /idsvr/token-procedures/mcp-token-exchange.js
 .idea
 target
+*.iml

@@ -24,8 +24,9 @@ Then navigate to `App Builder`, run the `get_portfolio` tool and interact with t
 
 ![MCP Test Client](images/test-client.png)
 
-## Develop the MCP Server
+## Develop APIs
 
+To develop the MCP server and APIs, run both components locally.\
 Override URLs so that the API gateway of the deployed system routes to the local computer.\
 Then re-run the deployment with a local development routing:
 

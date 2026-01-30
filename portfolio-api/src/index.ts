@@ -46,10 +46,6 @@ const portfolio = [
         quantity: 12
     },
 ];
-
-/*
- * The example API returns this hard-coded list of in-memory stocks for any test user
- */
 const transactions = [] as Transaction[];
 
 /*

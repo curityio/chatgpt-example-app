@@ -67,4 +67,14 @@
       </settings>
     </profile>
   </profiles>
+  <facilities xmlns="https://curity.se/ns/conf/base">
+    <sms-provider>
+      <id>sms</id>
+      <twilio>
+        <from-number>MyTestAccount</from-number>
+        <account-sid>my-account-id</account-sid>
+        <auth-token>my-auth-token</auth-token>
+      </twilio>
+    </sms-provider>
+  </facilities>
 </config>
