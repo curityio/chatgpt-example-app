@@ -95,8 +95,3 @@ GET /oauth/v2/oauth-authorize
 ## Handle Redeployments
 
 If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from ChatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data. If you run into connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.
-
-## Adapt the Deployment
-
-The example deployment uses a BankID signing consentor as a financial-grade step-up solution.\
-The [Adapt the Deployment README](adapt-the-deployment/README.md) explains ways to alter the deployment and use a different authenticator.
