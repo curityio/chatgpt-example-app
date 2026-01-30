@@ -1,0 +1,112 @@
+<config xmlns="http://tail-f.com/ns/config/1.0">
+  <profiles xmlns="https://curity.se/ns/conf/base">
+    <profile>
+      <id>authentication-service</id>
+      <type xmlns:auth="https://curity.se/ns/conf/profile/authentication">auth:authentication-service</type>
+      <settings>
+        <authentication-service xmlns="https://curity.se/ns/conf/profile/authentication">
+          <authentication-actions>
+            <authentication-action>
+              <id>second-factor-authentication</id>
+              <multi-factor-condition xmlns="https://curity.se/ns/ext-conf/multi-factor-condition">
+                <disable-second-factor-subject-check>true</disable-second-factor-subject-check>
+                <always>
+                  <second-factor>
+                    <id>email</id>
+                  </second-factor>
+                  <allow-authentication-with-sso-for-second-factor>false</allow-authentication-with-sso-for-second-factor>
+                </always>
+              </multi-factor-condition>
+            </authentication-action>
+          </authentication-actions>
+          <authenticators>
+            <authenticator>
+              <id>html-form</id>
+              <html-form xmlns="https://curity.se/ns/conf/authenticators/html-form">
+                <account-manager>default-account-manager</account-manager>
+                <credential-manager>default-credential-manager</credential-manager>
+              </html-form>
+            </authenticator>
+            <authenticator>
+              <id>access-token</id>
+              <authentication-actions>
+                <login>second-factor-authentication</login>
+                <sso>second-factor-authentication</sso>
+              </authentication-actions>
+              <access-token xmlns="https://curity.se/ns/ext-conf/access-token">
+                <key-verification>
+                  <id>default-signature-verification-key</id>
+                </key-verification>
+                <allowed-oauth-client-ids>mcp-server-haapi</allowed-oauth-client-ids>
+                <required-audience>$EXTERNAL_BASE_URL/</required-audience>
+                <required-issuer>$EXTERNAL_BASE_URL/oauth/v2/oauth-anonymous</required-issuer>
+                <required-scopes>portfolio</required-scopes>
+              </access-token>
+            </authenticator>
+          </authenticators>
+        </authentication-service>
+      </settings>
+    </profile>
+    <profile>
+      <id>token-service</id>
+      <type xmlns:as="https://curity.se/ns/conf/profile/oauth">as:oauth-service</type>
+      <expose-detailed-error-messages/>
+      <settings>
+        <authorization-server xmlns="https://curity.se/ns/conf/profile/oauth">
+          <client-store>
+            <config-backed>
+              <client>
+                <id>mcp-server-haapi</id>
+                <description>The MCP server acts as a HAAPI client to run a backend API-driven step-up authentication flow</description>
+                <secret>§5§8LfFRmKklSw/pcbm§RztPpt5FzhrA4a8NwJB8qjijWHa./MJCqwE7GcdIxt8</secret>
+                <redirect-uris>haapi:/callback</redirect-uris>
+                <scope>portfolio</scope>
+                <scope>transaction</scope>
+                <audience>$EXTERNAL_BASE_URL/</audience>
+                <user-authentication>
+                  <allowed-authenticators>access-token</allowed-authenticators>
+                </user-authentication>
+                <capabilities>
+                  <code>
+                  </code>
+                  <haapi>
+                    <allow-without-attestation>true</allow-without-attestation>
+                    <use-legacy-dpop>true</use-legacy-dpop>
+                  </haapi>
+                </capabilities>
+                <validate-port-on-loopback-interfaces>true</validate-port-on-loopback-interfaces>
+              </client>
+            </config-backed>
+          </client-store>
+          <dynamic-client-registration>
+            <client-data-source>default-datasource</client-data-source>
+            <non-templatized>
+              <capabilities>
+                <code/>
+              </capabilities>
+              <default-refresh-token-ttl>3600</default-refresh-token-ttl>
+              <scopes>
+                <scope>portfolio</scope>
+              </scopes>
+              <authenticators>
+                <authenticator>html-form</authenticator>
+              </authenticators>
+              <client-authentication-method>
+                <secret>
+                  <credential-manager>default-credential-manager</credential-manager>
+                </secret>
+              </client-authentication-method>
+              <no-authentication/>
+              <user-consent>
+                <only-consentors>true</only-consentors>
+                <consentors>
+                  <consentor>simple-consentor</consentor>
+                </consentors>
+              </user-consent>
+            </non-templatized>
+          </dynamic-client-registration>
+        </authorization-server>
+      </settings>
+    </profile>
+  </profiles>
+</config>
