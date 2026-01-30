@@ -18,5 +18,7 @@ In lower security use cases you might use HTML Form (passwords) for the initial 
 - The Curity Identity Server would then run step-up with the Access Token Authenticator and the Email Authenticator.
 
 This folder's `curity-scenario-config-template.xml` file configures that alternative flow.\
+The test user account `john.doe@demo.example` can sign in with a password of `Password1`.
+
 You could copy `curity-scenario-config-template.xml` to the `idsvr` folder, to overwrite the BankID-specific configuration.\
 Then, you could re-run the `./deploy.sh` script and re-test the flow in ChatGPT.
