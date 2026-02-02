@@ -26,10 +26,10 @@ export async function getPortfolio(configuration: Configuration, token: string):
     const options = {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     };
-    
+
     const response = await makeFetchRequest(configuration.portfolioApiUrl, options);
     const portfolio = await response.json();
-    const output = { result: portfolio };
+    const output = { portfolio };
     return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };
 }
 
@@ -45,8 +45,8 @@ export async function buyOrSellStock(configuration: Configuration, id: string, d
         body: JSON.stringify({ delta }),
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     };
-    
+
     const response = await makeFetchRequest(`${configuration.portfolioApiUrl}/${id}`, options);
     const result = await response.json();
-    return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { result } };
+    return { content: [{ type: 'text', text: JSON.stringify({ updatedStock: result, continueAuthorization: false }) }], structuredContent: { updatedStock: result, continueAuthorization: false } };
 }

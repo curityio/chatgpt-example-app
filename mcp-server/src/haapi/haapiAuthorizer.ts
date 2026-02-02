@@ -16,7 +16,7 @@
 
 import crypto from 'crypto';
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
-import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
+import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView, HaapiView} from './haapiTypes.js';
 import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} from './haapiUtils.js';
 import {
     authenticateWithBankID,
@@ -123,23 +123,26 @@ export class HaapiAuthorizer {
         const authResponse = await this.sendAuthorizationRequest(stepupScope!);
 
         // Should get to the access_token authenticator view directly
-        const accessTokenView = await haapiResponseView<AccessTokenAuthenticatorView>(
+        const haapiStepView = await haapiResponseView<HaapiView>(
             this.configuration.authorizationServerBaseUrl,
             authResponse,
             this.client);
 
         //console.log('>>> Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
 
-        // submit the access token, expect the next authenticator to be BankID
-        const bankIDView = await haapiResponseView<BankIDAuthenticatorView>(
-            this.configuration.authorizationServerBaseUrl,
-            await this.authenticateWithAccessTokenAuthenticator(receivedAccessToken, accessTokenView),
-            this.client
-        );
+        if (haapiStepView.metadata.viewName == 'authenticator/access-token/authenticate/start') {
+            // submit the access token, expect the next authenticator to be BankID
+            return await haapiResponseView<BankIDAuthenticatorView>(
+                this.configuration.authorizationServerBaseUrl,
+                await this.authenticateWithAccessTokenAuthenticator(receivedAccessToken, haapiStepView as AccessTokenAuthenticatorView),
+                this.client
+            );
 
-        //console.log('>>> HAAPI BankID authenticator response:', JSON.stringify(bankIDView, null, 2));
+        } else if (haapiStepView.metadata.viewName == 'consentor/bankid-signing-consentor/templates/consent/polling-pending') {
+            return haapiStepView as BankIDAuthenticatorView;
+        }
 
-        return bankIDView;
+        throw new McpServerError(400, 'haapi_exception', 'Unexpected HAAPI response');
     }
 
     /*

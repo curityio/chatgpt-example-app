@@ -21,7 +21,7 @@ import {PollingData} from '../haapi/bankid.js';
  * Serializable session data
  */
 export interface Session {
-    
+
     // Details about this session
     id: string;
     createdAt: Date;
@@ -37,10 +37,21 @@ export interface Session {
     haapiExpiresAt?: Date;
     haapiSessionId?: string;
 
+    // The data of the tool call that requires step-up
+    originalToolCallData: ToolCallData | null;
+
     // Polling details for BankID completion
     pollingData: PollingData | null;
     pollingCount: number;
-    
+
     // The access token issued once step-up authentication completes
     highPrivilegeAccessToken?: string;
+}
+
+export type ToolCallData = {
+    toolName: string,
+    parameters: {
+        id: string,
+        delta: number
+    }
 }

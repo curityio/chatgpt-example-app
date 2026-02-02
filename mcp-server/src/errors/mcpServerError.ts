@@ -52,7 +52,7 @@ export class McpServerError extends Error {
      * Capture any exception details
      */
     public addException(e: any) {
-       
+
         this.extra = {};
         if (e.message) {
             this.extra.message = e.message;
@@ -84,6 +84,7 @@ export class McpServerError extends Error {
                 code: this.code,
                 message: this.message,
             },
+            continueAuthorization: false,
         };
 
         return {

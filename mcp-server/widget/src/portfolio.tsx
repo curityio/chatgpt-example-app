@@ -14,43 +14,30 @@
  *  limitations under the License.
  */
 
-import {FC} from 'react';
+import {FC, useEffect, useRef} from 'react';
 import {createRoot} from 'react-dom/client';
 import {useWidgetState} from './use-widget-state';
 import {useOpenAiGlobal} from './use-openai-global';
-import {CallToolResponse, ToolError} from './types';
-
-type Stock = {
-    id: string,
-    name: string,
-    currentPrice: number,
-    quantity: number
-}
-
-type Tool = {
-    name: string,
-    parameters: {
-        id: string,
-        delta: number
-    }
-}
+import {CallToolResponse, CurityPortfolioWidgetState, Tool, ToolError} from './types';
 
 const PortfolioApp: FC = () => {
 
     // OpenAI provides the output of the tool that invoked the widget
     const toolOutput = useOpenAiGlobal('toolOutput');
-    //console.log('>>> Received toolOutput: ', toolOutput);
+    // console.log('>>> Received toolOutput: ', toolOutput);
 
     const defaultState = {
-        portfolio: toolOutput?.result as Stock[],
-        authMessage: toolOutput?.authMessage as any,
+        portfolio: toolOutput?.portfolio,
+        updatedStock: toolOutput?.updatedStock,
+        authMessage: toolOutput?.authMessage,
         error: toolOutput?.error as ToolError,
-        tool: null as Tool | null,
-    };
+    } as CurityPortfolioWidgetState;
 
     // Ask OpenAI to store data across invocations of the widget
     const [widgetState, setWidgetState] = useWidgetState(defaultState);
     //console.log('>>> Received widgetState: ', widgetState);
+
+    const shouldPoll = useRef<boolean>(false);
 
     // If OpenAI hooks supply null widget state, set state to force a re-render
     if (!widgetState) {
@@ -62,7 +49,7 @@ const PortfolioApp: FC = () => {
      */
     const buyStock = async (id: string, delta: number) => {
         const toolToCall = {
-            name: 'buy_stock',
+            toolName: 'buy_stock',
             parameters: { id, delta }
         }
 
@@ -74,11 +61,22 @@ const PortfolioApp: FC = () => {
      */
     const sellStock = async (id: string, delta: number) => {
         const toolToCall = {
-            name: 'sell_stock',
+            toolName: 'sell_stock',
             parameters: { id, delta }
         }
 
         updateStock(toolToCall, id, delta);
+    }
+
+    const getPortfolio = async () => {
+        const portfolioToolResult = await callTool('get_portfolio', {});
+
+        setWidgetState({
+            ...widgetState,
+            portfolio: portfolioToolResult.structuredContent.portfolio,
+            updatedStock: undefined,
+            authMessage: undefined,
+        });
     }
 
     /*
@@ -86,22 +84,23 @@ const PortfolioApp: FC = () => {
      */
     const updateStock = async (toolToCall: Tool, id: string, delta: number) => {
 
-        console.log(`>>> updateStock for ${toolToCall.name}`);
+        // console.log(`>>> updateStock for ${toolToCall.toolName}`);
         let updateStockResult: CallToolResponse;
         const newState = {} as any;
 
-        updateStockResult = await callTool(toolToCall.name, { id, quantity: delta });
+        updateStockResult = await callTool(toolToCall.toolName, { id, quantity: delta });
         //console.log('>>> updateStock result');
         //console.log(updateStockResult);
 
         // Handle errors if required
         newState.error = updateStockResult.structuredContent?.error;
+        shouldPoll.current = false;
         if (!newState.error) {
 
-            // Handle the step up response that begins polling
+            // Handle the step-up response that begins polling
             if (updateStockResult.structuredContent?.authMessage) {
                 newState.authMessage = updateStockResult.structuredContent.authMessage;
-                pollAuthentication(toolToCall);
+                shouldPoll.current = true;
             }
         }
 
@@ -116,9 +115,9 @@ const PortfolioApp: FC = () => {
     /*
      * Poll BankID and then complete the transaction
      */
-    const pollAuthentication = async (originalTool: Tool) => {
+    const pollAuthentication = async () => {
 
-        console.log('>>> pollAuthentication step');
+        // console.log('>>> pollAuthentication step');
         const timeout = (ms: number) => {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
@@ -126,8 +125,8 @@ const PortfolioApp: FC = () => {
 
         // Call the MCP polling operation once per second
         const toolResult = await callTool('continue_authorization', { });
-        //console.log('>>> pollAuthentication result');
-        //console.log(toolResult);
+        // console.log('>>> pollAuthentication result');
+        // console.log(toolResult);
 
         // Handle errors if required
         const newState = {} as any;
@@ -135,46 +134,50 @@ const PortfolioApp: FC = () => {
         if (!newState.error) {
 
             if (toolResult.structuredContent?.authMessage?.message === 'authentication_success') {
-                
-                // On success, invoke the original buy / sell tool again, to use the high privilege access token
-                const originalToolResult = await callTool(originalTool.name, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
-                //console.log('>>> original tool result');
-                //console.log(originalToolResult);
-                newState.error = originalToolResult.structuredContent?.error;
-                if (!newState.error) {
-                
-                    // Get the updated portfolio balance and add it to the state
-                    if (originalToolResult.structuredContent?.result) {
-                        
-                        const stockToUpdate = originalToolResult.structuredContent.result as Stock;
-                        const updatedPortfolio = widgetState?.portfolio?.map(stock => {
-                            if (stock.id === stockToUpdate.id) {
-                                return stockToUpdate;
-                            }
 
-                            return stock;
-                        });
+                const originalTool = toolResult.structuredContent?.continueOperation
 
-                        //console.log('>>> pollAuthentication: updated widget state after step-up completion');
-                        newState.portfolio = updatedPortfolio!;
-                        newState.authMessage = undefined;
-                        newState.tool = null;
+                if (!originalTool?.toolName) {
+                    newState.error = {
+                        status: 500,
+                        code: 'missing_required_attributes',
+                        message: 'Cannot continue operation'
+                    }
+                } else {
+                    // On success, invoke the original buy / sell tool again, to use the high privilege access token
+                    // Maybe the MCP server could actually do it?
+                    const originalToolResult = await callTool(originalTool.toolName, { id: originalTool.parameters.id, quantity: originalTool.parameters.delta });
+
+                    newState.error = originalToolResult.structuredContent?.error;
+                    if (!newState.error) {
+
+                        // Get the updated portfolio balance and add it to the state
+                        if (originalToolResult.structuredContent?.updatedStock) {
+
+                            const stockToUpdate = originalToolResult.structuredContent.updatedStock;
+                            newState.portfolio = widgetState?.portfolio?.map(stock => {
+                                if (stock.id === stockToUpdate.id) {
+                                    return stockToUpdate;
+                                }
+
+                                return stock;
+                            });
+                            newState.updatedStock = originalToolResult.structuredContent.updatedStock;
+                            newState.authMessage = undefined;
+                            shouldPoll.current = false;
+                        }
                     }
                 }
-
             } else {
-                
+
                 // During step-up authentication, show an updated animated QR code
-                //console.log('>>> pollAuthentication: update widget state with animated QR code');
                 newState.authMessage = toolResult?.structuredContent?.authMessage;
-                if (toolResult?.structuredContent?.authMessage?.message !== 'authentication_failure') {
-                    pollAuthentication(originalTool);
-                }
+                shouldPoll.current = toolResult?.structuredContent?.authMessage?.message !== 'authentication_failure';
             }
         }
 
-        //console.log('>>> pollAuthentication new widget state');
-        //console.log(newState);
+        // console.log('>>> pollAuthentication new widget state');
+        // console.log(newState);
         setWidgetState({
             ...widgetState,
             ...newState
@@ -185,7 +188,6 @@ const PortfolioApp: FC = () => {
      * Call an MCP tool and handle exceptions
      */
     const callTool = async (name: string, data: any): Promise<CallToolResponse> => {
-        
         try {
 
             return await window.openai?.callTool(name, data);
@@ -223,6 +225,7 @@ const PortfolioApp: FC = () => {
                         code,
                         message,
                     },
+                    continueAuthorization: false
                 },
             };
         }
@@ -232,9 +235,7 @@ const PortfolioApp: FC = () => {
      * Format error fields for display
      */
     const errorDisplayMessage = () => {
-        
         if (widgetState?.error) {
-            
             const parts: string[] = [];
             parts.push(widgetState.error.message);
             if (widgetState.error.status) {
@@ -251,21 +252,36 @@ const PortfolioApp: FC = () => {
     /*
      * Render the widget from state
      */
-    //console.log('>>> Rendering widgetState: ', widgetState);
+    // console.log('>>> Rendering widgetState: ', widgetState);
     const hasError = !!widgetState?.error;
-    const isLoading = !widgetState?.portfolio && !hasError;
     const showAuthMessage = !!widgetState?.authMessage;
-    const showPortfolio = !!widgetState?.portfolio && !showAuthMessage;
+    const hasPortfolio = !!widgetState?.portfolio;
+    const hasOnlyUpdatedStock = !hasPortfolio && !!widgetState?.updatedStock;
+    const showPortfolio = hasPortfolio && !showAuthMessage;
+
+    // Track the last toolOutput that triggered polling
+    const lastPolledToolOutputRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (shouldPoll.current) {
+            shouldPoll.current = false;
+            pollAuthentication();
+        }
+    }, [shouldPoll.current]);
+
+    useEffect(() => {
+        // Initiate polling when there is a new toolOutput that asks for polling.
+        if (toolOutput && lastPolledToolOutputRef.current !== toolOutput && toolOutput.continueAuthorization) {
+            shouldPoll.current = true;
+        }
+    }, [toolOutput]);
 
     return (<div className="widget_content">
-        
-        {isLoading && <div>Loading...</div>}
-
         {hasError && <div className="error">{errorDisplayMessage()}</div>}
 
         {!hasError && showAuthMessage && <div className="auth_message">
-            <p>{widgetState.authMessage.message}</p>
-            {widgetState.authMessage.qrCode && <img src={`data:image/png;base64,${widgetState.authMessage.qrCode}`} alt="QR Code" />}
+            <p>{widgetState.authMessage!.message}</p>
+            <img src={`data:image/png;base64,${widgetState.authMessage!.qrCode}`} alt="QR Code" />
         </div>}
 
         {showPortfolio && widgetState?.portfolio?.map((stock, idx) => (
@@ -287,6 +303,18 @@ const PortfolioApp: FC = () => {
                 }}>Sell</button>
             </div>
         ))}
+
+        {hasOnlyUpdatedStock && <div>
+            <h3>Your updated position for {widgetState.updatedStock!.id}</h3>
+            <p>
+                <span className="stock_name"><span className="ticker">{widgetState.updatedStock!.id}</span>: {widgetState.updatedStock!.name}</span><span className="currently_at">, currently at </span><span className="price">{widgetState.updatedStock!.currentPrice}</span> <span className="currency">USD</span>.
+            </p>
+            <p className="quantity">You own: <span>{widgetState.updatedStock!.quantity}</span></p>
+            <p>
+                <button className="button" onClick={() => {getPortfolio()}}>Show full portfolio</button>
+            </p>
+        </div>
+        }
     </div>);
 }
 
