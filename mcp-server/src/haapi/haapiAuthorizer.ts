@@ -21,13 +21,13 @@ import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} f
 import {
     authenticateWithBankID,
     findPollAction,
-    findQrCode
+    findQrCode, findSameDeviceAction, getStartButtonData
 } from './bankid.js';
 import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
 import { McpServerError } from '../errors/mcpServerError.js';
 
-export type AuthorizationResult = { message: string; qrCode?: string }
+export type AuthorizationResult = { message: string; qrCode?: string, startButton?: { title: string, href: string }, pollingCount?: number }
 const qrCodeMessage = 'Please confirm the action by scanning the QR code with your BankID app.';
 
 /*
@@ -58,6 +58,8 @@ export class HaapiAuthorizer {
         return {
             message: qrCodeMessage,
             qrCode: qrCode,
+            startButton: getStartButtonData(findSameDeviceAction(bankIDView)),
+            pollingCount: 0,
         };
     }
 
@@ -88,6 +90,8 @@ export class HaapiAuthorizer {
             return {
                 message: qrCodeMessage,
                 qrCode: authenticationResponse.currentQRCode!,
+                startButton: authenticationResponse.startButton,
+                pollingCount: session.pollingCount
             };
         }
 
@@ -128,7 +132,7 @@ export class HaapiAuthorizer {
             authResponse,
             this.client);
 
-        //console.log('>>> Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
+        // console.log('>>> First step response:', JSON.stringify(haapiStepView, null, 2));
 
         if (haapiStepView.metadata.viewName == 'authenticator/access-token/authenticate/start') {
             // submit the access token, expect the next authenticator to be BankID

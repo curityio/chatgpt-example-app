@@ -58,9 +58,17 @@ server.registerResource(
                     uri: "ui://widget/portfolio-widget.html",
                     mimeType: "text/html+skybridge",
                     text: `
-<div id="root"></div>
-<style>${css}</style>
-<script type="module">${widgetAppBundle}</script>
+<!doctype html>
+<html>
+<head>
+  <link rel="stylesheet" href="${configuration.externalBaseUrl}/mcp/app.css">
+  <link rel="stylesheet" href="${configuration.externalBaseUrl}/mcp/bundle.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">${widgetAppBundle}</script>
+</body>
+</html>
             `.trim(),
                     _meta: {
                         "openai/widgetPrefersBorder": true,
@@ -136,7 +144,12 @@ server.registerTool(
             })),
             authMessage: z.optional(z.object({
                 message: z.string(),
-                qrCode: z.string()
+                qrCode: z.string(),
+                startButton: z.optional(z.object({
+                    title: z.string(),
+                    href: z.string()
+                })),
+                pollingCount: z.optional(z.number())
             })),
             continueAuthorization: z.boolean(),
             error: z.optional(z.object({
@@ -147,8 +160,8 @@ server.registerTool(
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
-            "openai/toolInvocation/invoking": "Buying more stocks...",
-            "openai/toolInvocation/invoked": "Stock bought.",
+            "openai/toolInvocation/invoking": "Processing buying transaction...",
+            "openai/toolInvocation/invoked": "Buying transaction processed.",
         },
         // @ts-ignore
         securitySchemes: [
@@ -226,7 +239,12 @@ server.registerTool(
             })),
             authMessage: z.optional(z.object({
                 message: z.string(),
-                qrCode: z.string()
+                qrCode: z.string(),
+                startButton: z.optional(z.object({
+                    title: z.string(),
+                    href: z.string()
+                })),
+                pollingCount: z.optional(z.number())
             })),
             continueAuthorization: z.boolean(),
             error: z.optional(z.object({
@@ -237,8 +255,8 @@ server.registerTool(
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
-            "openai/toolInvocation/invoking": "Selling some stock...",
-            "openai/toolInvocation/invoked": "Stock sold.",
+            "openai/toolInvocation/invoking": "Processing selling transaction...",
+            "openai/toolInvocation/invoked": "Selling transaction processed.",
         },
         // @ts-ignore
         securitySchemes: [
@@ -310,7 +328,12 @@ server.registerTool(
         outputSchema: {
             authMessage: z.optional(z.object({
                 message: z.string(),
-                qrCode: z.optional(z.string())
+                qrCode: z.optional(z.string()),
+                startButton: z.optional(z.object({
+                    title: z.string(),
+                    href: z.string()
+                })),
+                pollingCount: z.optional(z.number())
             })),
             error: z.optional(z.object({
                 status: z.number(),
@@ -352,10 +375,7 @@ server.registerTool(
                 session)
 
             const structuredContent: any = {
-                authMessage: {
-                    message: authorizationResult.message,
-                    qrCode: authorizationResult.qrCode
-                },
+                authMessage: authorizationResult,
                 continueAuthorization: true,
             }
 
@@ -382,10 +402,7 @@ export async function requestAuthorization(receivedAccessToken: string, session:
 
     const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session, stepupScope);
     const structuredContent = {
-        authMessage: {
-            message: output.message,
-            qrCode: output.qrCode
-        },
+        authMessage: output,
         continueAuthorization: true,
     };
     return {
@@ -422,6 +439,11 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
     response.setHeader('content-type', 'application/json');
     response.status(200).send(JSON.stringify(metadata));
 });
+
+/**
+ * Serve CSS and JS for the widget
+ */
+app.use(express.static('widget/dist'));
 
 /*
  * For all other routes, apply OAuth validation

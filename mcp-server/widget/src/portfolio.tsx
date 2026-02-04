@@ -13,12 +13,23 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+import '../app.css'
 
-import {FC, useEffect, useRef} from 'react';
+import {FC, useEffect, useRef, StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {useWidgetState} from './use-widget-state';
 import {useOpenAiGlobal} from './use-openai-global';
-import {CallToolResponse, CurityPortfolioWidgetState, Tool, ToolError} from './types';
+import {
+    CallToolResponse,
+    CallToolResponseStructuredContent,
+    CurityPortfolioWidgetState,
+    Tool,
+    ToolError
+} from './types';
+
+import {Button, ButtonLink} from "@openai/apps-sdk-ui/components/Button"
+import { Input } from "@openai/apps-sdk-ui/components/Input";
+import { Alert } from "@openai/apps-sdk-ui/components/Alert";
 
 const PortfolioApp: FC = () => {
 
@@ -260,7 +271,7 @@ const PortfolioApp: FC = () => {
     const showPortfolio = hasPortfolio && !showAuthMessage;
 
     // Track the last toolOutput that triggered polling
-    const lastPolledToolOutputRef = useRef<any>(null);
+    const lastPolledToolOutputRef = useRef<CallToolResponseStructuredContent>(null);
 
     useEffect(() => {
         if (shouldPoll.current) {
@@ -271,50 +282,96 @@ const PortfolioApp: FC = () => {
 
     useEffect(() => {
         // Initiate polling when there is a new toolOutput that asks for polling.
-        if (toolOutput && lastPolledToolOutputRef.current !== toolOutput && toolOutput.continueAuthorization) {
+        if (toolOutput && lastPolledToolOutputRef.current !== toolOutput && lastPolledToolOutputRef.current?.authMessage?.pollingCount !== toolOutput.authMessage?.pollingCount && toolOutput.continueAuthorization) {
+            lastPolledToolOutputRef.current = toolOutput;
             shouldPoll.current = true;
         }
     }, [toolOutput]);
 
     return (<div className="widget_content">
-        {hasError && <div className="error">{errorDisplayMessage()}</div>}
+        {hasError && <Alert
+            description={errorDisplayMessage()}
+            title="Error"
+            color="warning"
+            variant="outline"
+        />}
 
-        {!hasError && showAuthMessage && <div className="auth_message">
-            <p>{widgetState.authMessage!.message}</p>
-            <img src={`data:image/png;base64,${widgetState.authMessage!.qrCode}`} alt="QR Code" />
+        {!hasError && showAuthMessage && <Alert
+            title="Follow the instructions to finish the action"
+            color="info"
+            variant="outline"
+            description={(<div>
+                <p className="w-2/3 float-left mt-11 text-secondary font-bold">{widgetState.authMessage!.message}</p>
+                <img className="float-left rounded-xxl w-1/5" src={`data:image/png;base64,${widgetState.authMessage!.qrCode}`} alt="The QR code to open the BankID app" />
+            </div>)}
+            actions={
+                <ButtonLink color="secondary" pill variant="soft" href={widgetState.authMessage!.startButton.href} external={true}>{widgetState.authMessage!.startButton.title}</ButtonLink>
+            }
+        />}
+
+        {showPortfolio && <div>
+            <h3 className="heading-md text-secondary">Your current portfolio</h3>
+            <table className="table-auto mt-4">
+                <thead className="bg-primary-soft text-tertiary font-normal">
+                    <tr className="">
+                        <th className="border border-solid border-primary-outline">Ticker</th>
+                        <th className="border border-solid border-primary-outline">Name</th>
+                        <th className="border border-solid border-primary-outline">Price</th>
+                        <th className="border border-solid border-primary-outline">Quantity</th>
+                        <th className="border border-solid border-primary-outline"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {widgetState?.portfolio?.map((stock, idx) => (
+                        <tr key={stock.id} className={idx % 2 === 0 ? 'background-' : '' }>
+                            <td className="border border-solid border-primary-outline">{stock.id}</td>
+                            <td className="border border-solid border-primary-outline">{stock.name}</td>
+                            <td className="border border-solid border-primary-outline">${stock.currentPrice}</td>
+                            <td className="border border-solid border-primary-outline">{stock.quantity}</td>
+                            <td className="border border-solid border-primary-outline">
+                                <Button color="success" variant="soft" size="sm" pill={false} className="mr-4 float-left" onClick={() => {
+                                    const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
+                                    const delta = input ? parseInt(input.value, 10) : 1;
+                                    buyStock(stock.id, delta);
+                                }}>Buy</Button>
+                                <Input type="number" defaultValue="1" size="sm" pill={false} className="w-1/6 float-left" id={`delta_${stock.id}`} />
+                                <Button pill color="danger" variant="soft" size="sm" className="ml-4 float-left" onClick={() => {
+                                    const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
+                                    const delta = input ? parseInt(input.value, 10) : 1;
+                                    sellStock(stock.id, delta);
+                                }}>Sell</Button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>}
 
-        {showPortfolio && widgetState?.portfolio?.map((stock, idx) => (
-            <div key={stock.id} className={idx % 2 === 0 ? 'element_even stock' : 'element_odd stock' }>
-                <p>
-                    <span className="stock_name"><span className="ticker">{stock.id}</span>: {stock.name}</span><span className="currently_at">, currently at </span><span className="price">{stock.currentPrice}</span> <span className="currency">USD</span>.
-                </p>
-                <p className="quantity">You own: <span>{stock.quantity}</span></p>
-                <input type="number" className="delta" defaultValue="1" id={`delta_${stock.id}`} />
-                <button className="button buy" onClick={() => {
-                    const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
-                    const delta = input ? parseInt(input.value, 10) : 1;
-                    buyStock(stock.id, delta);
-                }}>Buy</button>
-                <button className="button sell" onClick={() => {
-                    const input = document.getElementById(`delta_${stock.id}`) as HTMLInputElement;
-                    const delta = input ? parseInt(input.value, 10) : 1;
-                    sellStock(stock.id, delta);
-                }}>Sell</button>
-            </div>
-        ))}
 
         {hasOnlyUpdatedStock && <div>
-            <h3>Your updated position for {widgetState.updatedStock!.id}</h3>
-            <p>
-                <span className="stock_name"><span className="ticker">{widgetState.updatedStock!.id}</span>: {widgetState.updatedStock!.name}</span><span className="currently_at">, currently at </span><span className="price">{widgetState.updatedStock!.currentPrice}</span> <span className="currency">USD</span>.
-            </p>
-            <p className="quantity">You own: <span>{widgetState.updatedStock!.quantity}</span></p>
-            <p>
-                <button className="button" onClick={() => {getPortfolio()}}>Show full portfolio</button>
-            </p>
-        </div>
-        }
+            <h3 className="heading-md text-secondary">Here is your updated position for {widgetState.updatedStock!.id}</h3>
+            <div className="w-2/3">
+                <table className="table-auto mt-4 mb-4 w-full">
+                    <thead className="bg-primary-soft text-tertiary font-normal">
+                    <tr className="">
+                        <th className="border border-solid border-primary-outline">Ticker</th>
+                        <th className="border border-solid border-primary-outline">Name</th>
+                        <th className="border border-solid border-primary-outline">Price</th>
+                        <th className="border border-solid border-primary-outline">Quantity</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td className="border border-solid border-primary-outline">{widgetState.updatedStock!.id}</td>
+                        <td className="border border-solid border-primary-outline">{widgetState.updatedStock!.name}</td>
+                        <td className="border border-solid border-primary-outline">${widgetState.updatedStock!.currentPrice}</td>
+                        <td className="border border-solid border-primary-outline">{widgetState.updatedStock!.quantity}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <Button variant="solid" color="primary" className="m-auto block" onClick={() => {getPortfolio()}}>Show full portfolio</Button>
+            </div>
+        </div>}
     </div>);
 }
 
@@ -323,5 +380,9 @@ let container = null;
 if (!container) {
     container = document.getElementById('root') as HTMLElement;
     const root = createRoot(container);
-    root.render(<PortfolioApp />);
+    root.render(
+        <StrictMode>
+            <PortfolioApp />
+        </StrictMode>
+    );
 }

@@ -104,6 +104,11 @@ export type StockData = {
 export type AuthMessage = {
     message: string,
     qrCode: string,
+    startButton: {
+        title: string,
+        href: string
+    },
+    pollingCount: number
 }
 
 export type CallToolResponse = {
