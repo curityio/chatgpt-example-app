@@ -4,31 +4,41 @@
 [![Availability](https://img.shields.io/badge/availability-source-blue)](https://curity.io/resources/code-examples/status/)
 
 An example that shows how a ChatGPT widget can securely call APIs with human-in-the-loop approval.\
-The Hypermedia Authentication API enables step-up authentication with a simple user experience.
+The Hypermedia Authentication API enables step-up authentication and lodging consent with a simple user experience.
+
+## Running the Demo
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) to check how to deploy the demo's components on a local computer, and how to configure the app in ChatGPT. As part of this configuration, you will need to log a user in, as described below.
 
 ## Initial User Login Flow
 
-ChatGPT's MCP client first triggers user authentication for the test user `john.doe@demo.example`.\
-Get a one-time code for the test user from the test email inbox at `http://localhost:1080`.\
-Next, consent to ChatGPT's level of data access and ChatGPT receives a low privilege access token.
+ChatGPT's MCP client first triggers user authentication. USe the test user email: `john.doe@demo.example`.\
+The Curity Identity Server will send a one-time code to a test email inbox. Open `http://localhost:1080` to view the inbox.\
+Next, consent to ChatGPT's level of data access. As a result, ChatGPT receives a low privilege access token.
 
-<img src="images/chatgpt-consent.jpg" alt="User Consent" style="width:50%" />
+<img src="images/chatgpt-consent.jpg" alt="User Consent" style="width:50%; margin: auto; display: block;" />
 
-ChatGPT then downloads the widget app as an MCP resource and runs it in an iframe.\
-The widget's JavaScript calls an MCP tool to get portfolio data and render it.
+You can then start the conversation with the chatbot. For example, try:
+
+- `Curity Portfolio App what's my portfolio`
+- `Curity Portfolio App I'm worried about nvidia being in a bubble. Check how many of their stock I have in my portfolio and sell all of it.`
+
+When you start prompts with the name of your app, it gives ChatGPT clearer intention that it should use its tools. It is not required, but can give more accurate results.
+
+You should see both a text response from the chatbot and a rendering of the app's widget. The widget will show different views, depending on your prompt. For example, it should show something similar to the following, if you ask for your portfolio.
 
 ![ChatGPT View](images/chatgpt-view.jpg)
 
-## Step-Up Authentication Flow
+## Lodging Intent and Step-Up Authentication Flow 
 
-The user can interact with the widget to invoke a tool to buy or sell stocks.\
-When the user initiates a high privilege buy or sell operation it triggers a step up flow:
+When you ask ChatGPT to buy or sell stocks, either through the widget's UI, or by asking the bot in a conversation, 
+the MCP server will need to acquire a high-privilege token, which cryptographically confirms the user's intent.
+
+In an overview, the flow looks similar to this:
 
 ![Overview of an end-to-end flow implemented by this example](images/end-to-end-overview.png?v=1)
 
-The tool triggers a server side API-driven authentication flow using the Hypermedia Authentication API.\
-The tool returns BankID's animated QR code to the widget, which polls the MCP server for completion.\
-The user authenticates with BankID to approve the transaction and the widget renders an updated balance.
+The tool triggers a server side API-driven authentication flow using the Hypermedia Authentication API to obtain a signed consent for the given transaction. The tool returns BankID's QR code to the widget, and the widget is responsible for polling the MCP server to check for completion. The widget is also responsible for displaying a refreshed QR code (also known as an animated QR code). The user uses the BankID to sign an approval of the transaction. The widget then commits the transaction and renders an updated balance.
 
 ![ChatGPT BankID Approval](images/chatgpt-bankid.jpg)
 

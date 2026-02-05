@@ -44,7 +44,7 @@ export class OAuthFilter {
     public async execute(request: Request, response: Response, next: NextFunction): Promise<void> {
 
         try {
-            
+
             (request as any).auth = await this.validateAccessToken(request, response);
             next();
 
@@ -60,7 +60,7 @@ export class OAuthFilter {
                     `Bearer error="${error.code}", error_description="${error.message}", resource_metadata="${metadataUrl}", scope="${scope}"`
                 );
             }
-            
+
             response.status(error.status).send(JSON.stringify(error.toHttpErrorResponse()));
         }
     }

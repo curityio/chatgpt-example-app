@@ -10,17 +10,23 @@
     "node": ">=22"
   },
   "scripts": {
-    "watch": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify --watch",
-    "build": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"
+    "watch": "mkdir -p dist && conc 'npm run css-watch' 'esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify --conditions=style --watch'",
+    "build": "mkdir -p dist && npm run css-build && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --conditions=style --minify",
+    "css-watch": "npx @tailwindcss/cli -i ./app.css -o ./dist/app.css --watch",
+    "css-build": "npx @tailwindcss/cli -i ./app.css -o ./dist/app.css"
   },
   "dependencies": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
+    "@openai/apps-sdk-ui": "^0.2.1",
+    "@tailwindcss/cli": "^4.1.18",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.27.0",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }
 }

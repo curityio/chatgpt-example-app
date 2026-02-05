@@ -84,6 +84,18 @@ export interface PollAction {
     }
 }
 
+export interface SameDeviceAction {
+    template: 'client-operation',
+    kind: 'bankid-same-device',
+    title: string,
+    model: {
+        name: string,
+        arguments: {
+            href: string
+        }
+    }
+}
+
 export interface BankIDAuthenticatorView extends HaapiView {
     type: 'polling-step';
     links: Array<{
@@ -95,7 +107,7 @@ export interface BankIDAuthenticatorView extends HaapiView {
         status: 'pending' | 'done' | 'failed';
     }
     actions: Array<
-        PollAction | RedirectAction | {
+        PollAction | RedirectAction | SameDeviceAction | {
         template: 'form';
         kind: 'cancel';
         model: {

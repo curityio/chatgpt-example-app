@@ -55,14 +55,28 @@ Later, once you've finished testing, run this command to free all Docker resourc
 ## Configure ChatGPT
 
 Log in to ChatGPT's web interface with a paid account that has access to **Developer Mode**.\
-In ChatGPT's web interface, go to **Settings** -> **Apps and Connectors** -> **Advanced** and enable **Developer Mode**.\
-Use the MCP server URL to create a new App from the **Apps and Connectors** panel:
+In ChatGPT's web interface, go to **Settings** -> **Apps** -> **Advanced settings** and enable **Developer Mode**.\
+Use the MCP server URL to create a new App from the **Apps** panel:
 
-<img src="images/chatgpt-register.jpg" alt="ChatGPT Register" style="width:50%" />
+<img src="images/chatgpt-register.jpg" alt="ChatGPT Register" style="width:50%; display: block; margin: auto;" />
 
-Then, select the MCP server as an application
+As part of the initial connection, ChatGPT will start an OAuth flow to obtain an access token it needs to connect to the MCP server. See the instructions in [README](README.md#initial-user-login-flow) to learn how to log a user in.
 
-![ChatGPT App](images/chatgpt-app.jpg)
+Once the connection is set up, you can use the app in a conversation. Select the MCP server as an application, or start the prompt with the name of the app, e.g.: `Curity Portfolio App show my portfolio`.
+
+![Enabling the chosen app in a chat](images/chatgpt-app.jpg)
+
+## Handle Redeployments
+
+ChatGPT caches meta-information obtained from the MCP server. If you update any tools, tool descriptions, templates, or assets you need to refresh the data. In the ChatGPT's web interface go to **Settings** -> **Apps** -> **Your app** and click on **Refresh**.
+
+![The refresh button in app settings view](images/chatgpt-refresh-app.jpg)
+
+If you restart the Curity Identity Server container, or if refreshing the app does not load new data, you need to delete the application from ChatGPT and create a new one. This will force a new client registration from ChatGPT.
+
+If you run into connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps** panel.
+
+## Debugging Initial Requests
 
 You can use debugging techniques to [Capture ChatGPT OAuth MCP Messages](https://github.com/curityio/mcp-authorization-secured-api/blob/main/clients/OAUTH-MCP-MESSAGES.md).\
 ChatGPT sends a Dynamic Registration Request with parameters similar to these, without a scope:
@@ -92,6 +106,3 @@ GET /oauth/v2/oauth-authorize
 &resource=https://ebc486da8823.ngrok-free.app/
 ```
 
-## Handle Redeployments
-
-If you restart the Curity Identity Server container, update any tools, tool descriptions, templates, or assets you need to delete the application from chatGPT and create a new one. This will force a new client registration from ChatGPT. There is a "Refresh" button on in the Apps settings panel, which might refresh some of this data. If you run into connectivity issues it might be sometimes necessary to reconnect the app. You can do it from the **Apps and Connectors** panel.

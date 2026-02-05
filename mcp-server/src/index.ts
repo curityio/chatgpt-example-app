@@ -48,7 +48,7 @@ server.registerResource(
     "ui://widget/portfolio-widget.html",
     {},
     async () => {
-        
+
         // Update the widget URI for every download during development
         const widgetAppBundle = readFileSync('widget/dist/bundle.js', 'utf-8');
         const css = readFileSync('widget/dist/app.css', 'utf-8');
@@ -58,9 +58,17 @@ server.registerResource(
                     uri: "ui://widget/portfolio-widget.html",
                     mimeType: "text/html+skybridge",
                     text: `
-<div id="root"></div>
-<style>${css}</style>
-<script type="module">${widgetAppBundle}</script>
+<!doctype html>
+<html>
+<head>
+  <link rel="stylesheet" href="${configuration.externalBaseUrl}/mcp/app.css">
+  <link rel="stylesheet" href="${configuration.externalBaseUrl}/mcp/bundle.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">${widgetAppBundle}</script>
+</body>
+</html>
             `.trim(),
                     _meta: {
                         "openai/widgetPrefersBorder": true,
@@ -80,7 +88,7 @@ server.registerTool(
         title: 'Get portfolio',
         description: "Returns the contents of the user's portfolio.",
         outputSchema: {
-            result: z.optional(z.array(z.object({
+            portfolio: z.optional(z.array(z.object({
                 id: z.string(),
                 name: z.string(),
                 currentPrice: z.number(),
@@ -128,7 +136,7 @@ server.registerTool(
             quantity: z.number()
         },
         outputSchema: {
-            result: z.optional(z.object({
+            updatedStock: z.optional(z.object({
                 id: z.string(),
                 name: z.string(),
                 currentPrice: z.number(),
@@ -136,8 +144,14 @@ server.registerTool(
             })),
             authMessage: z.optional(z.object({
                 message: z.string(),
-                qrCode: z.optional(z.string())
+                qrCode: z.string(),
+                startButton: z.optional(z.object({
+                    title: z.string(),
+                    href: z.string()
+                })),
+                pollingCount: z.optional(z.number())
             })),
+            continueAuthorization: z.boolean(),
             error: z.optional(z.object({
                 status: z.number(),
                 code: z.string(),
@@ -146,8 +160,8 @@ server.registerTool(
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
-            "openai/toolInvocation/invoking": "Buying more stocks...",
-            "openai/toolInvocation/invoked": "Stock bought.",
+            "openai/toolInvocation/invoking": "Processing buying transaction...",
+            "openai/toolInvocation/invoked": "Buying transaction processed.",
         },
         // @ts-ignore
         securitySchemes: [
@@ -155,7 +169,7 @@ server.registerTool(
         ]
     },
     async (input, context) => {
-        
+
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId, (context.authInfo?.extra as any)?.claims);
         const isRetry = !!session?.highPrivilegeAccessToken;
@@ -178,6 +192,14 @@ server.registerTool(
             if (error.status === 403 && error.scope) {
 
                 console.log(`>>> Setting step-up scope for buy operation to ${error.scope}`);
+                session.originalToolCallData = {
+                    toolName: 'buy_stock',
+                    parameters: {
+                        id: input.id,
+                        delta: input.quantity
+                    }
+                }
+
                 try {
                     return await requestAuthorization(receivedAccessToken, session, error.scope);
                 } catch (e2: any) {
@@ -209,7 +231,7 @@ server.registerTool(
             quantity: z.number()
         },
         outputSchema: {
-            result: z.optional(z.object({
+            updatedStock: z.optional(z.object({
                 id: z.string(),
                 name: z.string(),
                 currentPrice: z.number(),
@@ -217,8 +239,14 @@ server.registerTool(
             })),
             authMessage: z.optional(z.object({
                 message: z.string(),
-                qrCode: z.optional(z.string())
+                qrCode: z.string(),
+                startButton: z.optional(z.object({
+                    title: z.string(),
+                    href: z.string()
+                })),
+                pollingCount: z.optional(z.number())
             })),
+            continueAuthorization: z.boolean(),
             error: z.optional(z.object({
                 status: z.number(),
                 code: z.string(),
@@ -227,8 +255,8 @@ server.registerTool(
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
-            "openai/toolInvocation/invoking": "Selling some stock...",
-            "openai/toolInvocation/invoked": "Stock sold.",
+            "openai/toolInvocation/invoking": "Processing selling transaction...",
+            "openai/toolInvocation/invoked": "Selling transaction processed.",
         },
         // @ts-ignore
         securitySchemes: [
@@ -236,13 +264,13 @@ server.registerTool(
         ]
     },
     async (input, context) => {
-        
+
         const receivedAccessToken = context.authInfo?.token || '';
         const session = sessionManager.getOrCreateSession(context.sessionId, (context.authInfo?.extra as any)?.claims);
         const isRetry = !!session.highPrivilegeAccessToken;
 
         try {
-            
+
             // The initial request to the portfolio API is with a low privilege access token and triggers a step up
             // Once stepup completes, the portfolio API request re-runs with the session's high privilege access token
             const tokenToExchange = session?.highPrivilegeAccessToken || receivedAccessToken;
@@ -257,8 +285,16 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
-                
+
                 console.log(`>>> Setting step-up scope for sell operation to ${error.scope}`);
+                session.originalToolCallData = {
+                    toolName: 'sell_stock',
+                    parameters: {
+                        id: input.id,
+                        delta: -input.quantity
+                    }
+                }
+
                 try {
                     return await requestAuthorization(receivedAccessToken, session, error.scope);
                 } catch (e2: any) {
@@ -292,13 +328,26 @@ server.registerTool(
         outputSchema: {
             authMessage: z.optional(z.object({
                 message: z.string(),
-                qrCode: z.optional(z.string())
+                qrCode: z.optional(z.string()),
+                startButton: z.optional(z.object({
+                    title: z.string(),
+                    href: z.string()
+                })),
+                pollingCount: z.optional(z.number())
             })),
             error: z.optional(z.object({
                 status: z.number(),
                 code: z.string(),
                 message: z.string(),
             })),
+            continueAuthorization: z.boolean(),
+            continueOperation: z.optional(z.object({
+                toolName: z.string(),
+                parameters: z.object({
+                    id: z.string(),
+                    delta: z.number()
+                })
+            }))
         },
         // @ts-ignore
         securitySchemes: [
@@ -306,7 +355,7 @@ server.registerTool(
         ]
     },
     async (context) => {
-        
+
         try {
 
             // Validate preconditions
@@ -325,14 +374,19 @@ server.registerTool(
                 },
                 session)
 
+            const structuredContent: any = {
+                authMessage: authorizationResult,
+                continueAuthorization: true,
+            }
+
+            if (authorizationResult.message === 'authentication_success') {
+                structuredContent.continueOperation = session.originalToolCallData
+                structuredContent.continueAuthorization = false;
+            }
+
             return {
-                content: [],
-                structuredContent: {
-                    authMessage: {
-                        message: authorizationResult.message,
-                        qrCode: authorizationResult.qrCode
-                    }
-                }
+                content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+                structuredContent
             }
 
         } catch (e: any) {
@@ -345,13 +399,11 @@ server.registerTool(
  * Return the initial step up response to the MCP client
  */
 export async function requestAuthorization(receivedAccessToken: string, session: Session, stepupScope: string): Promise<CallToolResult> {
-    
+
     const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session, stepupScope);
     const structuredContent = {
-        authMessage: {
-            message: output.message,
-            qrCode: output.qrCode
-        }
+        authMessage: output,
+        continueAuthorization: true,
     };
     return {
         // The structuredContent should be exactly the same as the unstructured content
@@ -388,6 +440,11 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
     response.status(200).send(JSON.stringify(metadata));
 });
 
+/**
+ * Serve CSS and JS for the widget
+ */
+app.use(express.static('widget/dist'));
+
 /*
  * For all other routes, apply OAuth validation
  */
@@ -402,11 +459,11 @@ app.post('/', async (request: Request, response: Response) => {
     const sessionId = request.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
     if (sessionId && transports[sessionId]) {
-      
+
         transport = transports[sessionId];
 
     } else {
-      
+
         transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => sessionManager.createSession(response.locals.claims).id,
             onsessioninitialized: (sessionId) => {

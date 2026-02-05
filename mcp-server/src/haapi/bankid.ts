@@ -15,7 +15,10 @@
  */
 
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
-import {BankIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction} from './haapiTypes.js';
+import {
+    BankIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction,
+    SameDeviceAction
+} from './haapiTypes.js';
 import {createPollingData, ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapiUtils.js';
 import {Configuration} from '../configuration.js';
 
@@ -23,13 +26,19 @@ export type AuthenticateWithBankIDResult = {
     status: 'continue' | 'done' | 'failed',
     currentQRCode: string | undefined,
     pollingData: PollingData | undefined,
-    accessToken: string | undefined
+    accessToken: string | undefined,
+    startButton: StartButton | undefined
 }
 
 export type PollingData = {
     pollingUrl: string,
     method: 'GET' | 'POST',
     fields: Record<string, string> | undefined
+}
+
+export type StartButton = {
+    title: string,
+    href: string
 }
 
 export async function authenticateWithBankID(
@@ -71,7 +80,8 @@ export async function authenticateWithBankID(
         return {
             status: 'continue',
             pollingData: createPollingData(findPollAction(bankIDViewCurrent)),
-            currentQRCode: findQrCode(bankIDViewCurrent)
+            currentQRCode: findQrCode(bankIDViewCurrent),
+            startButton: getStartButtonData(findSameDeviceAction(bankIDViewCurrent))
         } as AuthenticateWithBankIDResult;
     }
 
@@ -149,4 +159,15 @@ export function findPollAction(view: BankIDAuthenticatorView): PollAction {
 
 function findRedirectAction(view: BankIDAuthenticatorView): RedirectAction {
     return findAction(view, 'redirect') as RedirectAction;
+}
+
+export function findSameDeviceAction(view: BankIDAuthenticatorView): SameDeviceAction {
+    return findAction(view, 'bankid-same-device') as SameDeviceAction
+}
+
+export function getStartButtonData(action: SameDeviceAction) {
+    return {
+        title: action.title,
+        href: action.model.arguments.href
+    }
 }

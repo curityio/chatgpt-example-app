@@ -4,9 +4,9 @@
 
 export type OpenAiGlobals<
     ToolInput = UnknownObject,
-    ToolOutput = UnknownObject,
+    ToolOutput = CallToolResponseStructuredContent,
     ToolResponseMetadata = UnknownObject,
-    WidgetState = UnknownObject
+    WidgetState = CurityPortfolioWidgetState
 > = {
     // visuals
     theme: Theme;
@@ -26,6 +26,13 @@ export type OpenAiGlobals<
     widgetState: WidgetState | null;
     setWidgetState: (state: WidgetState) => Promise<void>;
 };
+
+export type CurityPortfolioWidgetState = {
+    portfolio?: Array<StockData>,
+    updatedStock?: StockData,
+    authMessage?: AuthMessage,
+    error?: ToolError,
+}
 
 // currently copied from types.ts in chatgpt/web-sandbox.
 // Will eventually use a public package.
@@ -79,13 +86,43 @@ export type ToolError = {
     message: string;
 }
 
-export type CallToolResponse = {
-    structuredContent: {
-        result?: any;
-        authMessage?: any;
-        error?: ToolError;
+export type Tool = {
+    toolName: string,
+    parameters: {
+        id: string,
+        delta: number
+    }
+}
+
+export type StockData = {
+    id: string,
+    name: string,
+    currentPrice: number,
+    quantity: number
+}
+
+export type AuthMessage = {
+    message: string,
+    qrCode: string,
+    startButton: {
+        title: string,
+        href: string
     },
+    pollingCount: number
+}
+
+export type CallToolResponse = {
+    structuredContent: CallToolResponseStructuredContent,
 };
+
+export type CallToolResponseStructuredContent = {
+    portfolio?: Array<StockData>;
+    updatedStock?: StockData;
+    authMessage?: AuthMessage;
+    error?: ToolError;
+    continueOperation?: Tool;
+    continueAuthorization: boolean;
+}
 
 /** Calling APIs */
 export type CallTool = (
