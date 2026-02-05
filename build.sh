@@ -88,6 +88,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Move the built jars into a separate folder for simpler mounting in the docker container.
+# This avoids issues when versions of the plugin or dependencies change.
+
+mkdir target/plugin
+cp target/*.jar target/plugin
+
 #
 # Build the Simple Consentor plugin which MCP clients use instead of the BankID consentor
 #

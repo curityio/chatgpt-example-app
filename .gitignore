@@ -7,6 +7,7 @@ dist/
 inspector
 typescript-sdk
 /apigateway/kong.yml
+/idsvr/curity-config.xml
 /idsvr/curity-base-config.xml
 /idsvr/curity-scenario-config.xml
 /idsvr/pre-processing-procedures/mcp-client-registration-policy.js
