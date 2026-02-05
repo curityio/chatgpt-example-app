@@ -19,9 +19,7 @@ import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/st
 import {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import express, {Request, Response} from 'express';
 import morgan from 'morgan';
-import {readFileSync} from 'node:fs';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import {readFileSync} from 'fs';
 import {z} from 'zod';
 import {getPortfolio, buyOrSellStock} from './api/portfolioApiClient.js';
 import {Configuration} from './configuration.js';
@@ -43,30 +41,34 @@ const haapiAuthorizer = new HaapiAuthorizer(configuration);
 const server = new McpServer({ name: 'portfolio-server', version: '1.0.0' });
 
 /*
- * ChatGPT downloads the MCP resource once connected
+ * ChatGPT downloads the widget in the ChatGPT skybridge format
  */
-const widgetAppBundle = readFileSync("dist/web/bundle.js", "utf8");
-const css = readFileSync("dist/web/app.css", "utf8");
 server.registerResource(
     "portfolio-widget",
     "ui://widget/portfolio-widget.html",
     {},
-    async () => ({
-        contents: [
-            {
-                uri: "ui://widget/portfolio-widget.html",
-                mimeType: "text/html+skybridge",
-                text: `
+    async () => {
+        
+        // Update the widget URI for every download during development
+        const widgetAppBundle = readFileSync('widget/dist/bundle.js', 'utf-8');
+        const css = readFileSync('widget/dist/app.css', 'utf-8');
+        return ({
+            contents: [
+                {
+                    uri: "ui://widget/portfolio-widget.html",
+                    mimeType: "text/html+skybridge",
+                    text: `
 <div id="root"></div>
 <style>${css}</style>
 <script type="module">${widgetAppBundle}</script>
-        `.trim(),
-                _meta: {
-                    "openai/widgetPrefersBorder": true,
+            `.trim(),
+                    _meta: {
+                        "openai/widgetPrefersBorder": true,
+                    },
                 },
-            },
-        ],
-    })
+            ],
+        })
+    },
 );
 
 /*
@@ -78,14 +80,17 @@ server.registerTool(
         title: 'Get portfolio',
         description: "Returns the contents of the user's portfolio.",
         outputSchema: {
-            result: z.array(
-                z.object({
-                    id: z.string(),
-                    name: z.string(),
-                    currentPrice: z.number(),
-                    quantity: z.number()
-                })
-            )
+            result: z.optional(z.array(z.object({
+                id: z.string(),
+                name: z.string(),
+                currentPrice: z.number(),
+                quantity: z.number()
+            }))),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -132,7 +137,12 @@ server.registerTool(
             authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            }))
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -166,8 +176,13 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
+
                 console.log(`>>> Setting step-up scope for buy operation to ${error.scope}`);
-                return requestAuthorization(receivedAccessToken, session, error.scope);
+                try {
+                    return await requestAuthorization(receivedAccessToken, session, error.scope);
+                } catch (e2: any) {
+                    return getAndLogResponseError(e2).toMcpToolErrorResponse();
+                }
             }
 
             return error.toMcpToolErrorResponse();
@@ -203,7 +218,12 @@ server.registerTool(
             authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            }))
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         _meta: {
             "openai/outputTemplate": "ui://widget/portfolio-widget.html",
@@ -237,8 +257,13 @@ server.registerTool(
             // The server side HAAPI flow gets a high privilege access token and adds it to the session data
             const error = getAndLogResponseError(e);
             if (error.status === 403 && error.scope) {
+                
                 console.log(`>>> Setting step-up scope for sell operation to ${error.scope}`);
-                return requestAuthorization(receivedAccessToken, session, error.scope);
+                try {
+                    return await requestAuthorization(receivedAccessToken, session, error.scope);
+                } catch (e2: any) {
+                    return getAndLogResponseError(e2).toMcpToolErrorResponse();
+                }
             }
 
             return error.toMcpToolErrorResponse();
@@ -265,10 +290,15 @@ server.registerTool(
             "openai/visibility": 'private' // Don't expose the tool to the LLM
         },
         outputSchema: {
-            authMessage: z.object({
+            authMessage: z.optional(z.object({
                 message: z.string(),
                 qrCode: z.optional(z.string())
-            })
+            })),
+            error: z.optional(z.object({
+                status: z.number(),
+                code: z.string(),
+                message: z.string(),
+            })),
         },
         // @ts-ignore
         securitySchemes: [
@@ -290,7 +320,7 @@ server.registerTool(
             // The client calls the original but or sell method, which then uses this token to call the Portfolio API
             const authorizationResult = await haapiAuthorizer.continueAuthorizeWithBankID(
                 (token) => {
-                    console.log('>>> Setting high privilege access token in session: ' + token);
+                    //console.log('>>> Setting high privilege access token in session: ' + token);
                     session.highPrivilegeAccessToken = token
                 },
                 session)
@@ -304,6 +334,7 @@ server.registerTool(
                     }
                 }
             }
+
         } catch (e: any) {
             return getAndLogResponseError(e).toMcpToolErrorResponse();
         }
@@ -315,49 +346,29 @@ server.registerTool(
  */
 export async function requestAuthorization(receivedAccessToken: string, session: Session, stepupScope: string): Promise<CallToolResult> {
     
-    const checkMark = 'iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAABSlJREFUeF7tnUty1DAQhqUjhAtAFVeAXaqS2bDLFeAYsCIZVnAMuEJ2bDKpyo5cIVVwAXIEQzvWPGKPH1Kr3W39sxkSj1vt//ske5wh8a7nUVXVebP5snkOX/fthm3zJ7Bxzt1SG977q752fNfGBjxBB/D5YXJ0sD4mQkuABv4Nx6iooS6BlggHAlRVRctFWO7VdY+GWBI4kGArAOCzhGulyMp7T9cJbl+Aykr36JMlgVqCWgDMfpZArRXZeO9XQQDMfmv4ePpdecx+niSNVoEARsFxtb2hFYDe8+OGD1ekturUAuD8bwsaa7cQgDVOe8UggD1mrB1DANY47RWDAPaYsXYMAVjjtFcMAthjxtoxBGCN014xCGCPGWvHEIA1TnvFIIA9ZqwdQwDWOO0VgwD2mLF2DAFY47RXDALYY8baMQRgjdNeMQhgjxlrxxCANU57xSCAPWasHUMA1jjtFYMA9pixdgwBWOO0VwwC2GPG2jEEYI1zWrG7xz/u20P9izzc3d/f7tPrs/rfH5vnadXiXg0B4nJL3ovAf23gPy9GIkhJAAGSUU4vcHH/o57xfQ8pCSDAdH5Je4yBHwa4fvvBnZ68TBpvaGcIMJQQ4/Yp8GnY0xev3PWb94wdtEtBgKzx7opPhQ8BhMBIDBMDP/T1+O5z1haxAmSN17kU+BIXghAgowAp8KktCJARTu7SFuBTBlgBMpiQCl/i6j8cNgRgFsASfKwAhcOHAIwCWJv5OAUAfp0ArgESRbA687ECJIKn3a3DxwqQIMES4EOASAGWAh8CRAiwJPgQYKIAS4MPASYIsET4EGCkAEuFDwFGCLBk+OICaPgc/Ajm25csHb6oAFo+Bz9WgBLgiwnQBz8AkfwZ+JAEpcAXEWAMfE0SlARfnQDU0JwrQWnwRQQ4+fllaMVtbZ9DghLhiwgQG6ykBLE9ajp1TZ5lzQ7ZPw+QEq6EBCn9zX3KioW+v192Aei9/8Wv79G95pSgdPgipwAaZMo7gS5TckgA+E9JZ18BAlBNgWvqJXppZNpRTADqV0PwGnpgYsdSRlSAuSUA/LYz4gLMJQHgdy8YswggLQHgHz9bzCaAlASA33+pMKsAuSUA/OHrxNkFyCUB4A/DF70PMNQOJzDOWkN9W9+uYgXgvFlEtYZ+CWMftBx3HTVLokoAjtNBStilwVd1CtgHl7qEx0hQIny1AkivBKXCVy2AlAQlw1cvQG4JSodvQoBcEgD+05WSuncBxy7gOC8MAX+XshkBuFYCwD+cYqYESJUA8NvrqzkBYiUA/O6Tq0kBpkoA+MdvjZkVYKwEgN9/X9S0AHRofR85B/zhm+LmBQgS0DP9J5TwoL+7l/svbg3Hq/8VixBAf8x6O4QAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQCKCXjUhnEEAkZr2DQAC9bEQ6gwAiMesdBALoZSPSGQQQiVnvIBBALxuRziCASMx6B4EAetmIdAYBRGLWOwgE0MtGpDMIIBKz3kEggF42Ip1BAJGY9Q4CAfSyEekMAojErHcQEuDGOXeut0V0ljGBDQTImK6B0msSgGY/rQJ4lJcABCiP+e6IPT3oS1wHFKnB+j/+qyAATgOFORAmfy1AswpAgnIkqGc/He5WgEYC+uZlOTkUeaRb+C0BIMHihVh57zf7R3mwAuxvqKoKq8FyfCDoNPMP4HeuAM+PuRGBvn2GO4ZmjAig1zXkDvDhSP4BcLDmrm+X+ucAAAAASUVORK5CYII=';
     const output = await haapiAuthorizer.authorizeWithBankID(receivedAccessToken, session, stepupScope);
-    if (output.success) {
-        const structuredContent = {
-            authMessage: {
-                message: output.message,
-                qrCode: output.qrCode
-            }
-        };
-        return {
-            // The structuredContent should be exactly the same as the unstructured content
-            // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
-            // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
-            content: [
-                { type: 'text', annotations: { audience: ['user'] }, text: JSON.stringify(structuredContent) } as any,
-                { type: 'image', data: output.qrCode || checkMark, mimeType: 'image/png', annotations: { audience: ['user']} } as any,
-                { type: 'text', annotations: { audience: ['assistant'] }, text: 'Show the user the response from this tool and ask them to confirm when they approved authorization. Once the user approves, run the initial tool again.'} as any
-            ],
-            structuredContent,
-        };
-    }
-    const structuredContent = { success: false, authMessage: { message: output.message, qrCode: null }};
+    const structuredContent = {
+        authMessage: {
+            message: output.message,
+            qrCode: output.qrCode
+        }
+    };
     return {
-        content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+        // The structuredContent should be exactly the same as the unstructured content
+        // according to https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
+        // We do not include the image in the output the LLM will see, to avoid bloating the LLM context.
+        content: [
+            { type: 'text', annotations: { audience: ['user'] }, text: JSON.stringify(structuredContent) } as any,
+            { type: 'image', data: output.qrCode || '', mimeType: 'image/png', annotations: { audience: ['user']} } as any,
+        ],
         structuredContent,
     };
 }
 
 /*
- * Create the Express application
+ * Create the Express HTTP server and add middleware
  */
 const app = express();
-
-/*
- * Use Express to serve the ChatGPT widget's web content
- */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, '../../web')));
-
-/*
- * Add general middleware
- */
 app.use(morgan('combined'));
 app.use(express.json());
 
@@ -383,7 +394,7 @@ app.get('/.well-known/oauth-protected-resource', (request: Request, response: Re
 app.use('/', oauthFilter.execute);
 
 /*
- * Do the MCP boiler plate setup
+ * Add boiler plate code to integrate the MCP server with the Express HTTP server
  */
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 app.post('/', async (request: Request, response: Response) => {

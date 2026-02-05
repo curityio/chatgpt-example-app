@@ -102,13 +102,13 @@ export class DPoPOAuthClient {
         this.session.dpopKeyPair = keypair;
 
         const dpopProof = await this.createDPoPProof('POST', tokenEndpoint);
-        console.log('>>> Using Dpop: ' + dpopProof);
+        //console.log('>>> Using Dpop: ' + dpopProof);
         const body = new URLSearchParams({
             grant_type: 'client_credentials',
             scope: scope,
         });
 
-        console.log('>>> Request with body ' + body.toString());
+        //console.log('>>> Request with body ' + body.toString());
 
         const response = await makeFetchRequest(tokenEndpoint, {
             method: 'POST',
@@ -131,7 +131,7 @@ export class DPoPOAuthClient {
         if (tokenData.expires_in) {
             this.session.haapiExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
         }
-        console.log('>>> Obtained client access token, expires at:', this.session.haapiExpiresAt);
+        //console.log('>>> Obtained client access token, expires at:', this.session.haapiExpiresAt);
     }
 
     async request(url: string, options: RequestInit = {}): Promise<Response> {
@@ -142,7 +142,7 @@ export class DPoPOAuthClient {
 
         const method = options.method || 'GET';
         const dpopProof = await this.createDPoPProof(method, url, this.session.haapiAccessToken);
-        console.log('>>> Using Dpop: ' + dpopProof);
+        //console.log('>>> Using Dpop: ' + dpopProof);
 
         const headers = {
             'Authorization': `${this.session.haapiTokenType || 'DPoP'} ${this.session.haapiAccessToken}`,
@@ -157,7 +157,7 @@ export class DPoPOAuthClient {
             // @ts-ignore - Node.js specific agent property
             agent: url.startsWith('https:') ? this.httpsAgent : undefined,
         });
-        console.log(`>>> HAAPI request returned status: ${response.status}`);
+        //console.log(`>>> HAAPI request returned status: ${response.status}`);
 
         if (response.headers.has('Set-Session-Id')) {
             this.session.haapiSessionId = response.headers.get('Set-Session-Id') || undefined;

@@ -16,29 +16,48 @@
 
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import {BankIDAuthenticatorView, type OAuthAuthorizationResponseView, type PollAction, type RedirectAction} from './haapiTypes.js';
-import {ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapiUtils.js';
+import {createPollingData, ensureAbsoluteUrl, haapiHeaders, haapiResponseView} from './haapiUtils.js';
 import {Configuration} from '../configuration.js';
 
 export type AuthenticateWithBankIDResult = {
     status: 'continue' | 'done' | 'failed',
     currentQRCode: string | undefined,
-    pollingUrl: string | undefined,
+    pollingData: PollingData | undefined,
     accessToken: string | undefined
+}
+
+export type PollingData = {
+    pollingUrl: string,
+    method: 'GET' | 'POST',
+    fields: Record<string, string> | undefined
 }
 
 export async function authenticateWithBankID(
     configuration: Configuration,
     client: DPoPOAuthClient,
-    pollingUrl: string
+    pollingData: PollingData
 ): Promise<AuthenticateWithBankIDResult> {
 
     // Check status of authorization
+    let haapiResponse: Response | null = null;
+
+    if (pollingData.method === 'GET') {
+        haapiResponse = await client.get(ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, pollingData.pollingUrl), haapiHeaders);
+    } else {
+        haapiResponse = await client.postForm(
+            ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, pollingData.pollingUrl),
+            pollingData.fields!,
+            haapiHeaders
+        )
+    }
+
     const bankIDViewCurrent = await haapiResponseView<BankIDAuthenticatorView>(
         configuration.authorizationServerBaseUrl,
-        await client.get(ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, pollingUrl), haapiHeaders),
+        haapiResponse,
         client
     );
-    console.log('>>> BankID poll response status:', bankIDViewCurrent);
+
+    //console.log('>>> BankID poll response status:', bankIDViewCurrent);
 
     const status = bankIDViewCurrent.properties.status;
 
@@ -49,45 +68,44 @@ export async function authenticateWithBankID(
     }
 
     if (status == 'pending') {
-        const pollAction = findPollAction(bankIDViewCurrent);
         return {
             status: 'continue',
-            pollingUrl: pollAction.model.href,
+            pollingData: createPollingData(findPollAction(bankIDViewCurrent)),
             currentQRCode: findQrCode(bankIDViewCurrent)
         } as AuthenticateWithBankIDResult;
     }
 
     // Finish authentication and eventually set token in the session
-    const formAction = findFormAction(bankIDViewCurrent);
+    const redirectAction = findRedirectAction(bankIDViewCurrent);
 
-    console.log('>>> Continue authentication', formAction)
+    //console.log('>>> Continue authentication', redirectAction)
 
-    const url = ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, formAction.model.href);
-    console.log('>>> Redirecting after successful authentication: ', formAction);
+    const url = ensureAbsoluteUrl(configuration.authorizationServerBaseUrl, redirectAction.model.href);
+    //console.log('>>> Redirecting after successful authentication: ', redirectAction);
 
     let redirectResponse = null;
 
-    if (formAction.model.method === 'POST') {
+    if (redirectAction.model.method === 'POST') {
         const formData: Record<string, string> = {};
-        for (const field of formAction.model.fields || []) {
+        for (const field of redirectAction.model.fields || []) {
             formData[field.name] = field.value;
         }
         redirectResponse = await client.postForm(url, formData, haapiHeaders);
-    } else if (formAction.model.method === 'GET') {
+    } else if (redirectAction.model.method === 'GET') {
         redirectResponse = await client.get(url, haapiHeaders);
-    } else if (formAction.model.method !== 'GET') {
-        throw new Error(`Unsupported redirect method: ${formAction.model.method}`);
+    } else if (redirectAction.model.method !== 'GET') {
+        throw new Error(`Unsupported redirect method: ${redirectAction.model.method}`);
     }
 
     const finalView = await haapiResponseView<OAuthAuthorizationResponseView>(
         configuration.authorizationServerBaseUrl, redirectResponse as Response, client);
 
-    console.log('>>> Final authenticator response:', JSON.stringify(finalView, null, 2));
+    //console.log('>>> Final authenticator response:', JSON.stringify(finalView, null, 2));
 
     if (finalView.metadata.viewName !== 'templates/oauth/success-authorization-response') {
         throw new Error('Expected final authorization-response view now!');
     }
-    console.log('>>> Authentication successful! Exchanging authorization code for access token...');
+    //console.log('>>> Authentication successful! Exchanging authorization code for access token...');
 
     const oauthCallbackUrl = finalView.links.find(link => link.rel === 'authorization-response')?.href;
     if (!oauthCallbackUrl) {
@@ -97,7 +115,7 @@ export async function authenticateWithBankID(
     const tokenResponse = await client.postAuthorizationCode(configuration.tokenEndpoint,
         finalView.properties.code, oauthCallbackUrl.substring(0, oauthCallbackUrl.indexOf('?')));
 
-    console.log('>>> HAAPI token response:', tokenResponse);
+    //console.log('>>> HAAPI token response:', tokenResponse);
 
     return {
         status: 'done',
@@ -129,6 +147,6 @@ export function findPollAction(view: BankIDAuthenticatorView): PollAction {
     return findAction(view, 'poll') as PollAction
 }
 
-function findFormAction(view: BankIDAuthenticatorView): RedirectAction {
-    return findAction(view, 'form') as RedirectAction
+function findRedirectAction(view: BankIDAuthenticatorView): RedirectAction {
+    return findAction(view, 'redirect') as RedirectAction;
 }

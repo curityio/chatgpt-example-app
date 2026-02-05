@@ -25,7 +25,6 @@ export class Configuration {
     public requiredIssuer: string;
     public requiredAudience: string;
     public lowPrivilegeScope: string;
-    public highPrivilegeScope: string;
 
     public constructor() {
 
@@ -35,7 +34,6 @@ export class Configuration {
         this.requiredIssuer = this.getValue('REQUIRED_JWT_ISSUER');
         this.requiredAudience = this.getValue('REQUIRED_JWT_AUDIENCE');
         this.lowPrivilegeScope = this.getValue('LOW_PRIVILEGE_SCOPE');
-        this.highPrivilegeScope = this.getValue('HIGH_PRIVILEGE_SCOPE');
     }
 
     private getValue(name: string): string {

@@ -14,14 +14,20 @@
  *  limitations under the License.
  */
 
+import crypto from 'crypto';
 import {DPoPOAuthClient} from './dpopOAuthClient.js';
 import type {AccessTokenAuthenticatorView, BankIDAuthenticatorView} from './haapiTypes.js';
-import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl} from './haapiUtils.js';
-import {authenticateWithBankID, findPollAction, findQrCode} from './bankid.js';
+import {haapiHeaders, haapiResponseView, ensureAbsoluteUrl, createPollingData} from './haapiUtils.js';
+import {
+    authenticateWithBankID,
+    findPollAction,
+    findQrCode
+} from './bankid.js';
 import {Configuration} from '../configuration.js';
 import {Session} from '../session/session.js';
+import { McpServerError } from '../errors/mcpServerError.js';
 
-export type AuthorizationResult = { success: boolean; message: string; qrCode?: string }
+export type AuthorizationResult = { message: string; qrCode?: string }
 const qrCodeMessage = 'Please confirm the action by scanning the QR code with your BankID app.';
 
 /*
@@ -40,20 +46,16 @@ export class HaapiAuthorizer {
      * Begin the HAAPI flow, to trigger the initial download of the QR code
      */
     public async authorizeWithBankID(receivedAccessToken: string, session: Session, stepupScope: string): Promise<AuthorizationResult> {
-        
-        // Create a HAAPI client that creates a new DPoP keypair to begin a new authentication flow
+
         this.client = await this.createAuthenticatedHaapiClient(session);
 
-        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, session, stepupScope);
+        const bankIDView = await this.runBankIDAuthenticationFlow(receivedAccessToken, stepupScope);
         const qrCode = findQrCode(bankIDView);
 
-        const pollAction = findPollAction(bankIDView);
-        const urlForPolling = pollAction.model.href;
-        session.pollingUrl = urlForPolling;
+        session.pollingData = createPollingData(findPollAction(bankIDView));
         session.pollingCount = 0;
 
         return {
-            success: true,
             message: qrCodeMessage,
             qrCode: qrCode,
         };
@@ -63,27 +65,27 @@ export class HaapiAuthorizer {
      * Called when ChatGPT app sends a request to poll for completion
      */
     public async continueAuthorizeWithBankID(onToken: (token: string) => void, session: Session): Promise<AuthorizationResult> {
-        
+
         // Create a HAAPI client that uses the existing HAAPI access token to resume an authentication flow
         this.client = new DPoPOAuthClient(this.configuration, session);
 
-        console.log(`>>> Poll authentication at ${session.pollingUrl}. Attempt ${session.pollingCount}.`);
-        const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingUrl);
+        if (!session.pollingData) {
+            throw new McpServerError(400, 'invalid_session', 'No polling data to continue authorization');
+        }
+
+        //console.log(`>>> Poll authentication at ${session.pollingData.pollingUrl}. Attempt ${session.pollingCount}.`);
+        const authenticationResponse = await authenticateWithBankID(this.configuration, this.client, session.pollingData);
 
         if (authenticationResponse.status == 'failed' || session.pollingCount > 30) {
-            return {
-                success: false,
-                message: 'authentication_failure'
-            }
+            throw new McpServerError(400, 'authentication_failure', 'Authentication failed or timed out');
         }
 
         session.pollingCount = session.pollingCount + 1;
 
         if (authenticationResponse.status == 'continue') {
-            session.pollingUrl = authenticationResponse.pollingUrl!;
+            session.pollingData = authenticationResponse.pollingData!;
 
             return {
-                success: true,
                 message: qrCodeMessage,
                 qrCode: authenticationResponse.currentQRCode!,
             };
@@ -93,14 +95,13 @@ export class HaapiAuthorizer {
         onToken(authenticationResponse.accessToken!);
 
         return {
-            success: true,
             message: 'authentication_success'
         };
     }
 
     /*
-    * Create a HAAPI client and get the HAAPI access token
-    */
+     * Create a HAAPI client and get the HAAPI access token
+     */
     private async createAuthenticatedHaapiClient(session: Session): Promise<DPoPOAuthClient> {
 
         const client = new DPoPOAuthClient(this.configuration, session);
@@ -117,7 +118,7 @@ export class HaapiAuthorizer {
      * @param oauthClient optional OAuth client
      * @returns the initial BankID authenticator view (caller must poll until authentication is complete)
      */
-    private async runBankIDAuthenticationFlow(receivedAccessToken: string, session: Session, stepupScope: string): Promise<BankIDAuthenticatorView> {
+    private async runBankIDAuthenticationFlow(receivedAccessToken: string, stepupScope: string): Promise<BankIDAuthenticatorView> {
 
         const authResponse = await this.sendAuthorizationRequest(stepupScope!);
 
@@ -127,7 +128,7 @@ export class HaapiAuthorizer {
             authResponse,
             this.client);
 
-        console.log('>>> Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
+        //console.log('>>> Access Token Authenticator response:', JSON.stringify(accessTokenView, null, 2));
 
         // submit the access token, expect the next authenticator to be BankID
         const bankIDView = await haapiResponseView<BankIDAuthenticatorView>(
@@ -136,7 +137,7 @@ export class HaapiAuthorizer {
             this.client
         );
 
-        console.log('>>> HAAPI BankID authenticator response:', JSON.stringify(bankIDView, null, 2));
+        //console.log('>>> HAAPI BankID authenticator response:', JSON.stringify(bankIDView, null, 2));
 
         return bankIDView;
     }
@@ -151,7 +152,7 @@ export class HaapiAuthorizer {
         url.searchParams.append('client_id', this.configuration.haapiClientId);
         url.searchParams.append('redirect_uri', this.configuration.redirectUri);
         url.searchParams.append('scope', stepupScope);
-        url.searchParams.append('state', 'random-state-value');
+        url.searchParams.append('state', encodeURIComponent(crypto.randomBytes(32).toString('base64')));
         url.searchParams.append('acr', this.configuration.acr);
         return this.client.get(url.toString(), haapiHeaders)
     }

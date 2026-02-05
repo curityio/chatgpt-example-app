@@ -5,17 +5,21 @@
   "author": "Curity AB",
   "license": "Apache-2.0",
   "main": "src/portfolio.tsx",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "build": "esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify",
-    "deploy": "cp app.css dist/bundle.js ../mcp-server/dist/web"
+    "watch": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify --watch",
+    "build": "mkdir -p dist && cp app.css dist && esbuild src/portfolio.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=tsx --minify"
   },
   "dependencies": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
-    "@types/react-dom": "^19.2.3",
     "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "esbuild": "^0.27.0",
     "typescript": "^5.9.3"
   }

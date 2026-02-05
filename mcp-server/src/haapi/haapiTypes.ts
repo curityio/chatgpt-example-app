@@ -76,6 +76,11 @@ export interface PollAction {
     model: {
         href: string;
         method: string;
+        fields?: Array<{
+            name: string;
+            type: string;
+            value: string;
+        }>
     }
 }
 

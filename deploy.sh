@@ -20,7 +20,7 @@ base64url_decode() {
   local len=$((${#1} % 4))
   local result="$1"
   if [ $len -eq 2 ]; then result="$1"'=='
-  elif [ $len -eq 3 ]; then result="$1"'=' 
+  elif [ $len -eq 3 ]; then result="$1"'='
   fi
   echo "$result" | tr '_-' '/+' | base64 --decode
 }
@@ -60,20 +60,29 @@ echo ">>> Use the external MCP Server URL to connect: $EXTERNAL_BASE_URL/mcp"
 #
 # Set the MCP server's default internal URL, which can be overridden for development
 #
-if [ "$MCP_SERVER_INTERNAL_URL" == '' ]; then
-  export MCP_SERVER_INTERNAL_URL='http://mcp-server:8081'
+if [ "$MCP_SERVER_HOST" == '' ]; then
+  export MCP_SERVER_HOST='mcp-server'
 fi
-if [ "$PORTFOLIO_API_INTERNAL_URL" == '' ]; then
-  export PORTFOLIO_API_INTERNAL_URL='http://portfolio-api:8080'
+if [ "$PORTFOLIO_API_HOST" == '' ]; then
+  export PORTFOLIO_API_HOST='portfolio-api'
 fi
 
 #
-# Since ngrok URLs are not predictable we must perform URL replacements
+# Since ngrok URLs are not predictable we must perform URL replacements for the deployment
 #
 envsubst < ./apigateway/kong-template.yml > ./apigateway/kong.yml
-envsubst < ./idsvr/curity-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-config.xml
+envsubst < ./idsvr/curity-base-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-base-config.xml
+envsubst < ./idsvr/curity-scenario-config-template.xml | sed -e 's/§/$/g' > ./idsvr/curity-scenario-config.xml
 envsubst < ./idsvr/pre-processing-procedures/mcp-client-registration-policy-template.js > ./idsvr/pre-processing-procedures/mcp-client-registration-policy.js
 envsubst < ./idsvr/token-procedures/mcp-token-exchange-template.js > ./idsvr/token-procedures/mcp-token-exchange.js
+
+#
+# In development mode, both the MCP server and portfolio API run locally.
+# Therefore, the MCP server configuration needs to use localhost to route to the portfolio API.
+#
+if [ "$PORTFOLIO_API_HOST" == 'host.docker.internal' ]; then
+  export PORTFOLIO_API_HOST='localhost'
+fi
 envsubst < ./mcp-server/.env-template > ./mcp-server/.env
 envsubst < ./portfolio-api/.env-template > ./portfolio-api/.env
 

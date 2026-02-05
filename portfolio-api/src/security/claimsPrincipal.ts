@@ -15,7 +15,6 @@
  */
 
 import {JWTPayload} from 'jose';
-import {Configuration} from '../configuration.js';
 import {ApiError} from '../errors/apiError.js';
 
 /*
@@ -23,13 +22,14 @@ import {ApiError} from '../errors/apiError.js';
  */
 export class ClaimsPrincipal {
 
-    private readonly configuration: Configuration;
     private readonly scope: string;
+    public readonly subject: string;
+    public readonly personalNumber: string | undefined;
 
-    public constructor(configuration: Configuration, claims: JWTPayload) {
-
-        this.configuration = configuration;
+    public constructor(claims: JWTPayload) {
         this.scope = this.getClaim(claims, 'scope');
+        this.subject = this.getClaim(claims, 'sub');
+        this.personalNumber = this.getClaim(claims, 'personal_number', false) || '';
     }
 
     public hasRequiredScope(expectedScope: string): boolean {
@@ -44,5 +44,16 @@ export class ClaimsPrincipal {
         }
 
         return value;
+    }
+
+    public findTransactionScope(): string | undefined {
+        const scopes = this.scope.split(' ');
+        for (const scope of scopes) {
+            if (scope.startsWith('transaction_')) {
+                return scope;
+            }
+        }
+
+        return undefined;
     }
 }
